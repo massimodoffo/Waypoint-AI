@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waypoint — AI Travel Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0f0e;
+    --bg2: #161714;
+    --bg3: #1e1f1c;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede6;
+    --text2: #9e9b93;
+    --text3: #5c5a54;
+    --accent: #c8b87a;
+    --accent2: #8fa87a;
+    --accent3: #7a9fa8;
+    --accent4: #a87a8f;
+    --accent5: #a8947a;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+  html { font-size: 16px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(14,15,14,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .nav-actions { display: flex; align-items: center; gap: 1rem; }
+  .nav-status {
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+
+  /* LAYOUT */
+  .app { display: flex; flex: 1; height: calc(100vh - 57px); }
+
+  /* SIDEBAR */
+  aside {
+    width: 260px;
+    min-width: 260px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg2);
+    overflow: hidden;
+  }
+  .sidebar-top { padding: 1.25rem 1rem 0.75rem; }
+  .sidebar-top h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .new-trip-btn {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; }
+  .trip-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+  .trip-entry {
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+  .trip-entry:hover { background: var(--bg3); color: var(--text); }
+  .trip-entry.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+  .trip-entry-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+  .trip-entry-name { font-weight: 400; }
+  .trip-entry-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .sidebar-agents { padding: 1rem; border-top: 1px solid var(--border); }
+  .sidebar-agents h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .agent-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .agent-pill.running { border-color: var(--border2); background: var(--bg3); }
+  .agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  .agent-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(143,168,122,0.5); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* MAIN */
+  main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* CHAT */
+  #chat { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth; }
+  #chat::-webkit-scrollbar { width: 4px; }
+  #chat::-webkit-scrollbar-track { background: transparent; }
+  #chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* WELCOME */
+  .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; }
+  .welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; }
+  .welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; }
+  .welcome h1 em { font-style: italic; color: var(--accent); }
+  .welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chip {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text2);
+    background: transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+
+  /* MESSAGES */
+  .msg { display: flex; gap: 12px; animation: slideUp 0.3s ease; max-width: 800px; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+  .msg.system-msg { align-self: flex-start; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; font-weight: 500;
+  }
+  .avatar.user { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); font-size: 12px; }
+  .avatar.ai { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.25); }
+  .avatar.orchestrator { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.2); }
+  .bubble {
+    padding: 0.8rem 1rem;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 620px;
+  }
+  .bubble.user { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 14px 4px 14px 14px; }
+  .bubble.ai { background: var(--bg2); color: var(--text); border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; }
+  .bubble.system-bubble { background: transparent; border: 1px dashed var(--border); border-radius: 8px; color: var(--text3); font-size: 13px; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 8px; }
+
+  /* AGENT ACTIVITY */
+  .agent-activity {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    max-width: 620px;
+    margin-top: 0.25rem;
+  }
+  .agent-activity-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .agent-tasks { padding: 0.5rem; }
+  .agent-task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 2px;
+    transition: background 0.2s;
+  }
+  .agent-task.done { color: var(--text2); }
+  .agent-task.running { background: var(--bg3); color: var(--text); }
+  .agent-task.pending { color: var(--text3); }
+  .task-icon { font-size: 15px; width: 20px; text-align: center; }
+  .task-label { flex: 1; }
+  .task-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .task-badge.done { background: rgba(143,168,122,0.15); color: var(--accent2); }
+  .task-badge.running { background: rgba(200,184,122,0.15); color: var(--accent); }
+  .task-badge.pending { background: var(--bg3); color: var(--text3); }
+
+  /* RESULT CARDS */
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 620px; margin-top: 0.75rem; }
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .rc-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .rc-body { padding: 0.85rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; }
+
+  /* ITINERARY */
+  .itin-full {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    max-width: 620px;
+    margin-top: 0.75rem;
+  }
+  .itin-hero {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .itin-hero h2 { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; }
+  .itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
+  .itin-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .itin-days { padding: 0.75rem; }
+  .day-block { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .day-header {
+    padding: 0.55rem 0.9rem;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .day-header-left { font-size: 12px; font-weight: 500; color: var(--text); }
+  .day-header-right { font-size: 11px; color: var(--text3); }
+  .stop { display: flex; gap: 10px; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
+  .stop:last-child { border-bottom: none; }
+  .stop-time { font-size: 11px; color: var(--text3); min-width: 50px; padding-top: 2px; font-family: 'DM Sans', sans-serif; }
+  .stop-body { flex: 1; }
+  .stop-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .stop-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.5; }
+  .stop-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .stag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .stag-food { background: rgba(168,148,122,0.2); color: var(--accent5); }
+  .stag-culture { background: rgba(122,159,168,0.2); color: var(--accent3); }
+  .stag-nature { background: rgba(143,168,122,0.2); color: var(--accent2); }
+  .stag-nightlife { background: rgba(168,122,143,0.2); color: var(--accent4); }
+  .stag-activity { background: rgba(200,184,122,0.15); color: var(--accent); }
+  .stag-hotel { background: rgba(122,159,168,0.15); color: var(--accent3); }
+
+  /* TYPING */
+  .typing-dots { display: flex; gap: 4px; padding: 6px 0; }
+  .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: tdot 1s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:.15s;}
+  .typing-dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes tdot{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+  /* INPUT */
+  #input-wrap {
+    padding: 1rem 2rem 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .input-box {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 0.85rem 0.75rem 1.1rem;
+    transition: border-color 0.2s;
+  }
+  .input-box:focus-within { border-color: rgba(200,184,122,0.4); }
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    min-height: 24px;
+    max-height: 120px;
+  }
+  textarea::placeholder { color: var(--text3); }
+  .send-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #1a1800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+  .send-btn:hover { opacity: 0.85; transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+  /* API KEY MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    width: 440px;
+    max-width: 90vw;
+  }
+  .modal h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 400; margin-bottom: 0.5rem; color: var(--text); }
+  .modal p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 1.25rem; }
+  .modal input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.7rem 0.9rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 1rem;
+  }
+  .modal input:focus { border-color: rgba(200,184,122,0.4); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-primary {
+    padding: 0.6rem 1.2rem;
+    background: var(--accent);
+    color: #1a1800;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost {
+    padding: 0.6rem 1rem;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .modal-warning { font-size: 12px; color: var(--text3); display: flex; align-items: flex-start; gap: 6px; margin-bottom: 1rem; line-height: 1.5; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    Waypoint
+  </div>
+  <div class="nav-actions">
+    <div class="nav-status"><div class="status-dot"></div>Connected</div>
+  </div>
+</nav>
+
+<div class="app">
+  <aside>
+    <div class="sidebar-top">
+      <h2>Trips</h2>
+      <button class="new-trip-btn" onclick="newTrip()">+ New trip</button>
+    </div>
+    <div class="trip-list" id="tripList">
+      <div class="trip-entry active" data-id="0">
+        <span class="trip-entry-icon">✦</span>
+        <div>
+          <div class="trip-entry-name">New trip</div>
+          <div class="trip-entry-meta">Just now</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-agents">
+      <h2>Agents</h2>
+      <div class="agent-pill" id="ap-orchestrator">
+        <div class="agent-dot" id="ad-orchestrator"></div>
+        <span style="font-size:13px">Orchestrator</span>
+      </div>
+      <div class="agent-pill" id="ap-itinerary">
+        <div class="agent-dot" id="ad-itinerary"></div>
+        <span style="font-size:13px">Itinerary</span>
+      </div>
+      <div class="agent-pill" id="ap-budget">
+        <div class="agent-dot" id="ad-budget"></div>
+        <span style="font-size:13px">Budget</span>
+      </div>
+      <div class="agent-pill" id="ap-hotels">
+        <div class="agent-dot" id="ad-hotels"></div>
+        <span style="font-size:13px">Hotels</span>
+      </div>
+      <div class="agent-pill" id="ap-local">
+        <div class="agent-dot" id="ad-local"></div>
+        <span style="font-size:13px">Local Tips</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="chat">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">✦</div>
+        <h1>Where do you want to <em>go?</em></h1>
+        <p>Tell me about your dream trip — what you love doing, how long you're staying, and your vibe. My agents will handle the rest.</p>
+        <div class="chips">
+          <button class="chip" onclick="quickStart('I want 5 days in Tokyo. I love street food, hidden izakayas, and architecture.')">Tokyo 5 days · food & architecture</button>
+          <button class="chip" onclick="quickStart('Plan a long weekend in Paris. I love art, café culture, and late nights.')">Paris weekend · art & nights</button>
+          <button class="chip" onclick="quickStart('7 days in Colombia between Medellín and Cartagena. I love coffee, beaches, and nightlife.')">Colombia · coffee & beaches</button>
+          <button class="chip" onclick="quickStart('I want a slow 10-day trip through Portugal. Wine, old towns, seafood, and surfing.')">Portugal 10 days · slow travel</button>
+        </div>
+      </div>
+    </div>
+    <div id="input-wrap">
+      <div class="input-box">
+        <textarea id="msgInput" placeholder="Describe your trip…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send">↑</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+
+<script>
+// ─── CONFIGURATION ───────────────────────────────────────────────────────────
+// After deploying your Cloudflare Worker, paste the URL it gives you here:
+const WORKER_URL = '/.netlify/functions/proxy';
+// ─────────────────────────────────────────────────────────────────────────────
+let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
+let currentTripId = 0;
+let tripCounter = 0;
+
+
+
+
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function quickStart(text) {
+  document.getElementById('msgInput').value = text;
+  autoResize(document.getElementById('msgInput'));
+  sendMessage();
+}
+function newTrip() {
+  tripCounter++;
+  const t = { id: tripCounter, name: 'New trip', history: [], date: new Date() };
+  trips.push(t);
+  currentTripId = tripCounter;
+  renderTripList();
+  clearChat();
+}
+function renderTripList() {
+  const list = document.getElementById('tripList');
+  list.innerHTML = '';
+  [...trips].reverse().forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'trip-entry' + (t.id === currentTripId ? ' active' : '');
+    el.setAttribute('data-id', t.id);
+    el.innerHTML = `<span class="trip-entry-icon">✦</span><div><div class="trip-entry-name">${t.name}</div><div class="trip-entry-meta">${formatDate(t.date)}</div></div>`;
+    el.onclick = () => { currentTripId = t.id; renderTripList(); };
+    list.appendChild(el);
+  });
+}
+function formatDate(d) {
+  const now = new Date(); const diff = (now - d) / 1000;
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  return d.toLocaleDateString();
+}
+function clearChat() {
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome';
+  welcome.id = 'welcome';
+  welcome.innerHTML = `
+    <div class="welcome-icon">✦</div>
+    <h1>Where do you want to <em>go?</em></h1>
+    <p>Tell me about your dream trip — what you love doing, how long you're staying, and your vibe.</p>
+    <div class="chips">
+      <button class="chip" onclick="quickStart('I want 5 days in Tokyo. I love street food, hidden izakayas, and architecture.')">Tokyo 5 days · food & architecture</button>
+      <button class="chip" onclick="quickStart('Plan a long weekend in Paris. I love art, café culture, and late nights.')">Paris weekend · art & nights</button>
+      <button class="chip" onclick="quickStart('7 days in Colombia. I love coffee, beaches, and nightlife.')">Colombia · coffee & beaches</button>
+    </div>`;
+  chat.appendChild(welcome);
+}
+
+function setAgentState(agent, state) {
+  const dot = document.getElementById('ad-' + agent);
+  const pill = document.getElementById('ap-' + agent);
+  if (!dot) return;
+  dot.classList.toggle('active', state === 'running');
+  pill.classList.toggle('running', state === 'running');
+}
+function resetAgents() {
+  ['orchestrator','itinerary','budget','hotels','local'].forEach(a => setAgentState(a, 'idle'));
+}
+
+function appendMsg(role, content) {
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  if (role === 'user') {
+    wrap.innerHTML = `<div class="avatar user">You</div><div class="bubble user">${escHtml(content)}</div>`;
+  } else {
+    wrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai">${content}</div>`;
+  }
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+
+function appendSystemMsg(text) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg system-msg';
+  wrap.innerHTML = `<div class="bubble system-bubble"><span style="color:var(--accent);font-size:12px">◈</span> ${escHtml(text)}</div>`;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.id = 'typing';
+  wrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function buildAgentActivityEl(tasks) {
+  const div = document.createElement('div');
+  div.className = 'agent-activity';
+  div.innerHTML = `<div class="agent-activity-header"><span style="color:var(--accent)">◈</span> Agent pipeline</div><div class="agent-tasks" id="atasks"></div>`;
+  const tasksDiv = div.querySelector('#atasks');
+  tasks.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'agent-task pending';
+    row.id = 'at-' + i;
+    row.innerHTML = `<span class="task-icon">${t.icon}</span><span class="task-label">${t.label}</span><span class="task-badge pending" id="atb-${i}">waiting</span>`;
+    tasksDiv.appendChild(row);
+  });
+  return div;
+}
+
+function updateTask(idx, state) {
+  const row = document.getElementById('at-' + idx);
+  const badge = document.getElementById('atb-' + idx);
+  if (!row || !badge) return;
+  row.className = 'agent-task ' + state;
+  badge.className = 'task-badge ' + state;
+  badge.textContent = state === 'done' ? 'done' : state === 'running' ? 'running…' : 'waiting';
+}
+
+async function callClaude(systemPrompt, userMsg, history = []) {
+
+  const messages = [...history, { role: 'user', content: userMsg }];
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: systemPrompt, messages }),
+  });
+  if (!res.ok) throw new Error('Worker error ' + res.status);
+  const data = await res.json();
+  return data.content?.map(b => b.text || '').join('') || '';
+}
+
+const ORCHESTRATOR_PROMPT = `You are the Waypoint orchestrator. A user describes a trip. You extract the key travel parameters and return ONLY a JSON object (no markdown, no preamble):
+{
+  "destination": "City, Country",
+  "duration": "X days",
+  "interests": ["interest1", "interest2"],
+  "pace": "relaxed|moderate|packed",
+  "budget_level": "budget|mid-range|luxury",
+  "trip_summary": "1 sentence summary of the trip"
+}`;
+
+const ITINERARY_PROMPT = `You are the Waypoint itinerary specialist. Given trip parameters, create a detailed day-by-day itinerary. Return ONLY JSON (no markdown):
+{
+  "days": [
+    {
+      "day": 1,
+      "theme": "Short theme",
+      "stops": [
+        { "time": "9:00 AM", "name": "Place", "description": "Why it fits", "tag": "food|culture|nature|nightlife|activity" }
+      ]
+    }
+  ]
+}
+Include 3-5 stops per day. Tailor every stop to the user's stated interests.`;
+
+const BUDGET_PROMPT = `You are the Waypoint budget specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "daily_estimate": "$X–$Y USD/day",
+  "total_estimate": "$X–$Y USD total",
+  "breakdown": {
+    "accommodation": "$X–$Y/night",
+    "food": "$X–$Y/day",
+    "transport": "$X–$Y/day",
+    "activities": "$X–$Y/day"
+  },
+  "money_tips": ["tip1", "tip2", "tip3"]
+}`;
+
+const HOTELS_PROMPT = `You are the Waypoint hotels specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "neighborhoods": ["Best area 1 with reason", "Best area 2 with reason"],
+  "hotel_picks": [
+    { "name": "Hotel name", "type": "boutique|hostel|luxury|airbnb-style", "why": "1 sentence why it fits", "price_range": "$X–$Y/night" }
+  ],
+  "booking_tips": "1–2 sentences on best booking strategy"
+}
+Include 3 hotel picks across different price ranges.`;
+
+const LOCAL_PROMPT = `You are the Waypoint local tips specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "insider_tips": ["tip1", "tip2", "tip3", "tip4"],
+  "avoid": ["thing to avoid 1", "thing to avoid 2"],
+  "phrases": [{ "phrase": "local phrase", "means": "meaning" }, { "phrase": "phrase2", "means": "meaning2" }],
+  "best_time_note": "1 sentence about timing"
+}`;
+
+function safeJSON(str) {
+  try { return JSON.parse(str.replace(/```json|```/g,'').trim()); } catch { return null; }
+}
+
+function buildItinCard(itin, dest, dur) {
+  const div = document.createElement('div');
+  div.className = 'itin-full';
+  div.innerHTML = `
+    <div class="itin-hero">
+      <h2>${dest}</h2>
+      <div class="itin-meta-row">
+        <span class="itin-badge">✦ ${dur}</span>
+      </div>
+    </div>
+    <div class="itin-days">
+      ${itin.days.map(d => `
+        <div class="day-block">
+          <div class="day-header">
+            <div class="day-header-left">Day ${d.day} — ${d.theme}</div>
+          </div>
+          ${d.stops.map(s => `
+            <div class="stop">
+              <div class="stop-time">${s.time}</div>
+              <div class="stop-body">
+                <div class="stop-name">${s.name}</div>
+                <div class="stop-desc">${s.description}</div>
+                <div class="stop-tags"><span class="stag stag-${s.tag}">${s.tag}</span></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>`;
+  return div;
+}
+
+function buildResultCards(budget, hotels, local) {
+  const grid = document.createElement('div');
+  grid.className = 'result-grid';
+
+  // Budget card
+  const bc = document.createElement('div');
+  bc.className = 'result-card';
+  bc.innerHTML = `<div class="rc-header"><div class="rc-dot" style="background:var(--accent5)"></div>Budget</div>
+  <div class="rc-body">
+    <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">${budget.daily_estimate}<span style="font-size:11px;color:var(--text3)"> /day</span></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${budget.total_estimate}</div>
+    ${Object.entries(budget.breakdown).map(([k,v]) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2);text-transform:capitalize">${k}</span><span style="color:var(--text)">${v}</span></div>`).join('')}
+    <div style="margin-top:10px;font-size:12px;color:var(--text2)">${budget.money_tips.map(t=>`<div style="margin-bottom:4px">· ${t}</div>`).join('')}</div>
+  </div>`;
+  grid.appendChild(bc);
+
+  // Hotels card
+  const hc = document.createElement('div');
+  hc.className = 'result-card';
+  hc.innerHTML = `<div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
+  <div class="rc-body">
+    ${hotels.hotel_picks.map(h=>`
+      <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+        <div style="font-weight:500;font-size:13px;color:var(--text)">${h.name}</div>
+        <div style="font-size:11px;color:var(--accent3);margin:2px 0">${h.price_range} · ${h.type}</div>
+        <div style="font-size:12px;color:var(--text2)">${h.why}</div>
+      </div>`).join('')}
+    <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${hotels.booking_tips}</div>
+  </div>`;
+  grid.appendChild(hc);
+
+  // Local tips — full width
+  const lc = document.createElement('div');
+  lc.className = 'result-card';
+  lc.style.gridColumn = '1/-1';
+  lc.innerHTML = `<div class="rc-header"><div class="rc-dot" style="background:var(--accent2)"></div>Local insider tips</div>
+  <div class="rc-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div>
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Insider tips</div>
+      ${local.insider_tips.map(t=>`<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Avoid</div>
+      ${local.avoid.map(t=>`<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+      <div style="margin-top:10px;font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Useful phrases</div>
+      ${local.phrases.map(p=>`<div style="font-size:12px;margin-bottom:4px"><span style="color:var(--accent);font-style:italic">${p.phrase}</span> <span style="color:var(--text3)">— ${p.means}</span></div>`).join('')}
+    </div>
+  </div>`;
+  grid.appendChild(lc);
+
+  return grid;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  const trip = trips.find(t => t.id === currentTripId);
+  appendMsg('user', text);
+  trip.history.push({ role: 'user', content: text });
+
+  // Show agent activity tracker
+  const tasks = [
+    { icon: '◈', label: 'Orchestrator — parsing your trip' },
+    { icon: '🗺', label: 'Itinerary agent — building your days' },
+    { icon: '💰', label: 'Budget agent — estimating costs' },
+    { icon: '🏨', label: 'Hotels agent — finding places to stay' },
+    { icon: '🌍', label: 'Local tips agent — insider knowledge' },
+  ];
+
+  const chat = document.getElementById('chat');
+  const activityWrap = document.createElement('div');
+  activityWrap.className = 'msg ai';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar orchestrator';
+  avatar.textContent = 'W';
+  const activityEl = buildAgentActivityEl(tasks);
+  activityWrap.appendChild(avatar);
+  activityWrap.appendChild(activityEl);
+  chat.appendChild(activityWrap);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    // Step 1: Orchestrator
+    setAgentState('orchestrator', 'running');
+    updateTask(0, 'running');
+    const orchRaw = await callClaude(ORCHESTRATOR_PROMPT, text, trip.history.slice(0,-1));
+    const params = safeJSON(orchRaw);
+    updateTask(0, 'done');
+    setAgentState('orchestrator', 'idle');
+
+    if (!params) throw new Error('Orchestrator parse failed');
+
+    if (trip.name === 'New trip' && params.destination) {
+      trip.name = params.destination;
+      renderTripList();
+    }
+
+    const tripContext = JSON.stringify(params);
+
+    // Steps 2-5 in parallel
+    setAgentState('itinerary', 'running'); updateTask(1, 'running');
+    setAgentState('budget', 'running');    updateTask(2, 'running');
+    setAgentState('hotels', 'running');    updateTask(3, 'running');
+    setAgentState('local', 'running');     updateTask(4, 'running');
+
+    const [itinRaw, budgetRaw, hotelsRaw, localRaw] = await Promise.all([
+      callClaude(ITINERARY_PROMPT, tripContext),
+      callClaude(BUDGET_PROMPT, tripContext),
+      callClaude(HOTELS_PROMPT, tripContext),
+      callClaude(LOCAL_PROMPT, tripContext),
+    ]);
+
+    updateTask(1,'done'); setAgentState('itinerary','idle');
+    updateTask(2,'done'); setAgentState('budget','idle');
+    updateTask(3,'done'); setAgentState('hotels','idle');
+    updateTask(4,'done'); setAgentState('local','idle');
+
+    const itin   = safeJSON(itinRaw);
+    const budget = safeJSON(budgetRaw);
+    const hotels = safeJSON(hotelsRaw);
+    const local  = safeJSON(localRaw);
+
+    // Remove activity card
+    activityWrap.remove();
+
+    // Render summary message
+    const summaryWrap = document.createElement('div');
+    summaryWrap.className = 'msg ai';
+    summaryWrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai">${params.trip_summary || 'Here\'s everything for your trip to ' + params.destination + '.'}</div>`;
+    chat.appendChild(summaryWrap);
+
+    // Render itinerary
+    if (itin) {
+      const itinWrap = document.createElement('div');
+      itinWrap.className = 'msg ai';
+      itinWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      itinWrap.appendChild(buildItinCard(itin, params.destination, params.duration));
+      chat.appendChild(itinWrap);
+    }
+
+    // Render result cards
+    if (budget && hotels && local) {
+      const cardsWrap = document.createElement('div');
+      cardsWrap.className = 'msg ai';
+      cardsWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      cardsWrap.appendChild(buildResultCards(budget, hotels, local));
+      chat.appendChild(cardsWrap);
+    }
+
+    trip.history.push({ role: 'assistant', content: `Trip to ${params.destination}: ${params.trip_summary}` });
+
+  } catch(err) {
+    activityWrap.remove();
+    resetAgents();
+    appendMsg('ai', `Something went wrong: ${err.message}. Please check your API key and try again.`);
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+  document.getElementById('sendBtn').disabled = false;
+  resetAgents();
+}
+</script>
+</body>
+</html>
