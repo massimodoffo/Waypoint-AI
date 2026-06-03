@@ -900,7 +900,7 @@ function appendMsg(role, content) {
   if (role === 'user') {
     wrap.innerHTML = `<div class="avatar user">You</div><div class="bubble user">${escHtml(content)}</div>`;
   } else {
-    wrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai">${content}</div>`;
+    wrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai">${renderMarkdown(content)}</div>`;
   }
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
@@ -933,6 +933,37 @@ function removeTyping() {
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderMarkdown(text) {
+  // Escape HTML first
+  let s = text
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+
+  // Markdown links: [text](url)
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$1 ↗</a>');
+
+  // Bare URLs
+  s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g,
+    '$1<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$2 ↗</a>');
+
+  // Bold+italic: ***text***
+  s = s.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  // Bold: **text**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text);font-weight:600">$1</strong>');
+  // Italic: *text* or _text_
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  s = s.replace(/\_([^_]+)\_/g, '<em>$1</em>');
+  // Underline: __text__
+  s = s.replace(/__([^_]+)__/g, '<u>$1</u>');
+
+  // Line breaks
+  s = s.replace(/\n/g, '<br>');
+
+  return s;
 }
 
 function buildAgentActivityEl(tasks) {
@@ -1192,7 +1223,7 @@ async function sendMessage() {
         setTimeout(() => {
           const transMsg = document.createElement('div');
           transMsg.className = 'msg ai';
-          transMsg.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai" style="color:var(--accent)">✦ Perfect — I have everything I need. Let me build your trip now...</div>';
+          transMsg.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai"><span style="color:var(--accent)">✦</span> Perfect — I have everything I need. Let me build your trip now...</div>';
           chat.appendChild(transMsg);
           chat.scrollTop = chat.scrollHeight;
           conversationMode = 'planning';
@@ -1410,7 +1441,7 @@ async function generateItinerary(trip) {
 
     const summaryWrap = document.createElement('div');
     summaryWrap.className = 'msg ai';
-    summaryWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + (params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!</div>';
+    summaryWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown((params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!') + '</div>';
     chat.appendChild(summaryWrap);
 
     if (itin) {
@@ -1451,7 +1482,7 @@ function renderRestaurantCards(data) {
   // Intro message
   const introWrap = document.createElement('div');
   introWrap.className = 'msg ai';
-  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + escHtml(data.intro) + '</div>';
+  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown(data.intro) + '</div>';
   chat.appendChild(introWrap);
 
   // Cards container
@@ -1548,7 +1579,7 @@ function renderHotelCards(data) {
 
   const introWrap = document.createElement('div');
   introWrap.className = 'msg ai';
-  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + escHtml(data.intro) + '</div>';
+  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown(data.intro) + '</div>';
   chat.appendChild(introWrap);
 
   const cardsWrap = document.createElement('div');
@@ -1628,7 +1659,7 @@ function renderActivityCards(data) {
 
   const introWrap = document.createElement('div');
   introWrap.className = 'msg ai';
-  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + escHtml(data.intro) + '</div>';
+  introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown(data.intro) + '</div>';
   chat.appendChild(introWrap);
 
   const cardsWrap = document.createElement('div');
