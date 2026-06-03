@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* DARK MODE (default) */
   :root {
     --bg: #0e0f0e;
     --bg2: #161714;
@@ -25,7 +27,29 @@
     --accent5: #a8947a;
     --radius: 10px;
     --radius-lg: 16px;
+    --nav-bg: rgba(14,15,14,0.92);
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
   }
+
+  /* LIGHT MODE */
+  :root.light {
+    --bg: #f7f5f0;
+    --bg2: #ffffff;
+    --bg3: #ede9e1;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1916;
+    --text2: #5c5a52;
+    --text3: #a09e97;
+    --accent: #9a7d2e;
+    --accent2: #4a7a3a;
+    --accent3: #2a6b78;
+    --accent4: #7a3a5e;
+    --accent5: #7a5a2e;
+    --nav-bg: rgba(247,245,240,0.94);
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
   html { font-size: 16px; }
   body {
     font-family: 'DM Sans', sans-serif;
@@ -45,7 +69,7 @@
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    background: rgba(14,15,14,0.92);
+    background: var(--nav-bg);
     backdrop-filter: blur(12px);
     z-index: 100;
   }
@@ -182,10 +206,10 @@
   .avatar.ai { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.25); }
   .avatar.orchestrator { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.2); }
   .bubble {
-    padding: 0.8rem 1rem;
+    padding: 0.9rem 1.1rem;
     border-radius: 14px;
-    font-size: 14px;
-    line-height: 1.7;
+    font-size: 15.5px;
+    line-height: 1.8;
     max-width: 620px;
   }
   .bubble.user { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 14px 4px 14px 14px; }
@@ -435,6 +459,42 @@
   .btn-ghost:hover { background: var(--bg3); color: var(--text); }
   .modal-warning { font-size: 12px; color: var(--text3); display: flex; align-items: flex-start; gap: 6px; margin-bottom: 1rem; line-height: 1.5; }
 
+
+  /* THEME TOGGLE */
+  .theme-toggle {
+    width: 36px; height: 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.25s, border-color 0.25s;
+    flex-shrink: 0;
+  }
+  .theme-toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--text3);
+    top: 2px; left: 2px;
+    transition: transform 0.25s, background 0.25s;
+  }
+  :root.light .theme-toggle::after {
+    transform: translateX(16px);
+    background: var(--accent);
+  }
+  .theme-label {
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .theme-label:hover .theme-toggle { border-color: var(--accent); }
+
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -488,7 +548,7 @@
   }
   .resto-divider { height: 1px; background: var(--border); margin: 0; }
   .resto-body { padding: 0.75rem 1rem; }
-  .resto-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+  .resto-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
   .resto-meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem; }
   .resto-tag {
     display: flex;
@@ -586,7 +646,7 @@
   .hotel-price-main { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
   .hotel-price-sub { font-size: 10px; color: var(--text3); }
   .hotel-body { padding: 0.75rem 1rem; }
-  .hotel-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+  .hotel-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
   .hotel-amenities { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
   .hotel-amenity { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
   .hotel-nights-calc { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; }
@@ -615,7 +675,7 @@
   .activity-category { font-size: 12px; color: var(--text3); margin-top: 3px; }
   .activity-duration-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(143,168,122,0.12); border: 1px solid rgba(143,168,122,0.2); color: var(--accent2); flex-shrink: 0; }
   .activity-body { padding: 0.75rem 1rem; }
-  .activity-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+  .activity-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
   .activity-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
   .activity-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
   .activity-cost-row { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; }
@@ -728,6 +788,10 @@
     </div>
   </div>
   <div class="nav-actions">
+    <label class="theme-label" onclick="toggleTheme()">
+      <span id="themeIcon">☀</span>
+      <div class="theme-toggle" id="themeToggle"></div>
+    </label>
     <div class="nav-status"><div class="status-dot"></div>Connected</div>
   </div>
 </nav>
@@ -815,6 +879,24 @@ function toggleSidebar() {
   document.querySelector('aside').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('visible');
 }
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('themeIcon').textContent = isLight ? '🌙' : '☀';
+  localStorage.setItem('wp_theme', isLight ? 'light' : 'dark');
+}
+
+// Apply saved theme on load
+(function() {
+  const saved = localStorage.getItem('wp_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    setTimeout(() => {
+      const icon = document.getElementById('themeIcon');
+      if (icon) icon.textContent = '🌙';
+    }, 0);
+  }
+})();
 
 let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
 let currentTripId = 0;
