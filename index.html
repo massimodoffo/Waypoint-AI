@@ -975,9 +975,74 @@ function toggleTheme() {
   }
 })();
 
+// ── PERSISTENT MEMORY ────────────────────────────────────────────────────────
+function saveTrips() {
+  try {
+    const data = {
+      trips: trips.map(t => ({
+        ...t,
+        date: t.date instanceof Date ? t.date.toISOString() : t.date
+      })),
+      currentTripId,
+      tripCounter,
+      conversationModes: Object.fromEntries(trips.map(t => [t.id, t._mode || 'chat']))
+    };
+    localStorage.setItem('wp_trips', JSON.stringify(data));
+  } catch(e) { console.warn('Could not save trips:', e); }
+}
+
+function loadTrips() {
+  try {
+    const raw = localStorage.getItem('wp_trips');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.trips || !data.trips.length) return false;
+    trips = data.trips.map(t => ({ ...t, date: new Date(t.date) }));
+    currentTripId = data.currentTripId ?? trips[trips.length - 1].id;
+    tripCounter = data.tripCounter ?? trips.length - 1;
+    // Restore conversationMode for current trip
+    const modes = data.conversationModes || {};
+    trips.forEach(t => { t._mode = modes[t.id] || 'chat'; });
+    return true;
+  } catch(e) { console.warn('Could not load trips:', e); return false; }
+}
+
+function deleteTrip(id, e) {
+  e.stopPropagation();
+  if (trips.length === 1) {
+    // Reset to blank instead of deleting last
+    trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
+    currentTripId = 0; tripCounter = 0; conversationMode = 'chat';
+  } else {
+    trips = trips.filter(t => t.id !== id);
+    if (currentTripId === id) {
+      currentTripId = trips[trips.length - 1].id;
+      const cur = trips.find(t => t.id === currentTripId);
+      conversationMode = cur?._mode || 'chat';
+    }
+  }
+  saveTrips();
+  renderTripList();
+  restoreChat();
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
 let currentTripId = 0;
 let tripCounter = 0;
+
+// Load saved trips on startup
+(function() {
+  const loaded = loadTrips();
+  if (loaded) {
+    const cur = trips.find(t => t.id === currentTripId);
+    conversationMode = cur?._mode || 'chat';
+  }
+  renderTripList();
+  if (loaded && trips.find(t => t.id === currentTripId)?.history?.length > 0) {
+    restoreChat();
+  }
+})();
 
 
 
@@ -1010,8 +1075,22 @@ function renderTripList() {
     const el = document.createElement('div');
     el.className = 'trip-entry' + (t.id === currentTripId ? ' active' : '');
     el.setAttribute('data-id', t.id);
-    el.innerHTML = `<span class="trip-entry-icon">✦</span><div><div class="trip-entry-name">${t.name}</div><div class="trip-entry-meta">${formatDate(t.date)}</div></div>`;
-    el.onclick = () => { currentTripId = t.id; renderTripList(); };
+    el.innerHTML = `
+      <span class="trip-entry-icon">✦</span>
+      <div style="flex:1;min-width:0">
+        <div class="trip-entry-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</div>
+        <div class="trip-entry-meta">${formatDate(t.date)}</div>
+      </div>
+      <button onclick="deleteTrip(${t.id}, event)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px;opacity:0;transition:opacity 0.15s;flex-shrink:0" class="trip-del-btn">✕</button>`;
+    el.onclick = () => {
+      currentTripId = t.id;
+      const cur = trips.find(tr => tr.id === t.id);
+      conversationMode = cur?._mode || 'chat';
+      renderTripList();
+      restoreChat();
+    };
+    el.onmouseenter = () => { const btn = el.querySelector('.trip-del-btn'); if(btn) btn.style.opacity='1'; };
+    el.onmouseleave = () => { const btn = el.querySelector('.trip-del-btn'); if(btn) btn.style.opacity='0'; };
     list.appendChild(el);
   });
 }
@@ -1037,6 +1116,38 @@ function clearChat() {
       <button class="chip" onclick="quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee and beaches</button>
     </div>`;
   chat.appendChild(welcome);
+}
+
+function restoreChat() {
+  // Rebuild chat from saved history for the current trip
+  const trip = trips.find(t => t.id === currentTripId);
+  if (!trip || !trip.history || trip.history.length === 0) {
+    clearChat();
+    return;
+  }
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  chat.innerHTML = '';
+
+  // Replay conversation messages only (skip system messages)
+  trip.history.forEach(m => {
+    if (m.role === 'user') {
+      appendMsg('user', m.content);
+    } else if (m.role === 'assistant') {
+      // Don't re-render card messages, just show as text
+      if (!m.content.startsWith('Showed ') && !m.content.startsWith('Full itinerary')) {
+        appendMsg('ai', m.content);
+      } else {
+        // Show a note that rich cards were generated
+        const note = document.createElement('div');
+        note.className = 'msg ai';
+        note.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai" style="color:var(--text3);font-style:italic">— Rich cards were shown here. Ask again to regenerate. —</div>';
+        chat.appendChild(note);
+      }
+    }
+  });
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function setAgentState(agent, state) {
@@ -1345,6 +1456,7 @@ async function sendMessage() {
   const trip = trips.find(t => t.id === currentTripId);
   appendMsg('user', text);
   trip.history.push({ role: 'user', content: text });
+  saveTrips();
 
   const chat = document.getElementById('chat');
 
@@ -1368,10 +1480,12 @@ async function sendMessage() {
       if (trip.name === 'New trip') {
         const words = text.split(' ').slice(0, 4).join(' ');
         trip.name = words;
+        saveTrips();
         renderTripList();
       }
 
       trip.history.push({ role: 'assistant', content: reply });
+      saveTrips();
 
       // Check if agent decided it has enough info
       if (reply.includes('[READY_TO_PLAN]')) {
@@ -1436,6 +1550,7 @@ price_per_person = realistic USD amount for one person, full meal + one drink.`;
         const restoData = safeJSON(restoRaw);
         if (restoData && restoData.restaurants) {
           trip.history.push({ role: 'assistant', content: 'Showed restaurant recommendations.' });
+          saveTrips();
           renderRestaurantCards(restoData);
         } else { fallbackReply(typingWrap, trip, text); }
 
@@ -1469,6 +1584,7 @@ price_per_night = realistic USD nightly rate for this hotel type and city.`;
         const hotelData = safeJSON(hotelRaw);
         if (hotelData && hotelData.hotels) {
           trip.history.push({ role: 'assistant', content: 'Showed hotel recommendations.' });
+          saveTrips();
           renderHotelCards(hotelData);
         } else { fallbackReply(typingWrap, trip, text); }
 
@@ -1504,6 +1620,7 @@ price_per_person = realistic USD per person. Use 0 for free activities.`;
         const activityData = safeJSON(activityRaw);
         if (activityData && activityData.activities) {
           trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.' });
+          saveTrips();
           renderActivityCards(activityData);
         } else { fallbackReply(typingWrap, trip, text); }
 
@@ -1568,6 +1685,8 @@ async function generateItinerary(trip) {
 
     if (params.destination) {
       trip.name = params.destination;
+      trip._mode = 'done';
+      saveTrips();
       renderTripList();
     }
 
@@ -1621,6 +1740,8 @@ async function generateItinerary(trip) {
 
     trip.history.push({ role: 'assistant', content: 'Full itinerary generated for ' + params.destination });
     conversationMode = 'done';
+    trip._mode = 'done';
+    saveTrips();
 
   } catch(err) {
     activityWrap.remove();
