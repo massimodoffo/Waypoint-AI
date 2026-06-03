@@ -1122,31 +1122,78 @@ function clearChat() {
 }
 
 function restoreChat() {
-  // Rebuild chat from saved history for the current trip
   const trip = trips.find(t => t.id === currentTripId);
-  if (!trip || !trip.history || trip.history.length === 0) {
-    clearChat();
-    return;
-  }
+  if (!trip || !trip.history || trip.history.length === 0) { clearChat(); return; }
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
   chat.innerHTML = '';
 
-  // Replay conversation messages only (skip system messages)
   trip.history.forEach(m => {
     if (m.role === 'user') {
       appendMsg('user', m.content);
     } else if (m.role === 'assistant') {
-      // Don't re-render card messages, just show as text
-      if (!m.content.startsWith('Showed ') && !m.content.startsWith('Full itinerary')) {
+      if (m.cardType === 'summary') {
         appendMsg('ai', m.content);
-      } else {
-        // Show a note that rich cards were generated
-        const note = document.createElement('div');
-        note.className = 'msg ai';
-        note.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai" style="color:var(--text3);font-style:italic">— Rich cards were shown here. Ask again to regenerate. —</div>';
-        chat.appendChild(note);
+      } else if (m.cardType === 'itinerary' && m.cardData) {
+        const d = m.cardData;
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        wrap.appendChild(buildItinCard(d.itin, d.destination, d.duration));
+        chat.appendChild(wrap);
+      } else if (m.cardType === 'results' && m.cardData) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        wrap.appendChild(buildResultCards(m.cardData.budget, m.cardData.hotels, m.cardData.local));
+        chat.appendChild(wrap);
+      } else if (m.cardType === 'restaurants' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'resto-grid';
+        m.cardData.restaurants.forEach((r, idx) => {
+          const cardId = 'rc-restore-' + m._id + '-' + idx;
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.google_maps_query);
+          const stars = parseFloat(r.rating) >= 4.5 ? '★★★★★' : parseFloat(r.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'resto-card';
+          card.innerHTML = buildRestoCardHTML(r, cardId, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'hotels' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'hotel-grid';
+        m.cardData.hotels.forEach((h, idx) => {
+          const cardId = 'hc-restore-' + m._id + '-' + idx;
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query);
+          const stars = parseFloat(h.rating) >= 4.5 ? '★★★★★' : parseFloat(h.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'hotel-card';
+          card.innerHTML = buildHotelCardHTML(h, cardId, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'activities' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'activity-grid';
+        m.cardData.activities.forEach(a => {
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.google_maps_query);
+          const stars = parseFloat(a.rating) >= 4.5 ? '★★★★★' : parseFloat(a.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'activity-card';
+          card.innerHTML = buildActivityCardHTML(a, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (!m.content.startsWith('Full itinerary generated')) {
+        appendMsg('ai', m.content);
       }
     }
   });
@@ -1550,9 +1597,10 @@ price_per_person = realistic USD amount for one person, full meal + one drink.`;
         typingWrap.remove();
         const restoData = safeJSON(restoRaw);
         if (restoData && restoData.restaurants) {
-          trip.history.push({ role: 'assistant', content: 'Showed restaurant recommendations.' });
+          const restoMsgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed restaurant recommendations.', cardType: 'restaurants', _id: restoMsgId, cardData: restoData });
           saveTrips();
-          renderRestaurantCards(restoData);
+          renderRestaurantCards(restoData, trip);
         } else { fallbackReply(typingWrap, trip, text); }
 
       } else if (intent === 'HOTELS') {
@@ -1584,9 +1632,10 @@ price_per_night = realistic USD nightly rate for this hotel type and city.`;
         typingWrap.remove();
         const hotelData = safeJSON(hotelRaw);
         if (hotelData && hotelData.hotels) {
-          trip.history.push({ role: 'assistant', content: 'Showed hotel recommendations.' });
+          const hotelMsgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed hotel recommendations.', cardType: 'hotels', _id: hotelMsgId, cardData: hotelData });
           saveTrips();
-          renderHotelCards(hotelData);
+          renderHotelCards(hotelData, trip);
         } else { fallbackReply(typingWrap, trip, text); }
 
       } else if (intent === 'ACTIVITIES') {
@@ -1620,9 +1669,10 @@ price_per_person = realistic USD per person. Use 0 for free activities.`;
         typingWrap.remove();
         const activityData = safeJSON(activityRaw);
         if (activityData && activityData.activities) {
-          trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.' });
+          const activityMsgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.', cardType: 'activities', _id: activityMsgId, cardData: activityData });
           saveTrips();
-          renderActivityCards(activityData);
+          renderActivityCards(activityData, trip);
         } else { fallbackReply(typingWrap, trip, text); }
 
       } else {
@@ -1718,10 +1768,12 @@ async function generateItinerary(trip) {
 
     activityWrap.remove();
 
+    const summaryText = (params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!';
     const summaryWrap = document.createElement('div');
     summaryWrap.className = 'msg ai';
-    summaryWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown((params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!') + '</div>';
+    summaryWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown(summaryText) + '</div>';
     chat.appendChild(summaryWrap);
+    trip.history.push({ role: 'assistant', content: summaryText, cardType: 'summary' });
 
     if (itin) {
       const itinWrap = document.createElement('div');
@@ -1729,6 +1781,7 @@ async function generateItinerary(trip) {
       itinWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
       itinWrap.appendChild(buildItinCard(itin, params.destination, params.duration));
       chat.appendChild(itinWrap);
+      trip.history.push({ role: 'assistant', content: 'Itinerary card', cardType: 'itinerary', cardData: { itin, destination: params.destination, duration: params.duration } });
     }
 
     if (budget && hotels && local) {
@@ -1737,6 +1790,7 @@ async function generateItinerary(trip) {
       cardsWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
       cardsWrap.appendChild(buildResultCards(budget, hotels, local));
       chat.appendChild(cardsWrap);
+      trip.history.push({ role: 'assistant', content: 'Results cards', cardType: 'results', cardData: { budget, hotels, local } });
     }
 
     trip.history.push({ role: 'assistant', content: 'Full itinerary generated for ' + params.destination });
@@ -1755,22 +1809,130 @@ async function generateItinerary(trip) {
   resetAgents();
 }
 
-function renderRestaurantCards(data) {
+// ── CARD HTML BUILDERS (shared by render + restore) ──────────────────────────
+function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
+  return `
+    <div class="resto-header">
+      <div class="resto-name-row">
+        <a class="resto-name" href="${r.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(r.name)}<span class="resto-name-link-icon">↗</span>
+        </a>
+        <div class="resto-cuisine">${escHtml(r.cuisine)} · ${escHtml(r.meal_type)}</div>
+      </div>
+      <div class="resto-rating-badge">${stars} ${r.rating}</div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="resto-body">
+      <div class="resto-desc">${escHtml(r.description)}</div>
+      <div class="resto-meta-row">
+        <div class="resto-tag"><span class="resto-tag-icon">✦</span> Must order: ${escHtml(r.must_order)}</div>
+      </div>
+      <div class="resto-pricing">
+        <div class="resto-pricing-title">Estimated cost</div>
+        <div class="resto-pricing-row">
+          <div class="resto-people-btns">
+            ${[1,2,3,4].map(n => `<button class="rpb${n===1?' active':''}" onclick="updateRestoPrice('${cardId}', ${r.price_per_person}, ${n}, this)">${n}</button>`).join('')}
+            <button class="rpb" onclick="updateRestoPricePlus('${cardId}', ${r.price_per_person}, this)" style="width:auto;padding:0 8px">+</button>
+          </div>
+          <div class="resto-price-display" id="${cardId}-price">$${r.price_per_person} <span>per person / 1 guest</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="resto-footer">
+      <div class="resto-location">📍 ${escHtml(r.neighborhood)}</div>
+      <a class="resto-maps-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
+function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
+  const amenityHtml = (h.amenities || []).map(a => '<span class="hotel-amenity">' + escHtml(a) + '</span>').join('');
+  return `
+    <div class="hotel-header">
+      <div class="hotel-name-row">
+        <a class="hotel-name" href="${h.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(h.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+        </a>
+        <div class="hotel-type">${escHtml(h.type)} · Best for: ${escHtml(h.best_for)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        <div class="hotel-rating-badge">${stars} ${h.rating}</div>
+        <div class="hotel-price-badge">
+          <div class="hotel-price-main">$${h.price_per_night}</div>
+          <div class="hotel-price-sub">per night</div>
+        </div>
+      </div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="hotel-body">
+      <div class="hotel-desc">${escHtml(h.description)}</div>
+      <div class="hotel-amenities">${amenityHtml}</div>
+      <div class="hotel-nights-calc">
+        <div class="hotel-nights-title">Estimated stay cost</div>
+        <div class="hotel-nights-row">
+          <div class="hotel-nights-btns">
+            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, -1)">−</button>
+            <span class="hnb-count" id="${cardId}-nights">3</span>
+            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, 1)">+</button>
+            <span style="font-size:12px;color:var(--text3);margin-left:4px">nights</span>
+          </div>
+          <div class="hotel-total-display" id="${cardId}-total">$${h.price_per_night * 3} <span>total</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hotel-footer">
+      <div class="hotel-location">📍 ${escHtml(h.neighborhood)}</div>
+      <a class="hotel-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
+function buildActivityCardHTML(a, mapsUrl, stars) {
+  const tagHtml = (a.tags || []).map(t => '<span class="activity-tag">' + escHtml(t) + '</span>').join('');
+  const costText = a.price_per_person === 0 ? 'Free' : '$' + a.price_per_person + ' <span>per person</span>';
+  return `
+    <div class="activity-header">
+      <div class="activity-name-row">
+        <a class="activity-name" href="${a.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(a.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+        </a>
+        <div class="activity-category">${escHtml(a.category)} · ${escHtml(a.best_time)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        <div class="activity-rating-badge">${stars} ${a.rating}</div>
+        <div class="activity-duration-badge">⏱ ${escHtml(a.duration)}</div>
+      </div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="activity-body">
+      <div class="activity-desc">${escHtml(a.description)}</div>
+      <div class="activity-tags">${tagHtml}</div>
+      <div class="activity-cost-row">
+        <div class="activity-cost-label">Cost per person</div>
+        <div class="activity-cost-val">${costText}</div>
+      </div>
+      <div style="background:rgba(200,184,122,0.06);border:1px solid rgba(200,184,122,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
+        <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
+      </div>
+    </div>
+    <div class="activity-footer">
+      <div class="activity-location">📍 ${escHtml(a.neighborhood)}</div>
+      <a class="activity-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderRestaurantCards(data, trip) {
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
   const chat = document.getElementById('chat');
 
-  // Intro message
   const introWrap = document.createElement('div');
   introWrap.className = 'msg ai';
   introWrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai">' + renderMarkdown(data.intro) + '</div>';
   chat.appendChild(introWrap);
 
-  // Cards container
   const cardsWrap = document.createElement('div');
   cardsWrap.className = 'msg ai';
   cardsWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
-
   const grid = document.createElement('div');
   grid.className = 'resto-grid';
 
@@ -1780,40 +1942,7 @@ function renderRestaurantCards(data) {
     const cardId = 'rc-' + Date.now() + '-' + idx;
     const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.google_maps_query);
     const stars = parseFloat(r.rating) >= 4.5 ? '★★★★★' : parseFloat(r.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
-
-    card.innerHTML = `
-      <div class="resto-header">
-        <div class="resto-name-row">
-          <a class="resto-name" href="${r.booking_url}" target="_blank" rel="noopener">
-            ${escHtml(r.name)}
-            <span class="resto-name-link-icon">↗</span>
-          </a>
-          <div class="resto-cuisine">${escHtml(r.cuisine)} · ${escHtml(r.meal_type)}</div>
-        </div>
-        <div class="resto-rating-badge">${stars} ${r.rating}</div>
-      </div>
-      <div class="resto-divider"></div>
-      <div class="resto-body">
-        <div class="resto-desc">${escHtml(r.description)}</div>
-        <div class="resto-meta-row">
-          <div class="resto-tag"><span class="resto-tag-icon">✦</span> Must order: ${escHtml(r.must_order)}</div>
-        </div>
-        <div class="resto-pricing">
-          <div class="resto-pricing-title">Estimated cost</div>
-          <div class="resto-pricing-row">
-            <div class="resto-people-btns">
-              ${[1,2,3,4].map(n => `<button class="rpb${n===1?' active':''}" onclick="updateRestoPrice('${cardId}', ${r.price_per_person}, ${n}, this)">${n}</button>`).join('')}
-              <button class="rpb" onclick="updateRestoPricePlus('${cardId}', ${r.price_per_person}, this)" style="width:auto;padding:0 8px">+</button>
-            </div>
-            <div class="resto-price-display" id="${cardId}-price">$${r.price_per_person} <span>per person / 1 guest</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="resto-footer">
-        <div class="resto-location">📍 ${escHtml(r.neighborhood)}</div>
-        <a class="resto-maps-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
-      </div>
-    `;
+    card.innerHTML = buildRestoCardHTML(r, cardId, mapsUrl, stars);
     grid.appendChild(card);
   });
 
@@ -1853,7 +1982,7 @@ function fallbackReply(typingWrap, trip, text) {
     .catch(() => appendMsg('ai', 'Something went wrong. Please try again.'));
 }
 
-function renderHotelCards(data) {
+function renderHotelCards(data, trip) {
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
   const chat = document.getElementById('chat');
@@ -1875,46 +2004,7 @@ function renderHotelCards(data) {
     const cardId = 'hc-' + Date.now() + '-' + idx;
     const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query);
     const stars = parseFloat(h.rating) >= 4.5 ? '★★★★★' : parseFloat(h.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
-    const amenityHtml = (h.amenities || []).map(a => '<span class="hotel-amenity">' + escHtml(a) + '</span>').join('');
-
-    card.innerHTML = `
-      <div class="hotel-header">
-        <div class="hotel-name-row">
-          <a class="hotel-name" href="${h.booking_url}" target="_blank" rel="noopener">
-            ${escHtml(h.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
-          </a>
-          <div class="hotel-type">${escHtml(h.type)} · Best for: ${escHtml(h.best_for)}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          <div class="hotel-rating-badge">${stars} ${h.rating}</div>
-          <div class="hotel-price-badge">
-            <div class="hotel-price-main">$${h.price_per_night}</div>
-            <div class="hotel-price-sub">per night</div>
-          </div>
-        </div>
-      </div>
-      <div class="resto-divider"></div>
-      <div class="hotel-body">
-        <div class="hotel-desc">${escHtml(h.description)}</div>
-        <div class="hotel-amenities">${amenityHtml}</div>
-        <div class="hotel-nights-calc">
-          <div class="hotel-nights-title">Estimated stay cost</div>
-          <div class="hotel-nights-row">
-            <div class="hotel-nights-btns">
-              <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, -1)">−</button>
-              <span class="hnb-count" id="${cardId}-nights">3</span>
-              <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, 1)">+</button>
-              <span style="font-size:12px;color:var(--text3);margin-left:4px">nights</span>
-            </div>
-            <div class="hotel-total-display" id="${cardId}-total">$${h.price_per_night * 3} <span>total</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="hotel-footer">
-        <div class="hotel-location">📍 ${escHtml(h.neighborhood)}</div>
-        <a class="hotel-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
-      </div>
-    `;
+    card.innerHTML = buildHotelCardHTML(h, cardId, mapsUrl, stars);
     grid.appendChild(card);
   });
 
@@ -1933,7 +2023,7 @@ function changeNights(cardId, pricePerNight, delta) {
   totalEl.innerHTML = '$' + (pricePerNight * next) + ' <span>total</span>';
 }
 
-function renderActivityCards(data) {
+function renderActivityCards(data, trip) {
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
   const chat = document.getElementById('chat');
@@ -1954,39 +2044,7 @@ function renderActivityCards(data) {
     card.className = 'activity-card';
     const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.google_maps_query);
     const stars = parseFloat(a.rating) >= 4.5 ? '★★★★★' : parseFloat(a.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
-    const tagHtml = (a.tags || []).map(t => '<span class="activity-tag">' + escHtml(t) + '</span>').join('');
-    const costText = a.price_per_person === 0 ? 'Free' : '$' + a.price_per_person + ' <span>per person</span>';
-
-    card.innerHTML = `
-      <div class="activity-header">
-        <div class="activity-name-row">
-          <a class="activity-name" href="${a.booking_url}" target="_blank" rel="noopener">
-            ${escHtml(a.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
-          </a>
-          <div class="activity-category">${escHtml(a.category)} · ${escHtml(a.best_time)}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          <div class="activity-rating-badge">${stars} ${a.rating}</div>
-          <div class="activity-duration-badge">⏱ ${escHtml(a.duration)}</div>
-        </div>
-      </div>
-      <div class="resto-divider"></div>
-      <div class="activity-body">
-        <div class="activity-desc">${escHtml(a.description)}</div>
-        <div class="activity-tags">${tagHtml}</div>
-        <div class="activity-cost-row">
-          <div class="activity-cost-label">Cost per person</div>
-          <div class="activity-cost-val">${costText}</div>
-        </div>
-        <div style="background:rgba(200,184,122,0.06);border:1px solid rgba(200,184,122,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
-          <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
-        </div>
-      </div>
-      <div class="activity-footer">
-        <div class="activity-location">📍 ${escHtml(a.neighborhood)}</div>
-        <a class="activity-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
-      </div>
-    `;
+    card.innerHTML = buildActivityCardHTML(a, mapsUrl, stars);
     grid.appendChild(card);
   });
 
