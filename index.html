@@ -975,6 +975,9 @@ function toggleTheme() {
   }
 })();
 
+// ── CONVERSATION STATE ───────────────────────────────────────────────────────
+let conversationMode = 'chat';
+
 // ── PERSISTENT MEMORY ────────────────────────────────────────────────────────
 function saveTrips() {
   try {
@@ -1275,8 +1278,6 @@ async function callClaude(systemPrompt, userMsg, history = []) {
 
 // ─── CONVERSATION STATE ──────────────────────────────────────────────────────
 // 'chat' = conversational mode, 'planning' = generating itinerary
-let conversationMode = 'chat';
-
 const CHAT_PROMPT = `You are Waypoint, a warm and knowledgeable AI travel agent. Your job is to have a genuine conversation with the user to understand their dream trip before generating a full itinerary.
 
 CONVERSATION STYLE:
