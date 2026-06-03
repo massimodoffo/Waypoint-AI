@@ -726,7 +726,6 @@
   @media (max-width: 700px) {
     nav { padding: 0.9rem 1rem; }
     .hamburger { display: flex; }
-    .nav-status { display: none; }
 
     aside {
       position: fixed;
@@ -771,6 +770,50 @@
 
     .itin-hero h2 { font-size: 1.2rem; }
     .rc-body { padding: 0.75rem; }
+    /* Keep toggle visible on mobile */
+    .theme-label { display: flex; }
+    .nav-status { display: none; }
+  }
+
+  /* AUTO: follow system dark/light preference on mobile */
+  @media (max-width: 700px) and (prefers-color-scheme: light) {
+    :root:not(.theme-manual-dark) {
+      --bg: #f7f5f0;
+      --bg2: #ffffff;
+      --bg3: #ede9e1;
+      --border: rgba(0,0,0,0.08);
+      --border2: rgba(0,0,0,0.14);
+      --text: #1a1916;
+      --text2: #5c5a52;
+      --text3: #a09e97;
+      --accent: #9a7d2e;
+      --accent2: #4a7a3a;
+      --accent3: #2a6b78;
+      --accent4: #7a3a5e;
+      --accent5: #7a5a2e;
+      --nav-bg: rgba(247,245,240,0.94);
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+  }
+
+  @media (max-width: 700px) and (prefers-color-scheme: dark) {
+    :root:not(.theme-manual-light) {
+      --bg: #0e0f0e;
+      --bg2: #161714;
+      --bg3: #1e1f1c;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --text: #f0ede6;
+      --text2: #9e9b93;
+      --text3: #5c5a54;
+      --accent: #c8b87a;
+      --accent2: #8fa87a;
+      --accent3: #7a9fa8;
+      --accent4: #a87a8f;
+      --accent5: #a8947a;
+      --nav-bg: rgba(14,15,14,0.92);
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
   }
 
 </style>
@@ -881,20 +924,54 @@ function toggleSidebar() {
 }
 
 function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
+  const root = document.documentElement;
+  const isLight = root.classList.toggle('light');
+  // Remove the other class if present
+  root.classList.remove(isLight ? 'dark' : 'light');
   document.getElementById('themeIcon').textContent = isLight ? '🌙' : '☀';
   localStorage.setItem('wp_theme', isLight ? 'light' : 'dark');
 }
 
-// Apply saved theme on load
+// On load: desktop uses saved preference; mobile uses system preference
 (function() {
+  const root = document.documentElement;
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
   const saved = localStorage.getItem('wp_theme');
+
+  // Both mobile and desktop: check saved preference first, then fall back to OS
   if (saved === 'light') {
-    document.documentElement.classList.add('light');
+    root.classList.add('light');
     setTimeout(() => {
       const icon = document.getElementById('themeIcon');
       if (icon) icon.textContent = '🌙';
     }, 0);
+  } else if (saved === 'dark') {
+    // explicit dark saved — keep dark regardless of OS
+    root.classList.remove('light');
+  } else {
+    // No saved preference — follow OS system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!prefersDark) {
+      root.classList.add('light');
+      setTimeout(() => {
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '🌙';
+      }, 0);
+    }
+    // Listen for real-time OS changes only if user hasn't manually picked
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      const hasSaved = localStorage.getItem('wp_theme');
+      if (hasSaved) return; // user made a manual choice, respect it
+      if (e.matches) {
+        root.classList.remove('light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '☀';
+      } else {
+        root.classList.add('light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '🌙';
+      }
+    });
   }
 })();
 
