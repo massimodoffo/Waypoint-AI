@@ -7,7 +7,307 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <style>
+/* ── RESET & VARIABLES ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* DARK MODE (default) */
+:root {
+  --bg: #0e0f0e; --bg2: #161714; --bg3: #1e1f1c;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #f0ede6; --text2: #9e9b93; --text3: #5c5a54;
+  --accent: #c8b87a; --accent2: #8fa87a; --accent3: #7a9fa8; --accent4: #a87a8f; --accent5: #a8947a;
+  --radius: 10px; --radius-lg: 16px;
+  --nav-bg: rgba(14,15,14,0.92);
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+/* LIGHT MODE */
+:root.light {
+  --bg: #f7f5f0; --bg2: #ffffff; --bg3: #ede9e1;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+  --text: #1a1916; --text2: #5c5a52; --text3: #a09e97;
+  --accent: #9a7d2e; --accent2: #4a7a3a; --accent3: #2a6b78; --accent4: #7a3a5e; --accent5: #7a5a2e;
+  --nav-bg: rgba(247,245,240,0.94);
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+html { font-size: 16px; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── NAV ─────────────────────────────────────────────────────────────────────── */
+nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--nav-bg); backdrop-filter: blur(12px); z-index: 100; }
+.logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.nav-actions { display: flex; align-items: center; gap: 1rem; }
+.nav-status { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+
+/* ── LAYOUT ──────────────────────────────────────────────────────────────────── */
+.app { display: flex; flex: 1; height: calc(100vh - 57px); }
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────────────────── */
+aside { width: 260px; min-width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); overflow: hidden; }
+.sidebar-top { padding: 1.25rem 1rem 0.75rem; }
+.sidebar-top h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+.new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; }
+.trip-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+.trip-entry { padding: 0.65rem 0.85rem; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; transition: all 0.15s; margin-bottom: 2px; }
+.trip-entry:hover { background: var(--bg3); color: var(--text); }
+.trip-entry.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+.trip-entry-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
+.trip-entry-name { font-weight: 400; }
+.trip-entry-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.sidebar-agents { padding: 1rem; border-top: 1px solid var(--border); }
+.sidebar-agents h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.agent-pill { display: flex; align-items: center; gap: 8px; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 12px; color: var(--text2); margin-bottom: 4px; border: 1px solid transparent; transition: all 0.2s; }
+.agent-pill.running { border-color: var(--border2); background: var(--bg3); }
+.agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.agent-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(143,168,122,0.5); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ── MAIN ────────────────────────────────────────────────────────────────────── */
+main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#chat { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth; }
+#chat::-webkit-scrollbar { width: 4px; }
+#chat::-webkit-scrollbar-track { background: transparent; }
+#chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── WELCOME ─────────────────────────────────────────────────────────────────── */
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; }
+.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; }
+.welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; }
+.welcome h1 em { font-style: italic; color: var(--accent); }
+.welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+
+/* ── MESSAGES ────────────────────────────────────────────────────────────────── */
+.msg { display: flex; gap: 12px; animation: slideUp 0.3s ease; max-width: 800px; }
+@keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+.msg.user { flex-direction: row-reverse; align-self: flex-end; }
+.msg.ai { align-self: flex-start; }
+.msg.system-msg { align-self: flex-start; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; font-weight: 500; }
+.avatar.user { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); font-size: 12px; }
+.avatar.ai { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.25); }
+.avatar.orchestrator { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.2); }
+.bubble { padding: 0.9rem 1.1rem; border-radius: 14px; font-size: 15.5px; line-height: 1.8; max-width: 620px; }
+.bubble.user { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 14px 4px 14px 14px; }
+.bubble.ai { background: var(--bg2); color: var(--text); border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; }
+.bubble.system-bubble { background: transparent; border: 1px dashed var(--border); border-radius: 8px; color: var(--text3); font-size: 13px; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 8px; }
+
+/* ── AGENT ACTIVITY ──────────────────────────────────────────────────────────── */
+.agent-activity { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.25rem; }
+.agent-activity-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+.agent-tasks { padding: 0.5rem; }
+.agent-task { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 13px; color: var(--text2); margin-bottom: 2px; transition: background 0.2s; }
+.agent-task.done { color: var(--text2); }
+.agent-task.running { background: var(--bg3); color: var(--text); }
+.agent-task.pending { color: var(--text3); }
+.task-icon { font-size: 15px; width: 20px; text-align: center; }
+.task-label { flex: 1; }
+.task-badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+.task-badge.done { background: rgba(143,168,122,0.15); color: var(--accent2); }
+.task-badge.running { background: rgba(200,184,122,0.15); color: var(--accent); }
+.task-badge.pending { background: var(--bg3); color: var(--text3); }
+
+/* ── ITINERARY CARD ──────────────────────────────────────────────────────────── */
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 620px; margin-top: 0.75rem; }
+.result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.rc-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text3); }
+.rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rc-body { padding: 0.85rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; }
+.itin-full { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.75rem; }
+.itin-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+.itin-hero h2 { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; }
+.itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
+.itin-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.itin-days { padding: 0.75rem; }
+.day-block { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.day-header { padding: 0.55rem 0.9rem; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.day-header-left { font-size: 12px; font-weight: 500; color: var(--text); }
+.stop { display: flex; gap: 10px; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
+.stop:last-child { border-bottom: none; }
+.stop-time { font-size: 11px; color: var(--text3); min-width: 50px; padding-top: 2px; }
+.stop-body { flex: 1; }
+.stop-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.stop-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.5; }
+.stop-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.stag { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
+.stag-food { background: rgba(168,148,122,0.2); color: var(--accent5); }
+.stag-culture { background: rgba(122,159,168,0.2); color: var(--accent3); }
+.stag-nature { background: rgba(143,168,122,0.2); color: var(--accent2); }
+.stag-nightlife { background: rgba(168,122,143,0.2); color: var(--accent4); }
+.stag-activity { background: rgba(200,184,122,0.15); color: var(--accent); }
+
+/* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
+.resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
+.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
+.resto-card:hover { border-color: var(--border2); }
+.resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.resto-name-row { flex: 1; }
+.resto-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
+.resto-name:hover { color: var(--accent); }
+.resto-name-link-icon { font-size: 11px; color: var(--text3); }
+.resto-cuisine { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.resto-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
+.resto-divider { height: 1px; background: var(--border); }
+.resto-body { padding: 0.75rem 1rem; }
+.resto-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+.resto-meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem; }
+.resto-tag { display: flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
+.resto-tag-icon { font-size: 12px; }
+.resto-pricing { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; margin-top: 0.5rem; }
+.resto-pricing-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
+.resto-pricing-row { display: flex; justify-content: space-between; align-items: center; }
+.resto-people-btns { display: flex; gap: 4px; }
+.rpb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
+.rpb:hover, .rpb.active { background: var(--accent); color: #1a1800; border-color: var(--accent); }
+.resto-price-display { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 400; color: var(--text); }
+.resto-price-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.resto-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.resto-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+.resto-maps-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.resto-maps-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+
+/* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
+.hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
+.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
+.hotel-card:hover { border-color: var(--border2); }
+.hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.hotel-name-row { flex: 1; }
+.hotel-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
+.hotel-name:hover { color: var(--accent); }
+.hotel-type { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.hotel-price-badge { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.hotel-price-main { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
+.hotel-price-sub { font-size: 10px; color: var(--text3); }
+.hotel-body { padding: 0.75rem 1rem; }
+.hotel-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+.hotel-amenities { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
+.hotel-amenity { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
+.hotel-nights-calc { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; }
+.hotel-nights-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
+.hotel-nights-row { display: flex; justify-content: space-between; align-items: center; }
+.hotel-nights-btns { display: flex; gap: 4px; align-items: center; }
+.hnb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
+.hnb:hover { background: var(--bg2); color: var(--text); }
+.hnb-count { font-size: 13px; color: var(--text); min-width: 24px; text-align: center; }
+.hotel-total-display { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
+.hotel-total-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.hotel-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hotel-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+.hotel-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.hotel-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+.hotel-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
+
+/* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
+.activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
+.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
+.activity-card:hover { border-color: var(--border2); }
+.activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.activity-name-row { flex: 1; }
+.activity-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
+.activity-name:hover { color: var(--accent); }
+.activity-category { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.activity-duration-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(143,168,122,0.12); border: 1px solid rgba(143,168,122,0.2); color: var(--accent2); flex-shrink: 0; }
+.activity-body { padding: 0.75rem 1rem; }
+.activity-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
+.activity-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
+.activity-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
+.activity-cost-row { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+.activity-cost-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
+.activity-cost-val { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
+.activity-cost-val span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.activity-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.activity-location { font-size: 12px; color: var(--text3); }
+.activity-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.activity-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent2); }
+.activity-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; }
+
+/* ── TYPING ───────────────────────────────────────────────────────────────────── */
+.typing-dots { display: flex; gap: 4px; padding: 6px 0; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: tdot 1s infinite; }
+.typing-dots span:nth-child(2){animation-delay:.15s;}
+.typing-dots span:nth-child(3){animation-delay:.3s;}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+/* ── INPUT ───────────────────────────────────────────────────────────────────── */
+#input-wrap { padding: 1rem 2rem 1.5rem; border-top: 1px solid var(--border); }
+.input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 0.75rem 0.85rem 0.75rem 1.1rem; transition: border-color 0.2s; }
+.input-box:focus-within { border-color: rgba(200,184,122,0.4); }
+textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
+textarea::placeholder { color: var(--text3); }
+.send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #1a1800; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; transition: all 0.2s; }
+.send-btn:hover { opacity: 0.85; transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+/* ── THEME TOGGLE ────────────────────────────────────────────────────────────── */
+.theme-toggle { width: 36px; height: 20px; border-radius: 20px; border: 1px solid var(--border2); background: var(--bg3); cursor: pointer; position: relative; transition: background 0.25s, border-color 0.25s; flex-shrink: 0; }
+.theme-toggle::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--text3); top: 2px; left: 2px; transition: transform 0.25s, background 0.25s; }
+:root.light .theme-toggle::after { transform: translateX(16px); background: var(--accent); }
+.theme-label { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+.theme-label:hover .theme-toggle { border-color: var(--accent); }
+
+/* ── SCROLLBAR ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── HAMBURGER ───────────────────────────────────────────────────────────────── */
+.hamburger { display: none; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 4px; }
+.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: all 0.2s; display: block; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
+.sidebar-overlay.visible { display: block; }
+
+/* ── MOBILE ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  nav { padding: 0.9rem 1rem; }
+  .hamburger { display: flex; }
+  .theme-label { display: flex; }
+  .nav-status { display: none; }
+  aside { position: fixed; left: -280px; top: 0; height: 100vh; width: 280px; z-index: 95; transition: left 0.3s ease; }
+  aside.open { left: 0; }
+  .app { height: calc(100vh - 53px); }
+  main { width: 100%; }
+  #chat { padding: 1rem; gap: 1rem; }
+  .welcome { padding: 2rem 1rem; min-height: 300px; }
+  .welcome h1 { font-size: 1.6rem; }
+  .welcome p { font-size: 14px; }
+  .chips { gap: 6px; }
+  .chip { font-size: 12px; padding: 0.4rem 0.8rem; }
+  .msg { max-width: 100%; }
+  .bubble { max-width: calc(100vw - 80px); font-size: 13px; }
+  .avatar { width: 28px; height: 28px; font-size: 12px; }
+  .agent-activity { max-width: calc(100vw - 80px); }
+  .itin-full { max-width: calc(100vw - 80px); }
+  .result-grid { grid-template-columns: 1fr; max-width: calc(100vw - 80px); }
+  #input-wrap { padding: 0.75rem 1rem 1rem; }
+  .stop { padding: 0.5rem 0.75rem; }
+  .stop-time { min-width: 42px; font-size: 10px; }
+  .stop-name { font-size: 12px; }
+  .stop-desc { font-size: 11px; }
+  .itin-hero h2 { font-size: 1.2rem; }
+  .rc-body { padding: 0.75rem; }
+  .hotel-grid, .activity-grid, .resto-grid { max-width: calc(100vw - 60px); }
+  .hotel-header, .activity-header, .resto-header { flex-direction: column; gap: 6px; }
+}
+
+/* ── MOBILE SYSTEM THEME ─────────────────────────────────────────────────────── */
+@media (max-width: 700px) and (prefers-color-scheme: light) {
+  :root:not(.light) {
+    --bg: #f7f5f0; --bg2: #ffffff; --bg3: #ede9e1;
+    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+    --text: #1a1916; --text2: #5c5a52; --text3: #a09e97;
+    --accent: #9a7d2e; --accent2: #4a7a3a; --accent3: #2a6b78; --accent4: #7a3a5e; --accent5: #7a5a2e;
+    --nav-bg: rgba(247,245,240,0.94);
+  }
+}
+
+  </style>
 </head>
 <body>
 
@@ -78,23 +378,1218 @@
         </div>
       </div>
     </div>
-
     <div id="input-wrap">
       <div class="input-box">
-        <textarea
-          id="msgInput"
-          placeholder="Tell me where you want to go…"
-          rows="1"
-          onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
-        ></textarea>
+        <textarea id="msgInput" placeholder="Tell me where you want to go…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send">↑</button>
       </div>
     </div>
   </main>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<script>
 
+// ── theme.js ──────────────────────────────────────────────────────────────────
+// ── theme.js ──────────────────────────────────────────────────────────────────
+// Handles light/dark mode toggle and system preference detection
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isLight = root.classList.toggle('light');
+  root.classList.remove(isLight ? 'dark' : 'light');
+  document.getElementById('themeIcon').textContent = isLight ? '🌙' : '☀';
+  localStorage.setItem('wp_theme', isLight ? 'light' : 'dark');
+}
+
+function toggleSidebar() {
+  document.querySelector('aside').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('visible');
+}
+
+function initTheme() {
+  const root = document.documentElement;
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  const saved = localStorage.getItem('wp_theme');
+
+  if (saved === 'light') {
+    root.classList.add('light');
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = '🌙';
+  } else if (!saved) {
+    // No saved preference — follow OS
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!prefersDark) {
+      root.classList.add('light');
+      const icon = document.getElementById('themeIcon');
+      if (icon) icon.textContent = '🌙';
+    }
+    // Listen for real-time OS changes when no manual preference set
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      if (localStorage.getItem('wp_theme')) return;
+      if (e.matches) {
+        root.classList.remove('light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '☀';
+      } else {
+        root.classList.add('light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '🌙';
+      }
+    });
+  }
+}
+
+
+// ── storage.js ────────────────────────────────────────────────────────────────
+// ── storage.js ────────────────────────────────────────────────────────────────
+// Handles all localStorage persistence for trips and chat history
+
+function saveTrips(trips, currentTripId, tripCounter) {
+  try {
+    const data = {
+      trips: trips.map(t => ({
+        ...t,
+        date: t.date instanceof Date ? t.date.toISOString() : t.date
+      })),
+      currentTripId,
+      tripCounter,
+      conversationModes: Object.fromEntries(trips.map(t => [t.id, t._mode || 'chat']))
+    };
+    localStorage.setItem('wp_trips', JSON.stringify(data));
+  } catch (e) {
+    console.warn('Could not save trips:', e);
+  }
+}
+
+function loadTrips() {
+  try {
+    const raw = localStorage.getItem('wp_trips');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data.trips || !data.trips.length) return null;
+
+    const trips = data.trips.map(t => ({ ...t, date: new Date(t.date) }));
+    const currentTripId = data.currentTripId ?? trips[trips.length - 1].id;
+    const tripCounter = data.tripCounter ?? trips.length - 1;
+    const modes = data.conversationModes || {};
+    trips.forEach(t => { t._mode = modes[t.id] || 'chat'; });
+
+    return { trips, currentTripId, tripCounter };
+  } catch (e) {
+    console.warn('Could not load trips:', e);
+    return null;
+  }
+}
+
+
+// ── chat.js ───────────────────────────────────────────────────────────────────
+// ── chat.js ───────────────────────────────────────────────────────────────────
+// Chat UI utilities: message rendering, markdown, typing indicators
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function renderMarkdown(text) {
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Markdown links: [text](url)
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$1 ↗</a>');
+
+  // Bare URLs
+  s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g,
+    '$1<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$2 ↗</a>');
+
+  // Bold+italic: ***text***
+  s = s.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  // Bold: **text**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text);font-weight:600">$1</strong>');
+  // Italic: *text*
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // Italic: _text_
+  s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
+  // Underline: __text__
+  s = s.replace(/__([^_]+)__/g, '<u>$1</u>');
+  // Line breaks
+  s = s.replace(/\n/g, '<br>');
+
+  return s;
+}
+
+function appendMsg(role, content) {
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  if (role === 'user') {
+    wrap.innerHTML = `<div class="avatar user">You</div><div class="bubble user">${escHtml(content)}</div>`;
+  } else {
+    wrap.innerHTML = `<div class="avatar ai">W</div><div class="bubble ai">${renderMarkdown(content)}</div>`;
+  }
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.id = 'typing';
+  wrap.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function setAgentState(agent, state) {
+  const dot = document.getElementById('ad-' + agent);
+  const pill = document.getElementById('ap-' + agent);
+  if (!dot) return;
+  dot.classList.toggle('active', state === 'running');
+  pill.classList.toggle('running', state === 'running');
+}
+
+function resetAgents() {
+  ['orchestrator', 'itinerary', 'budget', 'hotels', 'local'].forEach(a => setAgentState(a, 'idle'));
+}
+
+function buildAgentActivityEl(tasks) {
+  const div = document.createElement('div');
+  div.className = 'agent-activity';
+  div.innerHTML = `<div class="agent-activity-header"><span style="color:var(--accent)">◈</span> Agent pipeline</div><div class="agent-tasks" id="atasks"></div>`;
+  const tasksDiv = div.querySelector('#atasks');
+  tasks.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'agent-task pending';
+    row.id = 'at-' + i;
+    row.innerHTML = `<span class="task-icon">${t.icon}</span><span class="task-label">${t.label}</span><span class="task-badge pending" id="atb-${i}">waiting</span>`;
+    tasksDiv.appendChild(row);
+  });
+  return div;
+}
+
+function updateTask(idx, state) {
+  const row = document.getElementById('at-' + idx);
+  const badge = document.getElementById('atb-' + idx);
+  if (!row || !badge) return;
+  row.className = 'agent-task ' + state;
+  badge.className = 'task-badge ' + state;
+  badge.textContent = state === 'done' ? 'done' : state === 'running' ? 'running…' : 'waiting';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function formatDate(d) {
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  return d.toLocaleDateString();
+}
+
+function safeJSON(str) {
+  try { return JSON.parse(str.replace(/```json|```/g, '').trim()); } catch { return null; }
+}
+
+
+// ── cards.js ──────────────────────────────────────────────────────────────────
+// ── cards.js ──────────────────────────────────────────────────────────────────
+// All card builders: itinerary, results, restaurant, hotel, activity
+
+
+// ── ITINERARY CARD ────────────────────────────────────────────────────────────
+function buildItinCard(itin, dest, dur) {
+  const div = document.createElement('div');
+  div.className = 'itin-full';
+  div.innerHTML = `
+    <div class="itin-hero">
+      <h2>${dest}</h2>
+      <div class="itin-meta-row"><span class="itin-badge">✦ ${dur}</span></div>
+    </div>
+    <div class="itin-days">
+      ${itin.days.map(d => `
+        <div class="day-block">
+          <div class="day-header">
+            <div class="day-header-left">Day ${d.day} — ${d.theme}</div>
+          </div>
+          ${d.stops.map(s => `
+            <div class="stop">
+              <div class="stop-time">${s.time}</div>
+              <div class="stop-body">
+                <div class="stop-name">${s.name}</div>
+                <div class="stop-desc">${s.description}</div>
+                <div class="stop-tags"><span class="stag stag-${s.tag}">${s.tag}</span></div>
+              </div>
+            </div>`).join('')}
+        </div>`).join('')}
+    </div>`;
+  return div;
+}
+
+// ── RESULTS CARDS (budget, hotels, local) ────────────────────────────────────
+function buildResultCards(budget, hotels, local) {
+  const grid = document.createElement('div');
+  grid.className = 'result-grid';
+
+  // Budget card
+  const bc = document.createElement('div');
+  bc.className = 'result-card';
+  bc.innerHTML = `
+    <div class="rc-header"><div class="rc-dot" style="background:var(--accent5)"></div>Budget</div>
+    <div class="rc-body">
+      <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">
+        ${budget.daily_estimate}<span style="font-size:11px;color:var(--text3)"> /day</span>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${budget.total_estimate}</div>
+      ${Object.entries(budget.breakdown).map(([k, v]) => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2);text-transform:capitalize">${k}</span>
+          <span style="color:var(--text)">${v}</span>
+        </div>`).join('')}
+      <div style="margin-top:10px;font-size:12px;color:var(--text2)">
+        ${budget.money_tips.map(t => `<div style="margin-bottom:4px">· ${t}</div>`).join('')}
+      </div>
+    </div>`;
+  grid.appendChild(bc);
+
+  // Hotels card
+  const hc = document.createElement('div');
+  hc.className = 'result-card';
+  hc.innerHTML = `
+    <div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
+    <div class="rc-body">
+      ${hotels.hotel_picks.map(h => `
+        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <div style="font-weight:500;font-size:13px;color:var(--text)">${h.name}</div>
+          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${h.price_range} · ${h.type}</div>
+          <div style="font-size:12px;color:var(--text2)">${h.why}</div>
+        </div>`).join('')}
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${hotels.booking_tips}</div>
+    </div>`;
+  grid.appendChild(hc);
+
+  // Local tips card
+  const lc = document.createElement('div');
+  lc.className = 'result-card';
+  lc.style.gridColumn = '1/-1';
+  lc.innerHTML = `
+    <div class="rc-header"><div class="rc-dot" style="background:var(--accent2)"></div>Local insider tips</div>
+    <div class="rc-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Insider tips</div>
+        ${local.insider_tips.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Avoid</div>
+        ${local.avoid.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+        <div style="margin-top:10px;font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Useful phrases</div>
+        ${local.phrases.map(p => `
+          <div style="font-size:12px;margin-bottom:4px">
+            <span style="color:var(--accent);font-style:italic">${p.phrase}</span>
+            <span style="color:var(--text3)">— ${p.means}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  grid.appendChild(lc);
+  return grid;
+}
+
+// ── SHARED CARD HTML BUILDERS ─────────────────────────────────────────────────
+function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
+  return `
+    <div class="resto-header">
+      <div class="resto-name-row">
+        <a class="resto-name" href="${r.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(r.name)}<span class="resto-name-link-icon">↗</span>
+        </a>
+        <div class="resto-cuisine">${escHtml(r.cuisine)} · ${escHtml(r.meal_type)}</div>
+      </div>
+      <div class="resto-rating-badge">${stars} ${r.rating}</div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="resto-body">
+      <div class="resto-desc">${escHtml(r.description)}</div>
+      <div class="resto-meta-row">
+        <div class="resto-tag"><span class="resto-tag-icon">✦</span> Must order: ${escHtml(r.must_order)}</div>
+      </div>
+      <div class="resto-pricing">
+        <div class="resto-pricing-title">Estimated cost</div>
+        <div class="resto-pricing-row">
+          <div class="resto-people-btns">
+            ${[1, 2, 3, 4].map(n => `<button class="rpb${n === 1 ? ' active' : ''}" onclick="updateRestoPrice('${cardId}', ${r.price_per_person}, ${n}, this)">${n}</button>`).join('')}
+            <button class="rpb" onclick="updateRestoPricePlus('${cardId}', ${r.price_per_person}, this)" style="width:auto;padding:0 8px">+</button>
+          </div>
+          <div class="resto-price-display" id="${cardId}-price">$${r.price_per_person} <span>per person / 1 guest</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="resto-footer">
+      <div class="resto-location">📍 ${escHtml(r.neighborhood)}</div>
+      <a class="resto-maps-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
+function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
+  const amenityHtml = (h.amenities || []).map(a => `<span class="hotel-amenity">${escHtml(a)}</span>`).join('');
+  return `
+    <div class="hotel-header">
+      <div class="hotel-name-row">
+        <a class="hotel-name" href="${h.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(h.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+        </a>
+        <div class="hotel-type">${escHtml(h.type)} · Best for: ${escHtml(h.best_for)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        <div class="hotel-rating-badge">${stars} ${h.rating}</div>
+        <div class="hotel-price-badge">
+          <div class="hotel-price-main">$${h.price_per_night}</div>
+          <div class="hotel-price-sub">per night</div>
+        </div>
+      </div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="hotel-body">
+      <div class="hotel-desc">${escHtml(h.description)}</div>
+      <div class="hotel-amenities">${amenityHtml}</div>
+      <div class="hotel-nights-calc">
+        <div class="hotel-nights-title">Estimated stay cost</div>
+        <div class="hotel-nights-row">
+          <div class="hotel-nights-btns">
+            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, -1)">−</button>
+            <span class="hnb-count" id="${cardId}-nights">3</span>
+            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, 1)">+</button>
+            <span style="font-size:12px;color:var(--text3);margin-left:4px">nights</span>
+          </div>
+          <div class="hotel-total-display" id="${cardId}-total">$${h.price_per_night * 3} <span>total</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hotel-footer">
+      <div class="hotel-location">📍 ${escHtml(h.neighborhood)}</div>
+      <a class="hotel-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
+function buildActivityCardHTML(a, mapsUrl, stars) {
+  const tagHtml = (a.tags || []).map(t => `<span class="activity-tag">${escHtml(t)}</span>`).join('');
+  const costText = a.price_per_person === 0 ? 'Free' : `$${a.price_per_person} <span>per person</span>`;
+  return `
+    <div class="activity-header">
+      <div class="activity-name-row">
+        <a class="activity-name" href="${a.booking_url}" target="_blank" rel="noopener">
+          ${escHtml(a.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+        </a>
+        <div class="activity-category">${escHtml(a.category)} · ${escHtml(a.best_time)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        <div class="activity-rating-badge">${stars} ${a.rating}</div>
+        <div class="activity-duration-badge">⏱ ${escHtml(a.duration)}</div>
+      </div>
+    </div>
+    <div class="resto-divider"></div>
+    <div class="activity-body">
+      <div class="activity-desc">${escHtml(a.description)}</div>
+      <div class="activity-tags">${tagHtml}</div>
+      <div class="activity-cost-row">
+        <div class="activity-cost-label">Cost per person</div>
+        <div class="activity-cost-val">${costText}</div>
+      </div>
+      <div style="background:rgba(200,184,122,0.06);border:1px solid rgba(200,184,122,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
+        <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
+      </div>
+    </div>
+    <div class="activity-footer">
+      <div class="activity-location">📍 ${escHtml(a.neighborhood)}</div>
+      <a class="activity-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
+// ── RENDER FUNCTIONS ──────────────────────────────────────────────────────────
+function renderRestaurantCards(data) {
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  appendMsg('ai', data.intro);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+  const grid = document.createElement('div');
+  grid.className = 'resto-grid';
+
+  data.restaurants.forEach((r, idx) => {
+    const card = document.createElement('div');
+    card.className = 'resto-card';
+    const cardId = 'rc-' + Date.now() + '-' + idx;
+    const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.google_maps_query);
+    const stars = parseFloat(r.rating) >= 4.5 ? '★★★★★' : parseFloat(r.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+    card.innerHTML = buildRestoCardHTML(r, cardId, mapsUrl, stars);
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function renderHotelCards(data) {
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  appendMsg('ai', data.intro);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+  const grid = document.createElement('div');
+  grid.className = 'hotel-grid';
+
+  data.hotels.forEach((h, idx) => {
+    const card = document.createElement('div');
+    card.className = 'hotel-card';
+    const cardId = 'hc-' + Date.now() + '-' + idx;
+    const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query);
+    const stars = parseFloat(h.rating) >= 4.5 ? '★★★★★' : parseFloat(h.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+    card.innerHTML = buildHotelCardHTML(h, cardId, mapsUrl, stars);
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function renderActivityCards(data) {
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  appendMsg('ai', data.intro);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+  const grid = document.createElement('div');
+  grid.className = 'activity-grid';
+
+  data.activities.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'activity-card';
+    const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.google_maps_query);
+    const stars = parseFloat(a.rating) >= 4.5 ? '★★★★★' : parseFloat(a.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+    card.innerHTML = buildActivityCardHTML(a, mapsUrl, stars);
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ── INTERACTIVE PRICE UPDATERS (called from inline onclick) ───────────────────
+// These need to be on window since they're called from innerHTML onclick attributes
+window.updateRestoPrice = function(cardId, pricePerPerson, people, btn) {
+  const display = document.getElementById(cardId + '-price');
+  if (!display) return;
+  display.innerHTML = `$${pricePerPerson * people} <span>total / ${people} guest${people > 1 ? 's' : ''}</span>`;
+  btn.closest('.resto-people-btns').querySelectorAll('.rpb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+window.updateRestoPricePlus = function(cardId, pricePerPerson, btn) {
+  const display = document.getElementById(cardId + '-price');
+  if (!display) return;
+  const match = display.textContent.match(/(\d+)\s*guest/);
+  const next = match ? parseInt(match[1]) + 1 : 5;
+  display.innerHTML = `$${pricePerPerson * next} <span>total / ${next} guests</span>`;
+  btn.closest('.resto-people-btns').querySelectorAll('.rpb:not([onclick*="Plus"])').forEach(b => b.classList.remove('active'));
+};
+
+window.changeNights = function(cardId, pricePerNight, delta) {
+  const nightsEl = document.getElementById(cardId + '-nights');
+  const totalEl = document.getElementById(cardId + '-total');
+  if (!nightsEl || !totalEl) return;
+  const next = Math.max(1, parseInt(nightsEl.textContent) + delta);
+  nightsEl.textContent = next;
+  totalEl.innerHTML = `$${pricePerNight * next} <span>total</span>`;
+};
+
+
+// ── trips.js ──────────────────────────────────────────────────────────────────
+// ── trips.js ──────────────────────────────────────────────────────────────────
+// Trip state management: create, delete, switch, sidebar rendering, chat restore
+
+
+// Shared mutable state — imported by main.js
+let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
+let currentTripId = 0;
+let tripCounter = 0;
+let conversationMode = 'chat';
+
+function setTrips(val) { trips = val; }
+function setCurrentTripId(val) { currentTripId = val; }
+function setTripCounter(val) { tripCounter = val; }
+function setConversationMode(val) { conversationMode = val; }
+
+function getCurrentTrip() {
+  return trips.find(t => t.id === currentTripId);
+}
+
+function newTrip() {
+  tripCounter++;
+  const t = { id: tripCounter, name: 'New trip', history: [], date: new Date(), _mode: 'chat' };
+  trips.push(t);
+  currentTripId = tripCounter;
+  conversationMode = 'chat';
+  saveTrips(trips, currentTripId, tripCounter);
+  renderTripList();
+  clearChat();
+}
+
+function deleteTrip(id) {
+  if (trips.length === 1) {
+    trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
+    currentTripId = 0; tripCounter = 0; conversationMode = 'chat';
+  } else {
+    trips = trips.filter(t => t.id !== id);
+    if (currentTripId === id) {
+      currentTripId = trips[trips.length - 1].id;
+      const cur = trips.find(t => t.id === currentTripId);
+      conversationMode = cur?._mode || 'chat';
+    }
+  }
+  saveTrips(trips, currentTripId, tripCounter);
+  renderTripList();
+  restoreChat();
+}
+
+function renderTripList() {
+  const list = document.getElementById('tripList');
+  list.innerHTML = '';
+  [...trips].reverse().forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'trip-entry' + (t.id === currentTripId ? ' active' : '');
+    el.setAttribute('data-id', t.id);
+    el.innerHTML = `
+      <span class="trip-entry-icon">✦</span>
+      <div style="flex:1;min-width:0">
+        <div class="trip-entry-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</div>
+        <div class="trip-entry-meta">${formatDate(t.date)}</div>
+      </div>
+      <button data-del="${t.id}" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px;opacity:0;transition:opacity 0.15s;flex-shrink:0" class="trip-del-btn">✕</button>`;
+    el.onclick = (e) => {
+      if (e.target.classList.contains('trip-del-btn')) {
+        deleteTrip(t.id);
+        return;
+      }
+      currentTripId = t.id;
+      const cur = trips.find(tr => tr.id === t.id);
+      conversationMode = cur?._mode || 'chat';
+      renderTripList();
+      restoreChat();
+    };
+    el.onmouseenter = () => { const btn = el.querySelector('.trip-del-btn'); if (btn) btn.style.opacity = '1'; };
+    el.onmouseleave = () => { const btn = el.querySelector('.trip-del-btn'); if (btn) btn.style.opacity = '0'; };
+    list.appendChild(el);
+  });
+}
+
+function clearChat() {
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome';
+  welcome.id = 'welcome';
+  welcome.innerHTML = `
+    <div class="welcome-icon">✦</div>
+    <h1>Plan your next <em>adventure</em></h1>
+    <p>Tell me where you want to go and I will get to know your travel style before building your itinerary.</p>
+    <div class="chips">
+      <button class="chip" onclick="window.quickStart('I want to go to Japan for about 5 days. I love street food and hidden local spots.')">Japan · street food</button>
+      <button class="chip" onclick="window.quickStart('Thinking about Paris for a long weekend. I love art, wine, and staying out late.')">Paris · art and nights</button>
+      <button class="chip" onclick="window.quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee and beaches</button>
+    </div>`;
+  chat.appendChild(welcome);
+}
+
+function restoreChat() {
+  const trip = trips.find(t => t.id === currentTripId);
+  if (!trip || !trip.history || trip.history.length === 0) { clearChat(); return; }
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+  chat.innerHTML = '';
+
+  trip.history.forEach(m => {
+    if (m.role === 'user') {
+      appendMsg('user', m.content);
+    } else if (m.role === 'assistant') {
+      if (m.cardType === 'summary') {
+        appendMsg('ai', m.content);
+      } else if (m.cardType === 'itinerary' && m.cardData) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        wrap.appendChild(buildItinCard(m.cardData.itin, m.cardData.destination, m.cardData.duration));
+        chat.appendChild(wrap);
+      } else if (m.cardType === 'results' && m.cardData) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        wrap.appendChild(buildResultCards(m.cardData.budget, m.cardData.hotels, m.cardData.local));
+        chat.appendChild(wrap);
+      } else if (m.cardType === 'restaurants' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'resto-grid';
+        m.cardData.restaurants.forEach((r, idx) => {
+          const cardId = 'rc-restore-' + m._id + '-' + idx;
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.google_maps_query);
+          const stars = parseFloat(r.rating) >= 4.5 ? '★★★★★' : parseFloat(r.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'resto-card';
+          card.innerHTML = buildRestoCardHTML(r, cardId, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'hotels' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'hotel-grid';
+        m.cardData.hotels.forEach((h, idx) => {
+          const cardId = 'hc-restore-' + m._id + '-' + idx;
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query);
+          const stars = parseFloat(h.rating) >= 4.5 ? '★★★★★' : parseFloat(h.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'hotel-card';
+          card.innerHTML = buildHotelCardHTML(h, cardId, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'activities' && m.cardData) {
+        appendMsg('ai', m.cardData.intro);
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        const grid = document.createElement('div'); grid.className = 'activity-grid';
+        m.cardData.activities.forEach(a => {
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.google_maps_query);
+          const stars = parseFloat(a.rating) >= 4.5 ? '★★★★★' : parseFloat(a.rating) >= 4.0 ? '★★★★☆' : '★★★☆☆';
+          const card = document.createElement('div'); card.className = 'activity-card';
+          card.innerHTML = buildActivityCardHTML(a, mapsUrl, stars);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (!m.content.startsWith('Full itinerary generated')) {
+        appendMsg('ai', m.content);
+      }
+    }
+  });
+  chat.scrollTop = chat.scrollHeight;
+}
+
+
+// ── agents.js ─────────────────────────────────────────────────────────────────
+// ── agents.js ─────────────────────────────────────────────────────────────────
+// All Claude API calls and system prompts
+
+const WORKER_URL = '/.netlify/functions/proxy';
+
+async function callClaude(systemPrompt, userMsg, history = []) {
+  const messages = [...history, { role: 'user', content: userMsg }];
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: systemPrompt, messages })
+  });
+  if (!res.ok) throw new Error('Worker error ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.content?.map(b => b.text || '').join('') || '';
+}
+
+// ── PROMPTS ───────────────────────────────────────────────────────────────────
+
+const CHAT_PROMPT = `You are Waypoint, a warm and knowledgeable AI travel agent. Your job is to have a genuine conversation with the user to understand their dream trip before generating a full itinerary.
+
+CONVERSATION STYLE:
+- Be warm, curious, and genuinely interested in their travel dreams
+- Ask thoughtful follow-up questions about their interests, travel style, and preferences
+- Share brief, relevant insights about destinations to spark excitement
+- Never be robotic or give templated responses
+- Keep replies conversational and concise (2-4 sentences max per response)
+
+YOUR GOAL: Gather enough info to build a great itinerary. You need to know:
+- Destination(s)
+- Duration
+- What they love doing (food, culture, nightlife, nature, adventure, etc.)
+- Their travel pace (relaxed, moderate, packed)
+- Budget level (budget, mid-range, luxury)
+
+Once you feel you have enough information (usually after 2-4 exchanges), end your message with exactly this tag on its own line:
+[READY_TO_PLAN]
+
+Until then, just have a natural conversation. Ask ONE follow-up question at a time. Never ask multiple questions at once.
+
+IMPORTANT: Do NOT generate itineraries, bullet points of activities, or structured plans during the conversation phase. Just talk. Never include goo.gl or Google Maps short links in any response.`;
+
+const ORCHESTRATOR_PROMPT = `You are the Waypoint orchestrator. Given a conversation between a user and a travel agent, extract the trip parameters and return ONLY a JSON object (no markdown, no preamble):
+{
+  "destination": "City, Country",
+  "duration": "X days",
+  "interests": ["interest1", "interest2"],
+  "pace": "relaxed|moderate|packed",
+  "budget_level": "budget|mid-range|luxury",
+  "trip_summary": "1 sentence summary of the trip"
+}`;
+
+const ITINERARY_PROMPT = `You are the Waypoint itinerary specialist. Given trip parameters, create a detailed day-by-day itinerary. Return ONLY JSON (no markdown):
+{
+  "days": [
+    {
+      "day": 1,
+      "theme": "Short theme",
+      "stops": [
+        { "time": "9:00 AM", "name": "Place", "description": "Why it fits", "tag": "food|culture|nature|nightlife|activity" }
+      ]
+    }
+  ]
+}
+Include 3-5 stops per day. Tailor every stop to the user's stated interests.`;
+
+const BUDGET_PROMPT = `You are the Waypoint budget specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "daily_estimate": "$X–$Y USD/day",
+  "total_estimate": "$X–$Y USD total",
+  "breakdown": {
+    "accommodation": "$X–$Y/night",
+    "food": "$X–$Y/day",
+    "transport": "$X–$Y/day",
+    "activities": "$X–$Y/day"
+  },
+  "money_tips": ["tip1", "tip2", "tip3"]
+}`;
+
+const HOTELS_PROMPT = `You are the Waypoint hotels specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "neighborhoods": ["Best area 1 with reason", "Best area 2 with reason"],
+  "hotel_picks": [
+    { "name": "Hotel name", "type": "boutique|hostel|luxury|airbnb-style", "why": "1 sentence why it fits", "price_range": "$X–$Y/night" }
+  ],
+  "booking_tips": "1–2 sentences on best booking strategy"
+}
+Include 3 hotel picks across different price ranges.`;
+
+const LOCAL_PROMPT = `You are the Waypoint local tips specialist. Given trip parameters, return ONLY JSON (no markdown):
+{
+  "insider_tips": ["tip1", "tip2", "tip3", "tip4"],
+  "avoid": ["thing to avoid 1", "thing to avoid 2"],
+  "phrases": [{ "phrase": "local phrase", "means": "meaning" }, { "phrase": "phrase2", "means": "meaning2" }],
+  "best_time_note": "1 sentence about timing"
+}`;
+
+const INTENT_PROMPT = `You are an intent classifier for a travel agent app. Given the user message, return ONLY one of these intents as a single word (no quotes, no explanation, no punctuation):
+RESTAURANTS - asking about where to eat, food spots, dinner, lunch, breakfast, cafes, bars, specific cuisines
+HOTELS - asking about where to stay, accommodation, hotels, hostels, Airbnb, neighborhoods to stay in
+ACTIVITIES - asking about things to do, attractions, experiences, tours, museums, beaches, nightlife, day trips, sightseeing
+GENERAL - anything else: packing, weather, transport, visas, budget questions, general travel advice`;
+
+const RESTAURANT_SPECIALIST_PROMPT = `You are a Waypoint restaurant specialist. You know this destination deeply — its food culture, hidden gems, and iconic spots. Based on the trip context and user message, recommend 3-4 restaurants.
+
+Return ONLY a JSON object (no markdown, no preamble):
+{
+  "intro": "1-2 sentence warm, knowledgeable intro that feels like advice from a well-traveled friend",
+  "restaurants": [
+    {
+      "name": "Restaurant Name",
+      "cuisine": "Cuisine type",
+      "description": "2 sentences — what makes it special, the atmosphere, and why it suits this specific traveler",
+      "neighborhood": "District/Neighborhood name",
+      "price_per_person": 45,
+      "meal_type": "dinner|lunch|breakfast|cafe|bar",
+      "rating": "4.7",
+      "google_maps_query": "Restaurant Name City Country",
+      "booking_url": "best booking URL for this specific restaurant or city (opentable, thefork, resy, yelp)",
+      "must_order": "Specific signature dish or drink"
+    }
+  ]
+}
+price_per_person = realistic USD amount for one person, full meal + one drink.`;
+
+const HOTEL_SPECIALIST_PROMPT = `You are a Waypoint hotel specialist with deep knowledge of this destination. Based on the trip context and user message, recommend 3 hotels across different styles/budgets.
+
+Return ONLY a JSON object (no markdown, no preamble):
+{
+  "intro": "1-2 sentence warm intro referencing the traveler's style and what makes these picks right for them",
+  "hotels": [
+    {
+      "name": "Hotel Name",
+      "type": "boutique|luxury|budget|hostel|apartment|resort",
+      "description": "2 sentences — the vibe, standout features, and why it suits this traveler",
+      "neighborhood": "District/Neighborhood",
+      "price_per_night": 180,
+      "rating": "4.6",
+      "amenities": ["WiFi", "Pool", "Rooftop bar", "Gym"],
+      "google_maps_query": "Hotel Name City Country",
+      "booking_url": "direct booking URL — booking.com, hotels.com, or hotel website",
+      "best_for": "Solo traveler|Couples|Groups|Business"
+    }
+  ]
+}
+price_per_night = realistic USD nightly rate for this hotel type and city.`;
+
+const ACTIVITY_SPECIALIST_PROMPT = `You are a Waypoint activities specialist — a local expert who knows every hidden gem and iconic experience at this destination. Based on the trip context and user message, recommend 4 activities or experiences.
+
+Return ONLY a JSON object (no markdown, no preamble):
+{
+  "intro": "1-2 sentence intro that captures what makes these experiences special for this particular traveler",
+  "activities": [
+    {
+      "name": "Activity or Experience Name",
+      "category": "Culture|Adventure|Food|Nature|Nightlife|Art|History|Wellness|Sport",
+      "description": "2 sentences — what it is, what makes it unmissable, and why it fits this traveler",
+      "neighborhood": "Area or district",
+      "duration": "2-3 hours",
+      "price_per_person": 35,
+      "rating": "4.8",
+      "tags": ["Outdoor", "Family-friendly", "Hidden gem"],
+      "google_maps_query": "Activity Name City Country",
+      "booking_url": "booking URL — viator.com, getyourguide.com, or official site",
+      "best_time": "Morning|Afternoon|Evening|Any time",
+      "insider_tip": "One specific insider tip that only a local would know"
+    }
+  ]
+}
+price_per_person = realistic USD per person. Use 0 for free activities.`;
+
+
+// ── main.js ───────────────────────────────────────────────────────────────────
+// ── main.js ───────────────────────────────────────────────────────────────────
+// App entry point: init, sendMessage, generateItinerary, event wiring
+
+import {
+  appendMsg, showTyping, removeTyping,
+  setAgentState, resetAgents, buildAgentActivityEl, updateTask,
+  autoResize, safeJSON, renderMarkdown
+} from './chat.js';
+import {
+  buildItinCard, buildResultCards,
+  renderRestaurantCards, renderHotelCards, renderActivityCards
+} from './cards.js';
+import {
+  trips, currentTripId, tripCounter, conversationMode,
+  setTrips, setCurrentTripId, setTripCounter, setConversationMode,
+  getCurrentTrip, newTrip, renderTripList, clearChat, restoreChat
+} from './trips.js';
+import {
+  callClaude,
+  CHAT_PROMPT, ORCHESTRATOR_PROMPT,
+  ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
+  INTENT_PROMPT, RESTAURANT_SPECIALIST_PROMPT,
+  HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
+} from './agents.js';
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+
+  const saved = loadTrips();
+  if (saved) {
+    setTrips(saved.trips);
+    setCurrentTripId(saved.currentTripId);
+    setTripCounter(saved.tripCounter);
+    const cur = saved.trips.find(t => t.id === saved.currentTripId);
+    setConversationMode(cur?._mode || 'chat');
+  }
+
+  renderTripList();
+
+  const trip = getCurrentTrip();
+  if (trip && trip.history && trip.history.length > 0) {
+    restoreChat();
+  }
+
+  // Wire up global handlers needed by inline HTML onclick attributes
+  window.quickStart = quickStart;
+  window.toggleTheme = toggleTheme;
+  window.toggleSidebar = toggleSidebar;
+  window.newTrip = newTrip;
+  window.sendMessage = sendMessage;
+  window.handleKey = handleKey;
+  window.autoResize = autoResize;
+});
+
+// ── INPUT HELPERS ─────────────────────────────────────────────────────────────
+function quickStart(text) {
+  const input = document.getElementById('msgInput');
+  input.value = text;
+  autoResize(input);
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+// ── SEND MESSAGE ──────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  const trip = getCurrentTrip();
+  appendMsg('user', text);
+  trip.history.push({ role: 'user', content: text });
+  saveTrips(trips, currentTripId, tripCounter);
+
+  const chat = document.getElementById('chat');
+  showTyping();
+
+  try {
+    if (conversationMode === 'chat') {
+      // ── CONVERSATIONAL MODE ────────────────────────────────────────────────
+      setAgentState('orchestrator', 'running');
+      const reply = await callClaude(CHAT_PROMPT, text, trip.history.slice(0, -1));
+      setAgentState('orchestrator', 'idle');
+      removeTyping();
+
+      if (trip.name === 'New trip') {
+        trip.name = text.split(' ').slice(0, 4).join(' ');
+        saveTrips(trips, currentTripId, tripCounter);
+        renderTripList();
+      }
+
+      trip.history.push({ role: 'assistant', content: reply });
+      saveTrips(trips, currentTripId, tripCounter);
+
+      if (reply.includes('[READY_TO_PLAN]')) {
+        const cleanReply = reply.replace('[READY_TO_PLAN]', '').trim();
+        appendMsg('ai', cleanReply);
+        setTimeout(() => {
+          const transMsg = document.createElement('div');
+          transMsg.className = 'msg ai';
+          transMsg.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai"><span style="color:var(--accent)">✦</span> Perfect — I have everything I need. Let me build your trip now...</div>';
+          chat.appendChild(transMsg);
+          chat.scrollTop = chat.scrollHeight;
+          setConversationMode('planning');
+          setTimeout(() => generateItinerary(trip), 800);
+        }, 600);
+      } else {
+        appendMsg('ai', reply);
+      }
+
+    } else if (conversationMode === 'done') {
+      // ── FOLLOW-UP MODE — smart intent routing ──────────────────────────────
+      setAgentState('orchestrator', 'running');
+      const intent = (await callClaude(INTENT_PROMPT, text)).trim().toUpperCase().split('\n')[0];
+      setAgentState('orchestrator', 'idle');
+      const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+
+      if (intent === 'RESTAURANTS') {
+        setAgentState('local', 'running');
+        const restoRaw = await callClaude(RESTAURANT_SPECIALIST_PROMPT, tripContext);
+        setAgentState('local', 'idle');
+        removeTyping();
+        const restoData = safeJSON(restoRaw);
+        if (restoData && restoData.restaurants) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed restaurant recommendations.', cardType: 'restaurants', _id: msgId, cardData: restoData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderRestaurantCards(restoData);
+        } else { await fallbackReply(trip, text); }
+
+      } else if (intent === 'HOTELS') {
+        setAgentState('hotels', 'running');
+        const hotelRaw = await callClaude(HOTEL_SPECIALIST_PROMPT, tripContext);
+        setAgentState('hotels', 'idle');
+        removeTyping();
+        const hotelData = safeJSON(hotelRaw);
+        if (hotelData && hotelData.hotels) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed hotel recommendations.', cardType: 'hotels', _id: msgId, cardData: hotelData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderHotelCards(hotelData);
+        } else { await fallbackReply(trip, text); }
+
+      } else if (intent === 'ACTIVITIES') {
+        setAgentState('itinerary', 'running');
+        const activityRaw = await callClaude(ACTIVITY_SPECIALIST_PROMPT, tripContext);
+        setAgentState('itinerary', 'idle');
+        removeTyping();
+        const activityData = safeJSON(activityRaw);
+        if (activityData && activityData.activities) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.', cardType: 'activities', _id: msgId, cardData: activityData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderActivityCards(activityData);
+        } else { await fallbackReply(trip, text); }
+
+      } else {
+        // GENERAL — expert conversational response
+        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers.
+
+IMPORTANT: Never include goo.gl, maps.app.goo.gl, or any Google Maps short URLs. If you reference a location, just mention the name — do not include map links in your text responses.
+
+Trip context:\n${tripContext}`;
+        const reply = await callClaude(followUpPrompt, text);
+        removeTyping();
+        trip.history.push({ role: 'assistant', content: reply });
+        saveTrips(trips, currentTripId, tripCounter);
+        appendMsg('ai', reply);
+      }
+    }
+  } catch (err) {
+    removeTyping();
+    resetAgents();
+    appendMsg('ai', 'Something went wrong: ' + err.message + '. Please try again.');
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+  document.getElementById('sendBtn').disabled = false;
+  resetAgents();
+}
+
+// ── GENERATE ITINERARY ────────────────────────────────────────────────────────
+async function generateItinerary(trip) {
+  const chat = document.getElementById('chat');
+  const tasks = [
+    { icon: '◈', label: 'Orchestrator — parsing your trip' },
+    { icon: '🗺', label: 'Itinerary agent — building your days' },
+    { icon: '💰', label: 'Budget agent — estimating costs' },
+    { icon: '🏨', label: 'Hotels agent — finding places to stay' },
+    { icon: '🌍', label: 'Local tips agent — insider knowledge' },
+  ];
+
+  const activityWrap = document.createElement('div');
+  activityWrap.className = 'msg ai';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar orchestrator';
+  avatar.textContent = 'W';
+  activityWrap.appendChild(avatar);
+  activityWrap.appendChild(buildAgentActivityEl(tasks));
+  chat.appendChild(activityWrap);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    setAgentState('orchestrator', 'running'); updateTask(0, 'running');
+    const convoSummary = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+    const orchRaw = await callClaude(ORCHESTRATOR_PROMPT, convoSummary);
+    const params = safeJSON(orchRaw);
+    updateTask(0, 'done'); setAgentState('orchestrator', 'idle');
+    if (!params) throw new Error('Could not parse trip details');
+
+    if (params.destination) {
+      trip.name = params.destination;
+      trip._mode = 'done';
+      saveTrips(trips, currentTripId, tripCounter);
+      renderTripList();
+    }
+
+    const tripContext = JSON.stringify(params);
+    setAgentState('itinerary', 'running'); updateTask(1, 'running');
+    setAgentState('budget', 'running');    updateTask(2, 'running');
+    setAgentState('hotels', 'running');    updateTask(3, 'running');
+    setAgentState('local', 'running');     updateTask(4, 'running');
+
+    const [itinRaw, budgetRaw, hotelsRaw, localRaw] = await Promise.all([
+      callClaude(ITINERARY_PROMPT, tripContext),
+      callClaude(BUDGET_PROMPT, tripContext),
+      callClaude(HOTELS_PROMPT, tripContext),
+      callClaude(LOCAL_PROMPT, tripContext),
+    ]);
+
+    updateTask(1, 'done'); setAgentState('itinerary', 'idle');
+    updateTask(2, 'done'); setAgentState('budget', 'idle');
+    updateTask(3, 'done'); setAgentState('hotels', 'idle');
+    updateTask(4, 'done'); setAgentState('local', 'idle');
+
+    const itin   = safeJSON(itinRaw);
+    const budget = safeJSON(budgetRaw);
+    const hotels = safeJSON(hotelsRaw);
+    const local  = safeJSON(localRaw);
+
+    activityWrap.remove();
+
+    const summaryText = (params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!';
+    appendMsg('ai', summaryText);
+    trip.history.push({ role: 'assistant', content: summaryText, cardType: 'summary' });
+
+    if (itin) {
+      const itinWrap = document.createElement('div');
+      itinWrap.className = 'msg ai';
+      itinWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      itinWrap.appendChild(buildItinCard(itin, params.destination, params.duration));
+      chat.appendChild(itinWrap);
+      trip.history.push({ role: 'assistant', content: 'Itinerary card', cardType: 'itinerary', cardData: { itin, destination: params.destination, duration: params.duration } });
+    }
+
+    if (budget && hotels && local) {
+      const cardsWrap = document.createElement('div');
+      cardsWrap.className = 'msg ai';
+      cardsWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      cardsWrap.appendChild(buildResultCards(budget, hotels, local));
+      chat.appendChild(cardsWrap);
+      trip.history.push({ role: 'assistant', content: 'Results cards', cardType: 'results', cardData: { budget, hotels, local } });
+    }
+
+    trip.history.push({ role: 'assistant', content: 'Full itinerary generated for ' + params.destination });
+    setConversationMode('done');
+    trip._mode = 'done';
+    saveTrips(trips, currentTripId, tripCounter);
+
+  } catch (err) {
+    activityWrap.remove();
+    resetAgents();
+    appendMsg('ai', 'Something went wrong building your itinerary: ' + err.message + '. Please try again.');
+    setConversationMode('chat');
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+  resetAgents();
+}
+
+// ── FALLBACK REPLY ────────────────────────────────────────────────────────────
+async function fallbackReply(trip, text) {
+  removeTyping();
+  const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+  try {
+    const reply = await callClaude(
+      'You are Waypoint, a knowledgeable travel agent. Answer this follow-up question about the trip conversationally. Trip context: ' + tripContext,
+      text
+    );
+    trip.history.push({ role: 'assistant', content: reply });
+    saveTrips(trips, currentTripId, tripCounter);
+    appendMsg('ai', reply);
+  } catch {
+    appendMsg('ai', 'Something went wrong. Please try again.');
+  }
+}
+
+
+</script>
 </body>
 </html>
