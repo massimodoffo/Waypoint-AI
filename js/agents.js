@@ -101,7 +101,16 @@ RESTAURANTS - asking about where to eat, food spots, dinner, lunch, breakfast, c
 HOTELS - asking about where to stay, accommodation, hotels, hostels, Airbnb, neighborhoods to stay in
 ACTIVITIES - asking about things to do, attractions, experiences, tours, museums, beaches, nightlife, day trips, sightseeing
 DIRECTIONS - asking for directions, how to get from one place to another, navigation, routes between two locations
-GENERAL - anything else: packing, weather, transport, visas, budget questions, general travel advice`;
+WEATHER - asking about weather, temperature, rain, forecast, climate, what to pack, best time to visit weather-wise
+GENERAL - anything else: packing tips, transport, visas, budget questions, general travel advice`;
+
+export const WEATHER_PROMPT = `You are a Waypoint weather specialist. Extract the location the user is asking about and return ONLY a JSON object (no markdown, no preamble):
+{
+  "city": "City name only (e.g. Tokyo)",
+  "country": "Country name (e.g. Japan)",
+  "search_query": "City, Country (e.g. Tokyo, Japan)"
+}
+If no specific city is mentioned, use the destination from the trip context.`;
 
 export const DIRECTIONS_PROMPT = `You are a Waypoint directions specialist. The user is asking for directions between two places. Extract the origin and destination and return ONLY a JSON object (no markdown, no preamble):
 {
