@@ -25,6 +25,17 @@ import {
   HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
 } from './agents.js';
 
+// ── GLOBAL FUNCTION EXPOSURE ──────────────────────────────────────────────────
+// Must be at top level (not inside DOMContentLoaded) so onclick attributes
+// in the HTML can find them immediately on page load.
+window.toggleTheme   = toggleTheme;
+window.toggleSidebar = toggleSidebar;
+window.newTrip       = newTrip;
+window.sendMessage   = sendMessage;
+window.handleKey     = handleKey;
+window.autoResize    = autoResize;
+window.quickStart    = quickStart;
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -44,15 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (trip && trip.history && trip.history.length > 0) {
     restoreChat();
   }
-
-  // Wire up global handlers needed by inline HTML onclick attributes
-  window.quickStart = quickStart;
-  window.toggleTheme = toggleTheme;
-  window.toggleSidebar = toggleSidebar;
-  window.newTrip = newTrip;
-  window.sendMessage = sendMessage;
-  window.handleKey = handleKey;
-  window.autoResize = autoResize;
 });
 
 // ── INPUT HELPERS ─────────────────────────────────────────────────────────────
@@ -87,7 +89,7 @@ async function sendMessage() {
 
   try {
     if (conversationMode === 'chat') {
-      // ── CONVERSATIONAL MODE ────────────────────────────────────────────────
+      // ── CONVERSATIONAL MODE ──────────────────────────────────────────────
       setAgentState('orchestrator', 'running');
       const reply = await callClaude(CHAT_PROMPT, text, trip.history.slice(0, -1));
       setAgentState('orchestrator', 'idle');
@@ -119,7 +121,7 @@ async function sendMessage() {
       }
 
     } else if (conversationMode === 'done') {
-      // ── FOLLOW-UP MODE — smart intent routing ──────────────────────────────
+      // ── FOLLOW-UP MODE — smart intent routing ────────────────────────────
       setAgentState('orchestrator', 'running');
       const intent = (await callClaude(INTENT_PROMPT, text)).trim().toUpperCase().split('\n')[0];
       setAgentState('orchestrator', 'idle');
@@ -165,8 +167,11 @@ async function sendMessage() {
         } else { await fallbackReply(trip, text); }
 
       } else {
-        // GENERAL — expert conversational response
-        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers. Trip context:\n${tripContext}`;
+        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers.
+
+IMPORTANT: Never include goo.gl, maps.app.goo.gl, or any Google Maps short URLs. If referencing a location, just mention the name.
+
+Trip context:\n${tripContext}`;
         const reply = await callClaude(followUpPrompt, text);
         removeTyping();
         trip.history.push({ role: 'assistant', content: reply });
