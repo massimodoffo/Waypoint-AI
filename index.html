@@ -94,7 +94,14 @@
   </main>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<!-- Scripts loaded in dependency order — NO type="module" -->
+<script src="js/theme.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/agents.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/trips.js"></script>
+<script src="js/main.js"></script>
 
 </body>
 </html>
