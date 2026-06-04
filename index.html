@@ -89,6 +89,51 @@
 </div>
 
 <script type="module" src="js/main.js"></script>
+<script>
+  // Wire events as soon as DOM is ready — works alongside ES module
+  document.addEventListener('DOMContentLoaded', function() {
+    var sendBtn = document.getElementById('sendBtn');
+    var msgInput = document.getElementById('msgInput');
+    var hamburger = document.getElementById('hamburger');
+    var overlay = document.getElementById('sidebarOverlay');
+    var themeLabel = document.getElementById('themeLabel');
+    var newTripBtn = document.getElementById('newTripBtn');
+
+    if (sendBtn) sendBtn.addEventListener('click', function() {
+      if (typeof sendMessage === 'function') sendMessage();
+    });
+    if (msgInput) {
+      msgInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (typeof sendMessage === 'function') sendMessage();
+        }
+      });
+      msgInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+      });
+    }
+    if (hamburger) hamburger.addEventListener('click', function() {
+      if (typeof toggleSidebar === 'function') toggleSidebar();
+    });
+    if (overlay) overlay.addEventListener('click', function() {
+      if (typeof toggleSidebar === 'function') toggleSidebar();
+    });
+    if (themeLabel) themeLabel.addEventListener('click', function() {
+      if (typeof toggleTheme === 'function') toggleTheme();
+    });
+    if (newTripBtn) newTripBtn.addEventListener('click', function() {
+      if (typeof newTrip === 'function') newTrip();
+    });
+    document.querySelectorAll('.chip[data-prompt]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (msgInput) { msgInput.value = btn.getAttribute('data-prompt'); }
+        if (typeof sendMessage === 'function') sendMessage();
+      });
+    });
+  });
+</script>
 
 </body>
 </html>
