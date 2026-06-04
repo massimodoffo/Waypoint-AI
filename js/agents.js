@@ -100,7 +100,21 @@ export const INTENT_PROMPT = `You are an intent classifier for a travel agent ap
 RESTAURANTS - asking about where to eat, food spots, dinner, lunch, breakfast, cafes, bars, specific cuisines
 HOTELS - asking about where to stay, accommodation, hotels, hostels, Airbnb, neighborhoods to stay in
 ACTIVITIES - asking about things to do, attractions, experiences, tours, museums, beaches, nightlife, day trips, sightseeing
+DIRECTIONS - asking for directions, how to get from one place to another, navigation, routes between two locations
 GENERAL - anything else: packing, weather, transport, visas, budget questions, general travel advice`;
+
+export const DIRECTIONS_PROMPT = `You are a Waypoint directions specialist. The user is asking for directions between two places. Extract the origin and destination and return ONLY a JSON object (no markdown, no preamble):
+{
+  "origin": "Full address or place name, City, Country",
+  "destination": "Full address or place name, City, Country",
+  "origin_label": "Short readable name (e.g. Beekman Hotel)",
+  "destination_label": "Short readable name (e.g. TAO Hudson Yards)",
+  "travel_mode": "driving|walking|transit",
+  "context": "1 sentence of helpful context about this journey (distance, typical time, best mode)"
+}
+
+If the user only mentions one location (destination only, no origin), set origin to "" and origin_label to "".
+Infer the most appropriate travel_mode from context — walking for short city distances, transit or driving for longer.`;
 
 export const RESTAURANT_SPECIALIST_PROMPT = `You are a Waypoint restaurant specialist. You know this destination deeply — its food culture, hidden gems, and iconic spots. Based on the trip context and user message, recommend 3-4 restaurants.
 
