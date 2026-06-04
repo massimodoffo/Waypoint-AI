@@ -44,19 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     restoreChat();
   }
 
-  // ── WIRE UP ALL EVENTS HERE (no onclick in HTML needed) ───────────────────
-  document.getElementById('hamburger')?.addEventListener('click', toggleSidebar);
-  document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
-  document.getElementById('themeToggle')?.parentElement?.addEventListener('click', toggleTheme);
-  document.querySelector('.new-trip-btn')?.addEventListener('click', newTrip);
-  document.getElementById('sendBtn')?.addEventListener('click', sendMessage);
-  document.getElementById('msgInput')?.addEventListener('keydown', handleKey);
-  document.getElementById('msgInput')?.addEventListener('input', function() { autoResize(this); });
-
-  // Chip buttons
-  document.querySelectorAll('.chip[data-prompt]').forEach(btn => {
-    btn.addEventListener('click', () => quickStart(btn.getAttribute('data-prompt')));
-  });
+  // Events are wired in index.html plain script tag
 });
 
 // ── INPUT HELPERS ─────────────────────────────────────────────────────────────
@@ -329,3 +317,10 @@ async function fallbackReply(trip, text) {
     appendMsg('ai', 'Something went wrong. Please try again.');
   }
 }
+
+// Export key functions to window so the plain script in index.html can call them
+window.sendMessage   = sendMessage;
+window.toggleSidebar = toggleSidebar;
+window.toggleTheme   = toggleTheme;
+window.newTrip       = newTrip;
+window.quickStart    = quickStart;
