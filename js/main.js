@@ -1,22 +1,27 @@
 // ── main.js ───────────────────────────────────────────────────────────────────
-// App entry point: init, sendMessage, generateItinerary, event wiring
-
+import { initTheme, toggleTheme, toggleSidebar } from './theme.js';
+import { saveTrips, loadTrips } from './storage.js';
+import {
   appendMsg, showTyping, removeTyping,
   setAgentState, resetAgents, buildAgentActivityEl, updateTask,
   autoResize, safeJSON, renderMarkdown
 } from './chat.js';
+import {
   buildItinCard, buildResultCards,
-  renderRestaurantCards, renderHotelCards, renderActivityCards, renderDirectionsCard, fetchAndRenderWeather
+  renderRestaurantCards, renderHotelCards, renderActivityCards,
+  renderDirectionsCard, fetchAndRenderWeather
 } from './cards.js';
+import {
   trips, currentTripId, tripCounter, conversationMode,
   setTrips, setCurrentTripId, setTripCounter, setConversationMode,
   getCurrentTrip, newTrip, renderTripList, clearChat, restoreChat
 } from './trips.js';
+import {
   callClaude,
   CHAT_PROMPT, ORCHESTRATOR_PROMPT,
   ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
-  INTENT_PROMPT, DIRECTIONS_PROMPT, WEATHER_PROMPT, RESTAURANT_SPECIALIST_PROMPT,
-  HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
+  INTENT_PROMPT, DIRECTIONS_PROMPT, WEATHER_PROMPT,
+  RESTAURANT_SPECIALIST_PROMPT, HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
 } from './agents.js';
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -38,6 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (trip && trip.history && trip.history.length > 0) {
     restoreChat();
   }
+
+  // ── WIRE UP ALL EVENTS HERE (no onclick in HTML needed) ───────────────────
+  document.getElementById('hamburger')?.addEventListener('click', toggleSidebar);
+  document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
+  document.getElementById('themeToggle')?.parentElement?.addEventListener('click', toggleTheme);
+  document.querySelector('.new-trip-btn')?.addEventListener('click', newTrip);
+  document.getElementById('sendBtn')?.addEventListener('click', sendMessage);
+  document.getElementById('msgInput')?.addEventListener('keydown', handleKey);
+  document.getElementById('msgInput')?.addEventListener('input', function() { autoResize(this); });
+
+  // Chip buttons
+  document.querySelectorAll('.chip[data-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => quickStart(btn.getAttribute('data-prompt')));
+  });
 });
 
 // ── INPUT HELPERS ─────────────────────────────────────────────────────────────
@@ -72,7 +91,6 @@ async function sendMessage() {
 
   try {
     if (conversationMode === 'chat') {
-      // ── CONVERSATIONAL MODE ──────────────────────────────────────────────
       setAgentState('orchestrator', 'running');
       const reply = await callClaude(CHAT_PROMPT, text, trip.history.slice(0, -1));
       setAgentState('orchestrator', 'idle');
@@ -104,13 +122,24 @@ async function sendMessage() {
       }
 
     } else if (conversationMode === 'done') {
-      // ── FOLLOW-UP MODE — smart intent routing ────────────────────────────
       setAgentState('orchestrator', 'running');
       const intent = (await callClaude(INTENT_PROMPT, text)).trim().toUpperCase().split('\n')[0];
       setAgentState('orchestrator', 'idle');
       const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
 
-      if (intent === 'RESTAURANTS') {
+      if (intent === 'WEATHER') {
+        setAgentState('local', 'running');
+        const weatherRaw = await callClaude(WEATHER_PROMPT, text + '\n\nTrip context: ' + tripContext);
+        setAgentState('local', 'idle');
+        removeTyping();
+        const weatherData = safeJSON(weatherRaw);
+        if (weatherData && weatherData.city) {
+          appendMsg('ai', 'Let me pull up the live forecast for ' + weatherData.city + '...');
+          await fetchAndRenderWeather(weatherData, trip);
+          saveTrips(trips, currentTripId, tripCounter);
+        } else { await fallbackReply(trip, text); }
+
+      } else if (intent === 'RESTAURANTS') {
         setAgentState('local', 'running');
         const restoRaw = await callClaude(RESTAURANT_SPECIALIST_PROMPT, tripContext);
         setAgentState('local', 'idle');
@@ -149,19 +178,6 @@ async function sendMessage() {
           renderActivityCards(activityData);
         } else { await fallbackReply(trip, text); }
 
-      } else if (intent === 'WEATHER') {
-        setAgentState('local', 'running');
-        const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
-        const weatherRaw = await callClaude(WEATHER_PROMPT, text + '\n\nTrip context: ' + tripContext);
-        setAgentState('local', 'idle');
-        removeTyping();
-        const weatherData = safeJSON(weatherRaw);
-        if (weatherData && weatherData.city) {
-          appendMsg('ai', 'Let me pull up the live forecast for ' + weatherData.city + '...');
-          await fetchAndRenderWeather(weatherData, trip);
-          saveTrips(trips, currentTripId, tripCounter);
-        } else { await fallbackReply(trip, text); }
-
       } else if (intent === 'DIRECTIONS') {
         setAgentState('orchestrator', 'running');
         const dirRaw = await callClaude(DIRECTIONS_PROMPT, text);
@@ -169,9 +185,8 @@ async function sendMessage() {
         removeTyping();
         const dirData = safeJSON(dirRaw);
         if (dirData && dirData.destination) {
-          // If no origin extracted, ask the user for one
           if (!dirData.origin || dirData.origin.trim() === '') {
-            appendMsg('ai', `Where would you like directions from? For example: "from my hotel" or "from Times Square".`);
+            appendMsg('ai', 'Where would you like directions from? For example: "from my hotel" or "from Times Square".');
           } else {
             trip.history.push({ role: 'assistant', content: `Showing directions from ${dirData.origin_label || dirData.origin} to ${dirData.destination_label || dirData.destination}.`, cardType: 'directions', cardData: dirData });
             saveTrips(trips, currentTripId, tripCounter);
@@ -180,11 +195,7 @@ async function sendMessage() {
         } else { await fallbackReply(trip, text); }
 
       } else {
-        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers.
-
-IMPORTANT: Never include goo.gl, maps.app.goo.gl, or any Google Maps short URLs. If referencing a location, just mention the name.
-
-Trip context:\n${tripContext}`;
+        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers.\n\nIMPORTANT: Never include goo.gl or Google Maps short URLs.\n\nTrip context:\n${tripContext}`;
         const reply = await callClaude(followUpPrompt, text);
         removeTyping();
         trip.history.push({ role: 'assistant', content: reply });
@@ -308,7 +319,7 @@ async function fallbackReply(trip, text) {
   const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
   try {
     const reply = await callClaude(
-      'You are Waypoint, a knowledgeable travel agent. Answer this follow-up question about the trip conversationally. Trip context: ' + tripContext,
+      'You are Waypoint, a knowledgeable travel agent. Answer this follow-up question conversationally. Trip context: ' + tripContext,
       text
     );
     trip.history.push({ role: 'assistant', content: reply });
@@ -318,5 +329,3 @@ async function fallbackReply(trip, text) {
     appendMsg('ai', 'Something went wrong. Please try again.');
   }
 }
-
-// All functions are global — no window assignment needed
