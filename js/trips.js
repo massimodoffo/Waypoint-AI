@@ -167,6 +167,16 @@ export function restoreChat() {
           grid.appendChild(card);
         });
         wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'directions' && m.cardData) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ai';
+        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+        // Re-import renderDirectionsCard dynamically
+        import('./cards.js').then(({ renderDirectionsCard }) => {
+          // render directly into chat
+          const chat = document.getElementById('chat');
+          renderDirectionsCard(m.cardData);
+        });
       } else if (!m.content.startsWith('Full itinerary generated')) {
         appendMsg('ai', m.content);
       }
