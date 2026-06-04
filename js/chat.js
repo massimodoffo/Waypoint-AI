@@ -8,6 +8,13 @@ export function escHtml(s) {
     .replace(/>/g, '&gt;');
 }
 
+function fixMapsUrl(url) {
+  if (url.includes('goo.gl') || url.includes('maps.app')) {
+    return 'https://www.google.com/maps';
+  }
+  return url;
+}
+
 export function renderMarkdown(text) {
   let s = text
     .replace(/&/g, '&amp;')
@@ -15,12 +22,16 @@ export function renderMarkdown(text) {
     .replace(/>/g, '&gt;');
 
   // Markdown links: [text](url)
-  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$1 ↗</a>');
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (match, linkText, url) => {
+    const safeUrl = fixMapsUrl(url);
+    return `<a href="${safeUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">${linkText} ↗</a>`;
+  });
 
   // Bare URLs
-  s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g,
-    '$1<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">$2 ↗</a>');
+  s = s.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, pre, url) => {
+    const safeUrl = fixMapsUrl(url);
+    return `${pre}<a href="${safeUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;text-underline-offset:2px">${url} ↗</a>`;
+  });
 
   // Bold+italic: ***text***
   s = s.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
