@@ -1,325 +1,337 @@
-/* ── RESET & VARIABLES ───────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+// ── main.js ───────────────────────────────────────────────────────────────────
+// App entry point: init, sendMessage, generateItinerary, event wiring
 
-/* DARK MODE (default) */
-:root {
-  --bg: #0e0f0e; --bg2: #161714; --bg3: #1e1f1c;
-  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
-  --text: #f0ede6; --text2: #9e9b93; --text3: #5c5a54;
-  --accent: #c8b87a; --accent2: #8fa87a; --accent3: #7a9fa8; --accent4: #a87a8f; --accent5: #a8947a;
-  --radius: 10px; --radius-lg: 16px;
-  --nav-bg: rgba(14,15,14,0.92);
-  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+import { initTheme, toggleTheme, toggleSidebar } from './theme.js';
+import { saveTrips, loadTrips } from './storage.js';
+import {
+  appendMsg, showTyping, removeTyping,
+  setAgentState, resetAgents, buildAgentActivityEl, updateTask,
+  autoResize, safeJSON, renderMarkdown
+} from './chat.js';
+import {
+  buildItinCard, buildResultCards,
+  renderRestaurantCards, renderHotelCards, renderActivityCards, renderDirectionsCard, fetchAndRenderWeather
+} from './cards.js';
+import {
+  trips, currentTripId, tripCounter, conversationMode,
+  setTrips, setCurrentTripId, setTripCounter, setConversationMode,
+  getCurrentTrip, newTrip, renderTripList, clearChat, restoreChat
+} from './trips.js';
+import {
+  callClaude,
+  CHAT_PROMPT, ORCHESTRATOR_PROMPT,
+  ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
+  INTENT_PROMPT, DIRECTIONS_PROMPT, WEATHER_PROMPT, RESTAURANT_SPECIALIST_PROMPT,
+  HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
+} from './agents.js';
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+
+  const saved = loadTrips();
+  if (saved) {
+    setTrips(saved.trips);
+    setCurrentTripId(saved.currentTripId);
+    setTripCounter(saved.tripCounter);
+    const cur = saved.trips.find(t => t.id === saved.currentTripId);
+    setConversationMode(cur?._mode || 'chat');
+  }
+
+  renderTripList();
+
+  const trip = getCurrentTrip();
+  if (trip && trip.history && trip.history.length > 0) {
+    restoreChat();
+  }
+});
+
+// ── INPUT HELPERS ─────────────────────────────────────────────────────────────
+export function quickStart(text) {
+  const input = document.getElementById('msgInput');
+  input.value = text;
+  autoResize(input);
+  sendMessage();
 }
 
-/* LIGHT MODE */
-:root.light {
-  --bg: #f7f5f0; --bg2: #ffffff; --bg3: #ede9e1;
-  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
-  --text: #1a1916; --text2: #5c5a52; --text3: #a09e97;
-  --accent: #9a7d2e; --accent2: #4a7a3a; --accent3: #2a6b78; --accent4: #7a3a5e; --accent5: #7a5a2e;
-  --nav-bg: rgba(247,245,240,0.94);
-  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
-html { font-size: 16px; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+// ── SEND MESSAGE ──────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
 
-/* ── NAV ─────────────────────────────────────────────────────────────────────── */
-nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--nav-bg); backdrop-filter: blur(12px); z-index: 100; }
-.logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
-.logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
-.nav-actions { display: flex; align-items: center; gap: 1rem; }
-.nav-status { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
 
-/* ── LAYOUT ──────────────────────────────────────────────────────────────────── */
-.app { display: flex; flex: 1; height: calc(100vh - 57px); }
+  const trip = getCurrentTrip();
+  appendMsg('user', text);
+  trip.history.push({ role: 'user', content: text });
+  saveTrips(trips, currentTripId, tripCounter);
 
-/* ── SIDEBAR ─────────────────────────────────────────────────────────────────── */
-aside { width: 260px; min-width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); overflow: hidden; }
-.sidebar-top { padding: 1.25rem 1rem 0.75rem; }
-.sidebar-top h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
-.new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
-.new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; }
-.trip-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
-.trip-entry { padding: 0.65rem 0.85rem; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; transition: all 0.15s; margin-bottom: 2px; }
-.trip-entry:hover { background: var(--bg3); color: var(--text); }
-.trip-entry.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
-.trip-entry-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
-.trip-entry-name { font-weight: 400; }
-.trip-entry-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.sidebar-agents { padding: 1rem; border-top: 1px solid var(--border); }
-.sidebar-agents h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
-.agent-pill { display: flex; align-items: center; gap: 8px; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 12px; color: var(--text2); margin-bottom: 4px; border: 1px solid transparent; transition: all 0.2s; }
-.agent-pill.running { border-color: var(--border2); background: var(--bg3); }
-.agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
-.agent-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(143,168,122,0.5); animation: pulse 1.2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  const chat = document.getElementById('chat');
+  showTyping();
 
-/* ── MAIN ────────────────────────────────────────────────────────────────────── */
-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-#chat { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth; }
-#chat::-webkit-scrollbar { width: 4px; }
-#chat::-webkit-scrollbar-track { background: transparent; }
-#chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  try {
+    if (conversationMode === 'chat') {
+      // ── CONVERSATIONAL MODE ──────────────────────────────────────────────
+      setAgentState('orchestrator', 'running');
+      const reply = await callClaude(CHAT_PROMPT, text, trip.history.slice(0, -1));
+      setAgentState('orchestrator', 'idle');
+      removeTyping();
 
-/* ── WELCOME ─────────────────────────────────────────────────────────────────── */
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; }
-.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; }
-.welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; }
-.welcome h1 em { font-style: italic; color: var(--accent); }
-.welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
-.chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+      if (trip.name === 'New trip') {
+        trip.name = text.split(' ').slice(0, 4).join(' ');
+        saveTrips(trips, currentTripId, tripCounter);
+        renderTripList();
+      }
 
-/* ── MESSAGES ────────────────────────────────────────────────────────────────── */
-.msg { display: flex; gap: 12px; animation: slideUp 0.3s ease; max-width: 800px; }
-@keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-.msg.user { flex-direction: row-reverse; align-self: flex-end; }
-.msg.ai { align-self: flex-start; }
-.msg.system-msg { align-self: flex-start; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; font-weight: 500; }
-.avatar.user { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); font-size: 12px; }
-.avatar.ai { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.25); }
-.avatar.orchestrator { background: rgba(200,184,122,0.12); color: var(--accent); border: 1px solid rgba(200,184,122,0.2); }
-.bubble { padding: 0.9rem 1.1rem; border-radius: 14px; font-size: 15.5px; line-height: 1.8; max-width: 620px; }
-.bubble.user { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 14px 4px 14px 14px; }
-.bubble.ai { background: var(--bg2); color: var(--text); border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; }
-.bubble.system-bubble { background: transparent; border: 1px dashed var(--border); border-radius: 8px; color: var(--text3); font-size: 13px; padding: 0.6rem 0.9rem; display: flex; align-items: center; gap: 8px; }
+      trip.history.push({ role: 'assistant', content: reply });
+      saveTrips(trips, currentTripId, tripCounter);
 
-/* ── AGENT ACTIVITY ──────────────────────────────────────────────────────────── */
-.agent-activity { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.25rem; }
-.agent-activity-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
-.agent-tasks { padding: 0.5rem; }
-.agent-task { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 13px; color: var(--text2); margin-bottom: 2px; transition: background 0.2s; }
-.agent-task.done { color: var(--text2); }
-.agent-task.running { background: var(--bg3); color: var(--text); }
-.agent-task.pending { color: var(--text3); }
-.task-icon { font-size: 15px; width: 20px; text-align: center; }
-.task-label { flex: 1; }
-.task-badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
-.task-badge.done { background: rgba(143,168,122,0.15); color: var(--accent2); }
-.task-badge.running { background: rgba(200,184,122,0.15); color: var(--accent); }
-.task-badge.pending { background: var(--bg3); color: var(--text3); }
+      if (reply.includes('[READY_TO_PLAN]')) {
+        const cleanReply = reply.replace('[READY_TO_PLAN]', '').trim();
+        appendMsg('ai', cleanReply);
+        setTimeout(() => {
+          const transMsg = document.createElement('div');
+          transMsg.className = 'msg ai';
+          transMsg.innerHTML = '<div class="avatar ai">W</div><div class="bubble ai"><span style="color:var(--accent)">✦</span> Perfect — I have everything I need. Let me build your trip now...</div>';
+          chat.appendChild(transMsg);
+          chat.scrollTop = chat.scrollHeight;
+          setConversationMode('planning');
+          setTimeout(() => generateItinerary(trip), 800);
+        }, 600);
+      } else {
+        appendMsg('ai', reply);
+      }
 
-/* ── ITINERARY CARD ──────────────────────────────────────────────────────────── */
-.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 620px; margin-top: 0.75rem; }
-.result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-.rc-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text3); }
-.rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.rc-body { padding: 0.85rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; }
-.itin-full { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.75rem; }
-.itin-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
-.itin-hero h2 { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; }
-.itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
-.itin-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
-.itin-days { padding: 0.75rem; }
-.day-block { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.day-header { padding: 0.55rem 0.9rem; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.day-header-left { font-size: 12px; font-weight: 500; color: var(--text); }
-.stop { display: flex; gap: 10px; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
-.stop:last-child { border-bottom: none; }
-.stop-time { font-size: 11px; color: var(--text3); min-width: 50px; padding-top: 2px; }
-.stop-body { flex: 1; }
-.stop-name { font-size: 13px; font-weight: 500; color: var(--text); }
-.stop-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.5; }
-.stop-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-.stag { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
-.stag-food { background: rgba(168,148,122,0.2); color: var(--accent5); }
-.stag-culture { background: rgba(122,159,168,0.2); color: var(--accent3); }
-.stag-nature { background: rgba(143,168,122,0.2); color: var(--accent2); }
-.stag-nightlife { background: rgba(168,122,143,0.2); color: var(--accent4); }
-.stag-activity { background: rgba(200,184,122,0.15); color: var(--accent); }
+    } else if (conversationMode === 'done') {
+      // ── FOLLOW-UP MODE — smart intent routing ────────────────────────────
+      setAgentState('orchestrator', 'running');
+      const intent = (await callClaude(INTENT_PROMPT, text)).trim().toUpperCase().split('\n')[0];
+      setAgentState('orchestrator', 'idle');
+      const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
 
-/* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
-.resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.resto-card:hover { border-color: var(--border2); }
-.resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.resto-name-row { flex: 1; }
-.resto-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
-.resto-name:hover { color: var(--accent); }
-.resto-name-link-icon { font-size: 11px; color: var(--text3); }
-.resto-cuisine { font-size: 12px; color: var(--text3); margin-top: 3px; }
-.resto-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
-.resto-divider { height: 1px; background: var(--border); }
-.resto-body { padding: 0.75rem 1rem; }
-.resto-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
-.resto-meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem; }
-.resto-tag { display: flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
-.resto-tag-icon { font-size: 12px; }
-.resto-pricing { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; margin-top: 0.5rem; }
-.resto-pricing-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
-.resto-pricing-row { display: flex; justify-content: space-between; align-items: center; }
-.resto-people-btns { display: flex; gap: 4px; }
-.rpb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
-.rpb:hover, .rpb.active { background: var(--accent); color: #1a1800; border-color: var(--accent); }
-.resto-price-display { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 400; color: var(--text); }
-.resto-price-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
-.resto-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.resto-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
-.resto-maps-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
-.resto-maps-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+      if (intent === 'RESTAURANTS') {
+        setAgentState('local', 'running');
+        const restoRaw = await callClaude(RESTAURANT_SPECIALIST_PROMPT, tripContext);
+        setAgentState('local', 'idle');
+        removeTyping();
+        const restoData = safeJSON(restoRaw);
+        if (restoData && restoData.restaurants) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed restaurant recommendations.', cardType: 'restaurants', _id: msgId, cardData: restoData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderRestaurantCards(restoData);
+        } else { await fallbackReply(trip, text); }
 
-/* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
-.hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.hotel-card:hover { border-color: var(--border2); }
-.hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.hotel-name-row { flex: 1; }
-.hotel-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
-.hotel-name:hover { color: var(--accent); }
-.hotel-type { font-size: 12px; color: var(--text3); margin-top: 3px; }
-.hotel-price-badge { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
-.hotel-price-main { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
-.hotel-price-sub { font-size: 10px; color: var(--text3); }
-.hotel-body { padding: 0.75rem 1rem; }
-.hotel-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
-.hotel-amenities { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
-.hotel-amenity { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
-.hotel-nights-calc { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; }
-.hotel-nights-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
-.hotel-nights-row { display: flex; justify-content: space-between; align-items: center; }
-.hotel-nights-btns { display: flex; gap: 4px; align-items: center; }
-.hnb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
-.hnb:hover { background: var(--bg2); color: var(--text); }
-.hnb-count { font-size: 13px; color: var(--text); min-width: 24px; text-align: center; }
-.hotel-total-display { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
-.hotel-total-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
-.hotel-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.hotel-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
-.hotel-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
-.hotel-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
-.hotel-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
+      } else if (intent === 'HOTELS') {
+        setAgentState('hotels', 'running');
+        const hotelRaw = await callClaude(HOTEL_SPECIALIST_PROMPT, tripContext);
+        setAgentState('hotels', 'idle');
+        removeTyping();
+        const hotelData = safeJSON(hotelRaw);
+        if (hotelData && hotelData.hotels) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed hotel recommendations.', cardType: 'hotels', _id: msgId, cardData: hotelData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderHotelCards(hotelData);
+        } else { await fallbackReply(trip, text); }
 
-/* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
-.activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.activity-card:hover { border-color: var(--border2); }
-.activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.activity-name-row { flex: 1; }
-.activity-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
-.activity-name:hover { color: var(--accent); }
-.activity-category { font-size: 12px; color: var(--text3); margin-top: 3px; }
-.activity-duration-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(143,168,122,0.12); border: 1px solid rgba(143,168,122,0.2); color: var(--accent2); flex-shrink: 0; }
-.activity-body { padding: 0.75rem 1rem; }
-.activity-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
-.activity-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.75rem; }
-.activity-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
-.activity-cost-row { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-.activity-cost-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-.activity-cost-val { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
-.activity-cost-val span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
-.activity-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.activity-location { font-size: 12px; color: var(--text3); }
-.activity-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
-.activity-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent2); }
-.activity-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(200,184,122,0.12); border: 1px solid rgba(200,184,122,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; }
+      } else if (intent === 'ACTIVITIES') {
+        setAgentState('itinerary', 'running');
+        const activityRaw = await callClaude(ACTIVITY_SPECIALIST_PROMPT, tripContext);
+        setAgentState('itinerary', 'idle');
+        removeTyping();
+        const activityData = safeJSON(activityRaw);
+        if (activityData && activityData.activities) {
+          const msgId = Date.now();
+          trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.', cardType: 'activities', _id: msgId, cardData: activityData });
+          saveTrips(trips, currentTripId, tripCounter);
+          renderActivityCards(activityData);
+        } else { await fallbackReply(trip, text); }
 
-/* ── TYPING ───────────────────────────────────────────────────────────────────── */
-.typing-dots { display: flex; gap: 4px; padding: 6px 0; }
-.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: tdot 1s infinite; }
-.typing-dots span:nth-child(2){animation-delay:.15s;}
-.typing-dots span:nth-child(3){animation-delay:.3s;}
-@keyframes tdot{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+      } else if (intent === 'WEATHER') {
+        setAgentState('local', 'running');
+        const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+        const weatherRaw = await callClaude(WEATHER_PROMPT, text + '\n\nTrip context: ' + tripContext);
+        setAgentState('local', 'idle');
+        removeTyping();
+        const weatherData = safeJSON(weatherRaw);
+        if (weatherData && weatherData.city) {
+          appendMsg('ai', 'Let me pull up the live forecast for ' + weatherData.city + '...');
+          await fetchAndRenderWeather(weatherData, trip);
+          saveTrips(trips, currentTripId, tripCounter);
+        } else { await fallbackReply(trip, text); }
 
-/* ── INPUT ───────────────────────────────────────────────────────────────────── */
-#input-wrap { padding: 1rem 2rem 1.5rem; border-top: 1px solid var(--border); }
-.input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 0.75rem 0.85rem 0.75rem 1.1rem; transition: border-color 0.2s; }
-.input-box:focus-within { border-color: rgba(200,184,122,0.4); }
-textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
-textarea::placeholder { color: var(--text3); }
-.send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #1a1800; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; transition: all 0.2s; }
-.send-btn:hover { opacity: 0.85; transform: scale(1.05); }
-.send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+      } else if (intent === 'DIRECTIONS') {
+        setAgentState('orchestrator', 'running');
+        const dirRaw = await callClaude(DIRECTIONS_PROMPT, text);
+        setAgentState('orchestrator', 'idle');
+        removeTyping();
+        const dirData = safeJSON(dirRaw);
+        if (dirData && dirData.destination) {
+          // If no origin extracted, ask the user for one
+          if (!dirData.origin || dirData.origin.trim() === '') {
+            appendMsg('ai', `Where would you like directions from? For example: "from my hotel" or "from Times Square".`);
+          } else {
+            trip.history.push({ role: 'assistant', content: `Showing directions from ${dirData.origin_label || dirData.origin} to ${dirData.destination_label || dirData.destination}.`, cardType: 'directions', cardData: dirData });
+            saveTrips(trips, currentTripId, tripCounter);
+            renderDirectionsCard(dirData);
+          }
+        } else { await fallbackReply(trip, text); }
 
-/* ── THEME TOGGLE ────────────────────────────────────────────────────────────── */
-.theme-toggle { width: 36px; height: 20px; border-radius: 20px; border: 1px solid var(--border2); background: var(--bg3); cursor: pointer; position: relative; transition: background 0.25s, border-color 0.25s; flex-shrink: 0; }
-.theme-toggle::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--text3); top: 2px; left: 2px; transition: transform 0.25s, background 0.25s; }
-:root.light .theme-toggle::after { transform: translateX(16px); background: var(--accent); }
-.theme-label { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
-.theme-label:hover .theme-toggle { border-color: var(--accent); }
+      } else {
+        const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. Answer the traveler's follow-up question like a knowledgeable friend. Be specific, practical, and include real details. Keep it conversational — no bullet points or headers.
 
-/* ── SCROLLBAR ───────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+IMPORTANT: Never include goo.gl, maps.app.goo.gl, or any Google Maps short URLs. If referencing a location, just mention the name.
 
-/* ── HAMBURGER ───────────────────────────────────────────────────────────────── */
-.hamburger { display: none; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 4px; }
-.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: all 0.2s; display: block; }
-.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
-.sidebar-overlay.visible { display: block; }
+Trip context:\n${tripContext}`;
+        const reply = await callClaude(followUpPrompt, text);
+        removeTyping();
+        trip.history.push({ role: 'assistant', content: reply });
+        saveTrips(trips, currentTripId, tripCounter);
+        appendMsg('ai', reply);
+      }
+    }
+  } catch (err) {
+    removeTyping();
+    resetAgents();
+    appendMsg('ai', 'Something went wrong: ' + err.message + '. Please try again.');
+  }
 
-
-/* ── DIRECTIONS CARD ─────────────────────────────────────────────────────────── */
-.directions-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; }
-.directions-header { padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.directions-route { flex: 1; }
-.directions-from { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
-.directions-to { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); font-weight: 500; }
-.directions-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.directions-dot.from { background: var(--text3); border: 1px solid var(--border2); }
-.directions-dot.to { background: var(--accent); }
-.directions-line { width: 1px; height: 14px; background: var(--border2); margin-left: 3.5px; margin-bottom: 2px; }
-.directions-mode-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); flex-shrink: 0; }
-.directions-context { padding: 0.65rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.5; border-bottom: 1px solid var(--border); }
-.directions-map { width: 100%; height: 320px; border: none; display: block; }
-.directions-footer { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
-.directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
-.directions-mode-btns { display: flex; gap: 4px; }
-.dmb { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-.dmb:hover { background: var(--bg3); color: var(--text); }
-.dmb.active { background: var(--accent); color: #1a1800; border-color: var(--accent); }
-
-@media (max-width: 700px) {
-  .directions-card { max-width: calc(100vw - 60px); }
-  .directions-map { height: 240px; }
+  chat.scrollTop = chat.scrollHeight;
+  document.getElementById('sendBtn').disabled = false;
+  resetAgents();
 }
 
-/* ── MOBILE ──────────────────────────────────────────────────────────────────── */
-@media (max-width: 700px) {
-  nav { padding: 0.9rem 1rem; }
-  .hamburger { display: flex; }
-  .theme-label { display: flex; }
-  .nav-status { display: none; }
-  aside { position: fixed; left: -280px; top: 0; height: 100vh; width: 280px; z-index: 95; transition: left 0.3s ease; }
-  aside.open { left: 0; }
-  .app { height: calc(100vh - 53px); }
-  main { width: 100%; }
-  #chat { padding: 1rem; gap: 1rem; }
-  .welcome { padding: 2rem 1rem; min-height: 300px; }
-  .welcome h1 { font-size: 1.6rem; }
-  .welcome p { font-size: 14px; }
-  .chips { gap: 6px; }
-  .chip { font-size: 12px; padding: 0.4rem 0.8rem; }
-  .msg { max-width: 100%; }
-  .bubble { max-width: calc(100vw - 80px); font-size: 13px; }
-  .avatar { width: 28px; height: 28px; font-size: 12px; }
-  .agent-activity { max-width: calc(100vw - 80px); }
-  .itin-full { max-width: calc(100vw - 80px); }
-  .result-grid { grid-template-columns: 1fr; max-width: calc(100vw - 80px); }
-  #input-wrap { padding: 0.75rem 1rem 1rem; }
-  .stop { padding: 0.5rem 0.75rem; }
-  .stop-time { min-width: 42px; font-size: 10px; }
-  .stop-name { font-size: 12px; }
-  .stop-desc { font-size: 11px; }
-  .itin-hero h2 { font-size: 1.2rem; }
-  .rc-body { padding: 0.75rem; }
-  .hotel-grid, .activity-grid, .resto-grid { max-width: calc(100vw - 60px); }
-  .hotel-header, .activity-header, .resto-header { flex-direction: column; gap: 6px; }
+// ── GENERATE ITINERARY ────────────────────────────────────────────────────────
+async function generateItinerary(trip) {
+  const chat = document.getElementById('chat');
+  const tasks = [
+    { icon: '◈', label: 'Orchestrator — parsing your trip' },
+    { icon: '🗺', label: 'Itinerary agent — building your days' },
+    { icon: '💰', label: 'Budget agent — estimating costs' },
+    { icon: '🏨', label: 'Hotels agent — finding places to stay' },
+    { icon: '🌍', label: 'Local tips agent — insider knowledge' },
+  ];
+
+  const activityWrap = document.createElement('div');
+  activityWrap.className = 'msg ai';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar orchestrator';
+  avatar.textContent = 'W';
+  activityWrap.appendChild(avatar);
+  activityWrap.appendChild(buildAgentActivityEl(tasks));
+  chat.appendChild(activityWrap);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    setAgentState('orchestrator', 'running'); updateTask(0, 'running');
+    const convoSummary = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+    const orchRaw = await callClaude(ORCHESTRATOR_PROMPT, convoSummary);
+    const params = safeJSON(orchRaw);
+    updateTask(0, 'done'); setAgentState('orchestrator', 'idle');
+    if (!params) throw new Error('Could not parse trip details');
+
+    if (params.destination) {
+      trip.name = params.destination;
+      trip._mode = 'done';
+      saveTrips(trips, currentTripId, tripCounter);
+      renderTripList();
+    }
+
+    const tripContext = JSON.stringify(params);
+    setAgentState('itinerary', 'running'); updateTask(1, 'running');
+    setAgentState('budget', 'running');    updateTask(2, 'running');
+    setAgentState('hotels', 'running');    updateTask(3, 'running');
+    setAgentState('local', 'running');     updateTask(4, 'running');
+
+    const [itinRaw, budgetRaw, hotelsRaw, localRaw] = await Promise.all([
+      callClaude(ITINERARY_PROMPT, tripContext),
+      callClaude(BUDGET_PROMPT, tripContext),
+      callClaude(HOTELS_PROMPT, tripContext),
+      callClaude(LOCAL_PROMPT, tripContext),
+    ]);
+
+    updateTask(1, 'done'); setAgentState('itinerary', 'idle');
+    updateTask(2, 'done'); setAgentState('budget', 'idle');
+    updateTask(3, 'done'); setAgentState('hotels', 'idle');
+    updateTask(4, 'done'); setAgentState('local', 'idle');
+
+    const itin   = safeJSON(itinRaw);
+    const budget = safeJSON(budgetRaw);
+    const hotels = safeJSON(hotelsRaw);
+    const local  = safeJSON(localRaw);
+
+    activityWrap.remove();
+
+    const summaryText = (params.trip_summary || 'Here is your trip to ' + params.destination + '.') + ' Feel free to ask me anything about it!';
+    appendMsg('ai', summaryText);
+    trip.history.push({ role: 'assistant', content: summaryText, cardType: 'summary' });
+
+    if (itin) {
+      const itinWrap = document.createElement('div');
+      itinWrap.className = 'msg ai';
+      itinWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      itinWrap.appendChild(buildItinCard(itin, params.destination, params.duration));
+      chat.appendChild(itinWrap);
+      trip.history.push({ role: 'assistant', content: 'Itinerary card', cardType: 'itinerary', cardData: { itin, destination: params.destination, duration: params.duration } });
+    }
+
+    if (budget && hotels && local) {
+      const cardsWrap = document.createElement('div');
+      cardsWrap.className = 'msg ai';
+      cardsWrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+      cardsWrap.appendChild(buildResultCards(budget, hotels, local));
+      chat.appendChild(cardsWrap);
+      trip.history.push({ role: 'assistant', content: 'Results cards', cardType: 'results', cardData: { budget, hotels, local } });
+    }
+
+    trip.history.push({ role: 'assistant', content: 'Full itinerary generated for ' + params.destination });
+    setConversationMode('done');
+    trip._mode = 'done';
+    saveTrips(trips, currentTripId, tripCounter);
+
+  } catch (err) {
+    activityWrap.remove();
+    resetAgents();
+    appendMsg('ai', 'Something went wrong building your itinerary: ' + err.message + '. Please try again.');
+    setConversationMode('chat');
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+  resetAgents();
 }
 
-/* ── MOBILE SYSTEM THEME ─────────────────────────────────────────────────────── */
-@media (max-width: 700px) and (prefers-color-scheme: light) {
-  :root:not(.light) {
-    --bg: #f7f5f0; --bg2: #ffffff; --bg3: #ede9e1;
-    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
-    --text: #1a1916; --text2: #5c5a52; --text3: #a09e97;
-    --accent: #9a7d2e; --accent2: #4a7a3a; --accent3: #2a6b78; --accent4: #7a3a5e; --accent5: #7a5a2e;
-    --nav-bg: rgba(247,245,240,0.94);
+// ── FALLBACK REPLY ────────────────────────────────────────────────────────────
+async function fallbackReply(trip, text) {
+  removeTyping();
+  const tripContext = trip.history.map(m => m.role + ': ' + m.content).join('\n');
+  try {
+    const reply = await callClaude(
+      'You are Waypoint, a knowledgeable travel agent. Answer this follow-up question about the trip conversationally. Trip context: ' + tripContext,
+      text
+    );
+    trip.history.push({ role: 'assistant', content: reply });
+    saveTrips(trips, currentTripId, tripCounter);
+    appendMsg('ai', reply);
+  } catch {
+    appendMsg('ai', 'Something went wrong. Please try again.');
   }
 }
+
+// ── GLOBAL FUNCTION EXPOSURE ──────────────────────────────────────────────────
+// Placed at end of file so all functions are defined before being assigned.
+// ES modules don't hoist async functions, so this must come after declarations.
+window.toggleTheme   = toggleTheme;
+window.toggleSidebar = toggleSidebar;
+window.newTrip       = newTrip;
+window.sendMessage   = sendMessage;
+window.handleKey     = handleKey;
+window.autoResize    = autoResize;
+window.quickStart    = quickStart;
