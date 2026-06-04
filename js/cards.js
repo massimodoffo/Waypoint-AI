@@ -321,3 +321,113 @@ window.changeNights = function(cardId, pricePerNight, delta) {
   nightsEl.textContent = next;
   totalEl.innerHTML = `$${pricePerNight * next} <span>total</span>`;
 };
+
+// ── DIRECTIONS CARD ───────────────────────────────────────────────────────────
+export function renderDirectionsCard(data) {
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+
+  const card = document.createElement('div');
+  card.className = 'directions-card';
+
+  const modeIcon = { driving: '🚗', walking: '🚶', transit: '🚇' };
+  const modeLabel = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
+
+  // Build Google Maps embed URL
+  function buildEmbedUrl(origin, destination, mode) {
+    const base = 'https://www.google.com/maps/embed/v1/directions';
+    const key = 'AIzaSyD-placeholder'; // No key needed for basic embed
+    const params = new URLSearchParams({
+      origin: origin || destination,
+      destination: destination,
+      mode: mode,
+    });
+    // Use the non-API embed which doesn't need a key
+    const mapsMode = mode === 'transit' ? 'transit' : mode === 'walking' ? 'walking' : 'driving';
+    const originEnc = encodeURIComponent(origin || destination);
+    const destEnc = encodeURIComponent(destination);
+    return `https://www.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd'}&output=embed`;
+  }
+
+  function buildOpenUrl(origin, destination, mode) {
+    const modeFlag = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
+    const o = encodeURIComponent(origin || '');
+    const d = encodeURIComponent(destination);
+    return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
+  }
+
+  const currentMode = data.travel_mode || 'driving';
+  const iframeId = 'dir-iframe-' + Date.now();
+  const hasOrigin = data.origin && data.origin.trim() !== '';
+
+  card.innerHTML = `
+    <div class="directions-header">
+      <div class="directions-route">
+        ${hasOrigin ? `
+          <div class="directions-from">
+            <div class="directions-dot from"></div>
+            <span>${escHtml(data.origin_label || data.origin)}</span>
+          </div>
+          <div class="directions-line"></div>
+        ` : ''}
+        <div class="directions-to">
+          <div class="directions-dot to"></div>
+          <span>${escHtml(data.destination_label || data.destination)}</span>
+        </div>
+      </div>
+      <div class="directions-mode-badge">${modeIcon[currentMode] || '🗺'} ${modeLabel[currentMode] || currentMode}</div>
+    </div>
+    ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
+    <iframe
+      id="${iframeId}"
+      class="directions-map"
+      src="${buildEmbedUrl(data.origin, data.destination, currentMode)}"
+      allowfullscreen
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+    ></iframe>
+    <div class="directions-footer">
+      <div class="directions-mode-btns">
+        ${['driving','walking','transit'].map(m => `
+          <button class="dmb${m === currentMode ? ' active' : ''}"
+            onclick="switchDirectionsMode('${iframeId}', '${escHtml(data.origin)}', '${escHtml(data.destination)}', '${m}', this)">
+            ${modeIcon[m]} ${modeLabel[m]}
+          </button>`).join('')}
+      </div>
+      <a class="directions-open-btn" href="${buildOpenUrl(data.origin, data.destination, currentMode)}" target="_blank" rel="noopener">
+        Open in Maps ↗
+      </a>
+    </div>
+  `;
+
+  wrap.appendChild(card);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// Called from inline onclick — must be on window
+window.switchDirectionsMode = function(iframeId, origin, destination, mode, btn) {
+  const iframe = document.getElementById(iframeId);
+  if (!iframe) return;
+  const modeFlag = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
+  const originEnc = encodeURIComponent(origin || destination);
+  const destEnc = encodeURIComponent(destination);
+  iframe.src = `https://www.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${modeFlag}&output=embed`;
+
+  // Update open-in-maps link
+  const footer = iframe.nextElementSibling;
+  if (footer) {
+    const openBtn = footer.querySelector('.directions-open-btn');
+    if (openBtn) openBtn.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${mode}`;
+  }
+
+  // Update active button
+  btn.closest('.directions-mode-btns').querySelectorAll('.dmb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
