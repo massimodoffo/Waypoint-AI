@@ -13,13 +13,13 @@
 
 <nav>
   <div style="display:flex;align-items:center;gap:12px">
-    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <button class="hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
     <div class="logo"><span class="logo-dot"></span>Waypoint</div>
   </div>
   <div class="nav-actions">
-    <label class="theme-label" onclick="toggleTheme()">
+    <label class="theme-label" id="themeLabel">
       <span id="themeIcon">☀</span>
       <div class="theme-toggle" id="themeToggle"></div>
     </label>
@@ -27,13 +27,13 @@
   </div>
 </nav>
 
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="app">
   <aside>
     <div class="sidebar-top">
       <h2>Trips</h2>
-      <button class="new-trip-btn" onclick="newTrip()">+ New trip</button>
+      <button class="new-trip-btn" id="newTripBtn">+ New trip</button>
     </div>
     <div class="trip-list" id="tripList">
       <div class="trip-entry active" data-id="0">
@@ -71,37 +71,24 @@
         </div>
         <div style="font-size:13px;color:var(--text3);margin-bottom:1rem">Or jump in with one of these:</div>
         <div class="chips">
-          <button class="chip" onclick="quickStart('I want to go to Japan for about 5 days. I love street food and hidden local spots.')">Japan · street food</button>
-          <button class="chip" onclick="quickStart('Thinking about Paris for a long weekend. I love art, wine, and staying out late.')">Paris · art & nights</button>
-          <button class="chip" onclick="quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee & beaches</button>
-          <button class="chip" onclick="quickStart('Portugal for 10 days, slow travel. Wine, old towns, seafood, maybe some surfing.')">Portugal · slow travel</button>
+          <button class="chip" data-prompt="I want to go to Japan for about 5 days. I love street food and hidden local spots.">Japan · street food</button>
+          <button class="chip" data-prompt="Thinking about Paris for a long weekend. I love art, wine, and staying out late.">Paris · art & nights</button>
+          <button class="chip" data-prompt="I want to explore Colombia. Big into coffee, beaches, and nightlife.">Colombia · coffee & beaches</button>
+          <button class="chip" data-prompt="Portugal for 10 days, slow travel. Wine, old towns, seafood, maybe some surfing.">Portugal · slow travel</button>
         </div>
       </div>
     </div>
 
     <div id="input-wrap">
       <div class="input-box">
-        <textarea
-          id="msgInput"
-          placeholder="Tell me where you want to go…"
-          rows="1"
-          onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
-        ></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send">↑</button>
+        <textarea id="msgInput" placeholder="Tell me where you want to go…" rows="1"></textarea>
+        <button class="send-btn" id="sendBtn" aria-label="Send">↑</button>
       </div>
     </div>
   </main>
 </div>
 
-<!-- Scripts loaded in dependency order — NO type="module" -->
-<script src="js/theme.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/chat.js"></script>
-<script src="js/agents.js"></script>
-<script src="js/cards.js"></script>
-<script src="js/trips.js"></script>
-<script src="js/main.js"></script>
+<script type="module" src="js/main.js"></script>
 
 </body>
 </html>
