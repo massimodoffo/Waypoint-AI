@@ -1,7 +1,7 @@
 // ── storage.js ────────────────────────────────────────────────────────────────
 // Handles all localStorage persistence for trips and chat history
 
-export function saveTrips(trips, currentTripId, tripCounter) {
+function saveTrips(trips, currentTripId, tripCounter) {
   try {
     const data = {
       trips: trips.map(t => ({
@@ -18,7 +18,7 @@ export function saveTrips(trips, currentTripId, tripCounter) {
   }
 }
 
-export function loadTrips() {
+function loadTrips() {
   try {
     const raw = localStorage.getItem('wp_trips');
     if (!raw) return null;
