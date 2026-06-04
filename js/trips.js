@@ -87,11 +87,20 @@ function clearChat() {
     <h1>Plan your next <em>adventure</em></h1>
     <p>Tell me where you want to go and I will get to know your travel style before building your itinerary.</p>
     <div class="chips">
-      <button class="chip" onclick="window.quickStart('I want to go to Japan for about 5 days. I love street food and hidden local spots.')">Japan · street food</button>
-      <button class="chip" onclick="window.quickStart('Thinking about Paris for a long weekend. I love art, wine, and staying out late.')">Paris · art and nights</button>
-      <button class="chip" onclick="window.quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee and beaches</button>
+      <button class="chip" data-prompt="I want to go to Japan for about 5 days. I love street food and hidden local spots.">Japan · street food</button>
+      <button class="chip" data-prompt="Thinking about Paris for a long weekend. I love art, wine, and staying out late.">Paris · art & nights</button>
+      <button class="chip" data-prompt="I want to explore Colombia. Big into coffee, beaches, and nightlife.">Colombia · coffee & beaches</button>
     </div>`;
   chat.appendChild(welcome);
+  // Re-wire chip buttons after clearChat rebuilds them
+  welcome.querySelectorAll('.chip[data-prompt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('msgInput');
+      if (input) { input.value = btn.getAttribute('data-prompt'); }
+      // autoResize and sendMessage are global from main.js scope via module
+      if (typeof sendMessage === 'function') sendMessage();
+    });
+  });
 }
 
 function restoreChat() {
