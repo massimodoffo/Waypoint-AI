@@ -1,26 +1,23 @@
 // ── trips.js ──────────────────────────────────────────────────────────────────
 // Trip state management: create, delete, switch, sidebar rendering, chat restore
 
-import { saveTrips } from './storage.js';
-import { appendMsg, renderMarkdown, formatDate } from './chat.js';
-import { buildItinCard, buildResultCards, buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML, restoreWeatherCard } from './cards.js';
 
 // Shared mutable state — imported by main.js
-export let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
-export let currentTripId = 0;
-export let tripCounter = 0;
-export let conversationMode = 'chat';
+let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
+let currentTripId = 0;
+let tripCounter = 0;
+let conversationMode = 'chat';
 
-export function setTrips(val) { trips = val; }
-export function setCurrentTripId(val) { currentTripId = val; }
-export function setTripCounter(val) { tripCounter = val; }
-export function setConversationMode(val) { conversationMode = val; }
+function setTrips(val) { trips = val; }
+function setCurrentTripId(val) { currentTripId = val; }
+function setTripCounter(val) { tripCounter = val; }
+function setConversationMode(val) { conversationMode = val; }
 
-export function getCurrentTrip() {
+function getCurrentTrip() {
   return trips.find(t => t.id === currentTripId);
 }
 
-export function newTrip() {
+function newTrip() {
   tripCounter++;
   const t = { id: tripCounter, name: 'New trip', history: [], date: new Date(), _mode: 'chat' };
   trips.push(t);
@@ -31,7 +28,7 @@ export function newTrip() {
   clearChat();
 }
 
-export function deleteTrip(id) {
+function deleteTrip(id) {
   if (trips.length === 1) {
     trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
     currentTripId = 0; tripCounter = 0; conversationMode = 'chat';
@@ -48,7 +45,7 @@ export function deleteTrip(id) {
   restoreChat();
 }
 
-export function renderTripList() {
+function renderTripList() {
   const list = document.getElementById('tripList');
   list.innerHTML = '';
   [...trips].reverse().forEach(t => {
@@ -79,7 +76,7 @@ export function renderTripList() {
   });
 }
 
-export function clearChat() {
+function clearChat() {
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
   const welcome = document.createElement('div');
@@ -97,7 +94,7 @@ export function clearChat() {
   chat.appendChild(welcome);
 }
 
-export function restoreChat() {
+function restoreChat() {
   const trip = trips.find(t => t.id === currentTripId);
   if (!trip || !trip.history || trip.history.length === 0) { clearChat(); return; }
   const chat = document.getElementById('chat');
