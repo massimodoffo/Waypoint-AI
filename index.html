@@ -714,7 +714,6 @@
   }
 
 
-  /* WEATHER CARD */
   .weather-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; }
   .weather-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   .weather-city-name { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; }
@@ -742,6 +741,7 @@
   .wub.active { background: var(--accent); color: #1a1800; border-color: var(--accent); }
   .weather-loading-msg { padding: 2rem; text-align: center; color: var(--text3); font-size: 13px; }
   @media (max-width: 700px) {
+    .weather-card { max-width: calc(100vw - 60px); }
     .weather-stats-grid { grid-template-columns: repeat(2, 1fr); }
     .weather-stat-box:nth-child(2) { border-right: none; }
     .weather-stat-box:nth-child(3) { border-top: 1px solid var(--border); }
@@ -1243,7 +1243,8 @@ async function sendMessage() {
 RESTAURANTS - asking about where to eat, food spots, dinner, lunch, breakfast, cafes, bars, specific cuisines
 HOTELS - asking about where to stay, accommodation, hotels, hostels, Airbnb, neighborhoods to stay in
 ACTIVITIES - asking about things to do, attractions, experiences, tours, museums, beaches, nightlife, day trips, sightseeing
-GENERAL - anything else: packing, weather, transport, visas, budget questions, general travel advice`;
+WEATHER - asking about weather, temperature, rain, forecast, climate, what to pack weather-wise
+GENERAL - anything else: packing tips, transport, visas, budget questions, general travel advice`;
 
       const intent = (await callClaude(intentPrompt, text)).trim().toUpperCase().split('\n')[0];
       setAgentState('orchestrator', 'idle');
@@ -1352,22 +1353,21 @@ price_per_person = realistic USD per person. Use 0 for free activities.`;
 
       } else if (intent === 'WEATHER') {
         setAgentState('local', 'running');
-        const wxRaw = await callClaude(WEATHER_EXTRACT_PROMPT, text + '\n\nTrip context: ' + tripContext);
+        const wxExtractPrompt = 'Extract the city name from this message and return ONLY JSON: {"city":"City name","country":"Country name"}. If no city mentioned, use the trip destination from context.';
+        const wxRaw = await callClaude(wxExtractPrompt, text + '\n\nTrip context: ' + tripContext);
         setAgentState('local', 'idle');
         typingWrap.remove();
         const wxData = safeJSON(wxRaw);
-        const cityName = wxData && wxData.city ? wxData.city : (trip.name || 'the destination');
-        appendMsg('ai', 'Let me pull up the live forecast for ' + cityName + '...');
-        await fetchAndRenderWeather(cityName);
-        trip.history.push({ role: 'assistant', content: 'Showed weather for ' + cityName + '.' });
+        const wxCity = (wxData && wxData.city) ? wxData.city : trip.name;
+        appendMsg('ai', 'Let me pull up the live forecast for ' + wxCity + '...');
+        await fetchAndRenderWeather(wxCity);
+        trip.history.push({ role: 'assistant', content: 'Showed weather for ' + wxCity + '.' });
 
       } else {
         // GENERAL — deeply knowledgeable conversational response
         const followUpPrompt = `You are Waypoint — an expert travel agent who knows this destination inside out. The itinerary has been generated. Now the traveler has a follow-up question.
 
 Answer it like a knowledgeable friend who has been to this place many times. Be specific, practical, and genuinely helpful. Include real details, names, prices, timings wherever relevant. Keep it conversational — no bullet points or headers. 2-4 sentences unless the question warrants more detail.
-
-IMPORTANT: Never include goo.gl or Google Maps short URLs.
 
 Trip context:
 ${tripContext}`;
@@ -1730,102 +1730,90 @@ function renderActivityCards(data) {
 }
 
 
-// ── WEATHER ────────────────────────────────────────────────────────────────────
-function wxCodeInfo(code) {
-  if (code === 0) return { icon: '☀️', desc: 'Clear sky' };
-  if (code <= 2)  return { icon: '🌤️', desc: 'Mainly clear' };
-  if (code === 3) return { icon: '☁️', desc: 'Overcast' };
-  if ([45,48].includes(code)) return { icon: '🌫️', desc: 'Foggy' };
-  if ([51,53,55,61,63,65,80,81,82].includes(code)) return { icon: '🌧️', desc: 'Rain' };
-  if ([71,73,75,77,85,86].includes(code)) return { icon: '❄️', desc: 'Snow' };
-  if ([95,96,99].includes(code)) return { icon: '⛈️', desc: 'Thunderstorm' };
-  return { icon: '🌡️', desc: 'Unknown' };
-}
-function toF(c) { return Math.round(c * 9/5 + 32); }
-function fmtDay(s) { return new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' }); }
 window._wxCache = {};
+function wxInfo(c){if(c===0)return{icon:'☀️',desc:'Clear sky'};if(c<=2)return{icon:'🌤️',desc:'Mainly clear'};if(c===3)return{icon:'☁️',desc:'Overcast'};if([45,48].includes(c))return{icon:'🌫️',desc:'Foggy'};if([51,53,55,61,63,65,80,81,82].includes(c))return{icon:'🌧️',desc:'Rain'};if([71,73,75,77,85,86].includes(c))return{icon:'❄️',desc:'Snow'};if([95,96,99].includes(c))return{icon:'⛈️',desc:'Thunderstorm'};return{icon:'🌡️',desc:'Unknown'};}
+function toF(c){return Math.round(c*9/5+32);}
+function fmtDay(s){return new Date(s+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});}
+
+function renderWxCard(card, id, name, country, cur, daily, unit) {
+  const f = unit === 'F';
+  const temp = f ? toF(cur.temperature_2m) : Math.round(cur.temperature_2m);
+  const feels = f ? toF(cur.apparent_temperature) : Math.round(cur.apparent_temperature);
+  const info = wxInfo(cur.weather_code);
+  const now = new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'});
+
+  // Hero
+  const hero = document.createElement('div'); hero.className = 'weather-hero';
+  hero.innerHTML = '<div><div class="weather-city-name">'+name+'</div><div class="weather-country-name">'+country+'</div></div>' +
+    '<div><div class="weather-temp-big">'+temp+'<span class="weather-temp-unit">°'+unit+'</span></div><div class="weather-condition-text">'+info.icon+' '+info.desc+'</div></div>';
+
+  // Stats
+  const stats = document.createElement('div'); stats.className = 'weather-stats-grid';
+  [['Feels like', feels+'°'+unit], ['Humidity', cur.relative_humidity_2m+'%'], ['Wind', Math.round(cur.wind_speed_10m)+' km/h'], ['Rain now', cur.precipitation+' mm']].forEach(function(s) {
+    const b = document.createElement('div'); b.className = 'weather-stat-box';
+    b.innerHTML = '<div class="weather-stat-lbl">'+s[0]+'</div><div class="weather-stat-num">'+s[1]+'</div>';
+    stats.appendChild(b);
+  });
+
+  // Forecast
+  const fc = document.createElement('div'); fc.className = 'weather-forecast-row';
+  daily.time.forEach(function(date, i) {
+    const hi = f ? toF(daily.temperature_2m_max[i]) : Math.round(daily.temperature_2m_max[i]);
+    const lo = f ? toF(daily.temperature_2m_min[i]) : Math.round(daily.temperature_2m_min[i]);
+    const di = wxInfo(daily.weather_code[i]);
+    const rain = daily.precipitation_probability_max[i];
+    const dc = document.createElement('div'); dc.className = 'weather-day-card' + (i===0?' today':'');
+    dc.innerHTML = '<div class="weather-day-lbl">'+(i===0?'Today':fmtDay(date))+'</div><div class="weather-day-ico">'+di.icon+'</div><div class="weather-day-hi">'+hi+'°</div><div class="weather-day-lo">'+lo+'°</div>'+(rain>20?'<div class="weather-day-rain">💧 '+rain+'%</div>':'');
+    fc.appendChild(dc);
+  });
+
+  // Footer with unit toggle
+  const ft = document.createElement('div'); ft.className = 'weather-footer-row';
+  ft.innerHTML = '<div class="weather-updated-txt">Updated '+now+'</div>';
+  const btns = document.createElement('div'); btns.className = 'weather-unit-btns';
+  ['C','F'].forEach(function(u) {
+    const btn = document.createElement('button'); btn.className = 'wub' + (unit===u?' active':'');
+    btn.textContent = '°'+u;
+    btn.onclick = function() { switchWxUnit(id, u); };
+    btns.appendChild(btn);
+  });
+  ft.appendChild(btns);
+
+  card.innerHTML = '';
+  card.appendChild(hero); card.appendChild(stats); card.appendChild(fc); card.appendChild(ft);
+}
 
 async function fetchAndRenderWeather(cityName) {
-  const chat = document.getElementById('chat');
-  const welcome = document.getElementById('welcome');
+  var chat = document.getElementById('chat');
+  var welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
-
-  const wrap = document.createElement('div');
-  wrap.className = 'msg ai';
+  var wrap = document.createElement('div'); wrap.className = 'msg ai';
   wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
-  const card = document.createElement('div');
-  card.className = 'weather-card';
+  var card = document.createElement('div'); card.className = 'weather-card';
   card.innerHTML = '<div class="weather-loading-msg">⏳ Fetching live weather for ' + cityName + '...</div>';
-  wrap.appendChild(card);
-  chat.appendChild(wrap);
-  chat.scrollTop = chat.scrollHeight;
-
+  wrap.appendChild(card); chat.appendChild(wrap); chat.scrollTop = chat.scrollHeight;
   try {
-    const geoRes = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cityName) + '&count=1&language=en&format=json');
-    const geoData = await geoRes.json();
+    var geoRes = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cityName) + '&count=1&language=en&format=json');
+    var geoData = await geoRes.json();
     if (!geoData.results || !geoData.results.length) throw new Error('City not found: ' + cityName);
-    const { latitude, longitude, name, country } = geoData.results[0];
-
-    const wxRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7');
-    const wx = await wxRes.json();
-    const cur = wx.current;
-    const daily = wx.daily;
-    const id = 'wx-' + Date.now();
-    window._wxCache[id] = { name, country, cur, daily };
+    var loc = geoData.results[0];
+    var wxRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + loc.latitude + '&longitude=' + loc.longitude + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7');
+    var wx = await wxRes.json();
+    var id = 'wx-' + Date.now();
+    window._wxCache[id] = { name: loc.name, country: loc.country, cur: wx.current, daily: wx.daily };
     card.id = id;
-    card.innerHTML = buildWxHTML(id, name, country, cur, daily, 'C');
+    renderWxCard(card, id, loc.name, loc.country, wx.current, wx.daily, 'C');
   } catch(err) {
     card.innerHTML = '<div class="weather-loading-msg" style="color:var(--accent4)">Could not load weather: ' + err.message + '</div>';
   }
   chat.scrollTop = chat.scrollHeight;
 }
 
-function buildWxHTML(id, name, country, cur, daily, unit) {
-  const f = unit === 'F';
-  const temp = f ? toF(cur.temperature_2m) : Math.round(cur.temperature_2m);
-  const feels = f ? toF(cur.apparent_temperature) : Math.round(cur.apparent_temperature);
-  const info = wxCodeInfo(cur.weather_code);
-  const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-  const days = daily.time.map((date, i) => {
-    const hi = f ? toF(daily.temperature_2m_max[i]) : Math.round(daily.temperature_2m_max[i]);
-    const lo = f ? toF(daily.temperature_2m_min[i]) : Math.round(daily.temperature_2m_min[i]);
-    const di = wxCodeInfo(daily.weather_code[i]);
-    const rain = daily.precipitation_probability_max[i];
-    return '<div class="weather-day-card' + (i === 0 ? ' today' : '') + '">' +
-      '<div class="weather-day-lbl">' + (i === 0 ? 'Today' : fmtDay(date)) + '</div>' +
-      '<div class="weather-day-ico">' + di.icon + '</div>' +
-      '<div class="weather-day-hi">' + hi + '°</div>' +
-      '<div class="weather-day-lo">' + lo + '°</div>' +
-      (rain > 20 ? '<div class="weather-day-rain">💧 ' + rain + '%</div>' : '') +
-      '</div>';
-  }).join('');
-
-  return '<div class="weather-hero">' +
-    '<div><div class="weather-city-name">' + name + '</div><div class="weather-country-name">' + country + '</div></div>' +
-    '<div><div class="weather-temp-big">' + temp + '<span class="weather-temp-unit">°' + unit + '</span></div>' +
-    '<div class="weather-condition-text">' + info.icon + ' ' + info.desc + '</div></div>' +
-    '</div>' +
-    '<div class="weather-stats-grid">' +
-    '<div class="weather-stat-box"><div class="weather-stat-lbl">Feels like</div><div class="weather-stat-num">' + feels + '°' + unit + '</div></div>' +
-    '<div class="weather-stat-box"><div class="weather-stat-lbl">Humidity</div><div class="weather-stat-num">' + cur.relative_humidity_2m + '%</div></div>' +
-    '<div class="weather-stat-box"><div class="weather-stat-lbl">Wind</div><div class="weather-stat-num">' + Math.round(cur.wind_speed_10m) + ' km/h</div></div>' +
-    '<div class="weather-stat-box"><div class="weather-stat-lbl">Rain now</div><div class="weather-stat-num">' + cur.precipitation + ' mm</div></div>' +
-    '</div>' +
-    '<div class="weather-forecast-row">' + days + '</div>' +
-    '<div class="weather-footer-row">' +
-    '<div class="weather-updated-txt">Updated ' + now + '</div>' +
-    '<div class="weather-unit-btns">' +
-    '<button class="wub' + (!f ? ' active' : '') + '" onclick="switchWxUnit(\'' + id + '\', \'C\')">°C</button>' +
-    '<button class="wub' + (f ? ' active' : '') + '" onclick="switchWxUnit(\'' + id + '\', \'F\')">°F</button>' +
-    '</div></div>';
-}
-
 function switchWxUnit(id, unit) {
-  const card = document.getElementById(id);
-  const d = window._wxCache[id];
+  var card = document.getElementById(id);
+  var d = window._wxCache[id];
   if (!card || !d) return;
-  card.innerHTML = buildWxHTML(id, d.name, d.country, d.cur, d.daily, unit);
+  renderWxCard(card, id, d.name, d.country, d.cur, d.daily, unit);
 }
 
 </script>
