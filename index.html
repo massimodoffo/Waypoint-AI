@@ -90,23 +90,22 @@
 
 <script type="module" src="js/main.js"></script>
 <script>
-  // Wire events as soon as DOM is ready — works alongside ES module
-  document.addEventListener('DOMContentLoaded', function() {
-    var sendBtn = document.getElementById('sendBtn');
-    var msgInput = document.getElementById('msgInput');
-    var hamburger = document.getElementById('hamburger');
-    var overlay = document.getElementById('sidebarOverlay');
-    var themeLabel = document.getElementById('themeLabel');
-    var newTripBtn = document.getElementById('newTripBtn');
+  // Wait for ES module to expose functions to window, then wire events
+  function wireEvents() {
+    if (typeof window.sendMessage !== 'function') {
+      setTimeout(wireEvents, 50); // retry every 50ms until module is ready
+      return;
+    }
 
-    if (sendBtn) sendBtn.addEventListener('click', function() {
-      if (typeof sendMessage === 'function') sendMessage();
-    });
+    var msgInput = document.getElementById('msgInput');
+    var sendBtn  = document.getElementById('sendBtn');
+
+    if (sendBtn) sendBtn.addEventListener('click', window.sendMessage);
     if (msgInput) {
       msgInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          if (typeof sendMessage === 'function') sendMessage();
+          window.sendMessage();
         }
       });
       msgInput.addEventListener('input', function() {
@@ -114,25 +113,32 @@
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
       });
     }
-    if (hamburger) hamburger.addEventListener('click', function() {
-      if (typeof toggleSidebar === 'function') toggleSidebar();
-    });
-    if (overlay) overlay.addEventListener('click', function() {
-      if (typeof toggleSidebar === 'function') toggleSidebar();
-    });
-    if (themeLabel) themeLabel.addEventListener('click', function() {
-      if (typeof toggleTheme === 'function') toggleTheme();
-    });
-    if (newTripBtn) newTripBtn.addEventListener('click', function() {
-      if (typeof newTrip === 'function') newTrip();
-    });
+
+    var hamburger  = document.getElementById('hamburger');
+    var overlay    = document.getElementById('sidebarOverlay');
+    var themeLabel = document.getElementById('themeLabel');
+    var newTripBtn = document.getElementById('newTripBtn');
+
+    if (hamburger)  hamburger.addEventListener('click',  window.toggleSidebar);
+    if (overlay)    overlay.addEventListener('click',    window.toggleSidebar);
+    if (themeLabel) themeLabel.addEventListener('click', window.toggleTheme);
+    if (newTripBtn) newTripBtn.addEventListener('click', window.newTrip);
+
     document.querySelectorAll('.chip[data-prompt]').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        if (msgInput) { msgInput.value = btn.getAttribute('data-prompt'); }
-        if (typeof sendMessage === 'function') sendMessage();
+        var input = document.getElementById('msgInput');
+        if (input) input.value = btn.getAttribute('data-prompt');
+        window.sendMessage();
       });
     });
-  });
+  }
+
+  // Start polling once DOM is parsed
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireEvents);
+  } else {
+    wireEvents();
+  }
 </script>
 
 </body>
