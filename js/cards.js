@@ -1,10 +1,9 @@
 // ── cards.js ──────────────────────────────────────────────────────────────────
 // All card builders: itinerary, results, restaurant, hotel, activity
 
-import { escHtml, renderMarkdown, appendMsg } from './chat.js';
 
 // ── ITINERARY CARD ────────────────────────────────────────────────────────────
-export function buildItinCard(itin, dest, dur) {
+function buildItinCard(itin, dest, dur) {
   const div = document.createElement('div');
   div.className = 'itin-full';
   div.innerHTML = `
@@ -33,7 +32,7 @@ export function buildItinCard(itin, dest, dur) {
 }
 
 // ── RESULTS CARDS (budget, hotels, local) ────────────────────────────────────
-export function buildResultCards(budget, hotels, local) {
+function buildResultCards(budget, hotels, local) {
   const grid = document.createElement('div');
   grid.className = 'result-grid';
 
@@ -101,7 +100,7 @@ export function buildResultCards(budget, hotels, local) {
 }
 
 // ── SHARED CARD HTML BUILDERS ─────────────────────────────────────────────────
-export function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
+function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
   return `
     <div class="resto-header">
       <div class="resto-name-row">
@@ -135,7 +134,7 @@ export function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
     </div>`;
 }
 
-export function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
+function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
   const amenityHtml = (h.amenities || []).map(a => `<span class="hotel-amenity">${escHtml(a)}</span>`).join('');
   return `
     <div class="hotel-header">
@@ -176,7 +175,7 @@ export function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
     </div>`;
 }
 
-export function buildActivityCardHTML(a, mapsUrl, stars) {
+function buildActivityCardHTML(a, mapsUrl, stars) {
   const tagHtml = (a.tags || []).map(t => `<span class="activity-tag">${escHtml(t)}</span>`).join('');
   const costText = a.price_per_person === 0 ? 'Free' : `$${a.price_per_person} <span>per person</span>`;
   return `
@@ -211,7 +210,7 @@ export function buildActivityCardHTML(a, mapsUrl, stars) {
 }
 
 // ── RENDER FUNCTIONS ──────────────────────────────────────────────────────────
-export function renderRestaurantCards(data) {
+function renderRestaurantCards(data) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
@@ -239,7 +238,7 @@ export function renderRestaurantCards(data) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-export function renderHotelCards(data) {
+function renderHotelCards(data) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
@@ -267,7 +266,7 @@ export function renderHotelCards(data) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-export function renderActivityCards(data) {
+function renderActivityCards(data) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
@@ -323,7 +322,7 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 };
 
 // ── DIRECTIONS CARD ───────────────────────────────────────────────────────────
-export function renderDirectionsCard(data) {
+function renderDirectionsCard(data) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
@@ -455,7 +454,7 @@ function formatDay(dateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short' });
 }
 
-export async function fetchAndRenderWeather(cityData, trip) {
+async function fetchAndRenderWeather(cityData, trip) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
@@ -594,7 +593,7 @@ window.switchWeatherUnit = function(cardId, unit) {
 };
 
 // Version for restoring from trip history
-export async function restoreWeatherCard(cityData) {
+async function restoreWeatherCard(cityData) {
   // Just re-fetch live — weather should always be fresh anyway
   await fetchAndRenderWeather(cityData, null);
 }
