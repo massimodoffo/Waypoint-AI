@@ -3,7 +3,7 @@
 
 import { saveTrips } from './storage.js';
 import { appendMsg, renderMarkdown, formatDate } from './chat.js';
-import { buildItinCard, buildResultCards, buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML } from './cards.js';
+import { buildItinCard, buildResultCards, buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML, restoreWeatherCard } from './cards.js';
 
 // Shared mutable state — imported by main.js
 export let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
@@ -167,6 +167,9 @@ export function restoreChat() {
           grid.appendChild(card);
         });
         wrap.appendChild(grid); chat.appendChild(wrap);
+      } else if (m.cardType === 'weather' && m.cardData) {
+        appendMsg('ai', 'Restoring live weather for ' + m.cardData.city + '...');
+        restoreWeatherCard(m.cardData);
       } else if (m.cardType === 'directions' && m.cardData) {
         const wrap = document.createElement('div');
         wrap.className = 'msg ai';
