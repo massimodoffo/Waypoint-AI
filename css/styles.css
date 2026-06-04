@@ -253,6 +253,33 @@ textarea::placeholder { color: var(--text3); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }
 
+
+/* ── DIRECTIONS CARD ─────────────────────────────────────────────────────────── */
+.directions-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; }
+.directions-header { padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.directions-route { flex: 1; }
+.directions-from { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.directions-to { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); font-weight: 500; }
+.directions-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.directions-dot.from { background: var(--text3); border: 1px solid var(--border2); }
+.directions-dot.to { background: var(--accent); }
+.directions-line { width: 1px; height: 14px; background: var(--border2); margin-left: 3.5px; margin-bottom: 2px; }
+.directions-mode-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); flex-shrink: 0; }
+.directions-context { padding: 0.65rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.5; border-bottom: 1px solid var(--border); }
+.directions-map { width: 100%; height: 320px; border: none; display: block; }
+.directions-footer { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+.directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+.directions-mode-btns { display: flex; gap: 4px; }
+.dmb { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.dmb:hover { background: var(--bg3); color: var(--text); }
+.dmb.active { background: var(--accent); color: #1a1800; border-color: var(--accent); }
+
+@media (max-width: 700px) {
+  .directions-card { max-width: calc(100vw - 60px); }
+  .directions-map { height: 240px; }
+}
+
 /* ── MOBILE ──────────────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   nav { padding: 0.9rem 1rem; }
