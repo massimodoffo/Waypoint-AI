@@ -431,3 +431,170 @@ window.switchDirectionsMode = function(iframeId, origin, destination, mode, btn)
   btn.classList.add('active');
 };
 
+
+// ── WEATHER CARD ──────────────────────────────────────────────────────────────
+// WMO weather code → emoji + description
+function weatherCodeInfo(code) {
+  if (code === 0) return { icon: '☀️', desc: 'Clear sky' };
+  if (code === 1) return { icon: '🌤️', desc: 'Mainly clear' };
+  if (code === 2) return { icon: '⛅', desc: 'Partly cloudy' };
+  if (code === 3) return { icon: '☁️', desc: 'Overcast' };
+  if ([45,48].includes(code)) return { icon: '🌫️', desc: 'Foggy' };
+  if ([51,53,55].includes(code)) return { icon: '🌦️', desc: 'Drizzle' };
+  if ([61,63,65].includes(code)) return { icon: '🌧️', desc: 'Rain' };
+  if ([71,73,75,77].includes(code)) return { icon: '❄️', desc: 'Snow' };
+  if ([80,81,82].includes(code)) return { icon: '🌦️', desc: 'Rain showers' };
+  if ([85,86].includes(code)) return { icon: '🌨️', desc: 'Snow showers' };
+  if ([95,96,99].includes(code)) return { icon: '⛈️', desc: 'Thunderstorm' };
+  return { icon: '🌡️', desc: 'Unknown' };
+}
+
+function celsiusToF(c) { return Math.round(c * 9/5 + 32); }
+function formatDay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+export async function fetchAndRenderWeather(cityData, trip) {
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  // Show loading card while fetching
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
+  const loadingCard = document.createElement('div');
+  loadingCard.className = 'weather-card';
+  loadingCard.innerHTML = '<div class="weather-loading">⏳ Fetching live weather for ' + escHtml(cityData.city) + '...</div>';
+  wrap.appendChild(loadingCard);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    // Step 1: Geocode city name → lat/lng using Open-Meteo geocoding (free, no key)
+    const geoRes = await fetch(
+      'https://geocoding-api.open-meteo.com/v1/search?name=' +
+      encodeURIComponent(cityData.city) + '&count=1&language=en&format=json'
+    );
+    const geoData = await geoRes.json();
+    if (!geoData.results || geoData.results.length === 0) {
+      throw new Error('Could not find location: ' + cityData.city);
+    }
+    const { latitude, longitude, name, country } = geoData.results[0];
+
+    // Step 2: Fetch 7-day forecast from Open-Meteo (free, no key)
+    const wxRes = await fetch(
+      'https://api.open-meteo.com/v1/forecast?' +
+      'latitude=' + latitude + '&longitude=' + longitude +
+      '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum' +
+      '&timezone=auto&forecast_days=7'
+    );
+    const wx = await wxRes.json();
+    const cur = wx.current;
+    const daily = wx.daily;
+    const curInfo = weatherCodeInfo(cur.weather_code);
+
+    // Build card HTML
+    const cardId = 'wx-' + Date.now();
+    loadingCard.innerHTML = buildWeatherHTML(cardId, name, country, cur, daily, curInfo, 'C');
+
+    // Cache for unit switching
+    window._weatherCache = window._weatherCache || {};
+    window._weatherCache[cardId] = { city: name, country, cur, daily };
+
+    // Save to trip history
+    if (trip) {
+      trip.history.push({ role: 'assistant', content: 'Showed weather for ' + name + '.', cardType: 'weather', cardData: { city: name, country } });
+    }
+
+  } catch (err) {
+    loadingCard.innerHTML = '<div class="weather-loading" style="color:var(--accent4)">Could not load weather: ' + escHtml(err.message) + '</div>';
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function buildWeatherHTML(cardId, city, country, cur, daily, curInfo, unit) {
+  const isF = unit === 'F';
+  const temp = isF ? celsiusToF(cur.temperature_2m) : Math.round(cur.temperature_2m);
+  const feelsLike = isF ? celsiusToF(cur.apparent_temperature) : Math.round(cur.apparent_temperature);
+  const wind = Math.round(cur.wind_speed_10m);
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  const dayCards = daily.time.map((date, i) => {
+    const hi = isF ? celsiusToF(daily.temperature_2m_max[i]) : Math.round(daily.temperature_2m_max[i]);
+    const lo = isF ? celsiusToF(daily.temperature_2m_min[i]) : Math.round(daily.temperature_2m_min[i]);
+    const info = weatherCodeInfo(daily.weather_code[i]);
+    const rain = daily.precipitation_probability_max[i];
+    const isToday = i === 0;
+    return \`
+      <div class="weather-day\${isToday ? '" style="border-color:var(--accent);background:rgba(200,184,122,0.06)' : ''}">
+        <div class="weather-day-name">\${isToday ? 'Today' : formatDay(date)}</div>
+        <div class="weather-day-icon">\${info.icon}</div>
+        <div class="weather-day-high">\${hi}°</div>
+        <div class="weather-day-low">\${lo}°</div>
+        \${rain > 20 ? \`<div class="weather-day-rain">💧 \${rain}%</div>\` : ''}
+      </div>\`;
+  }).join('');
+
+  return \`
+    <div class="weather-hero">
+      <div class="weather-location">
+        <div class="weather-city">\${escHtml(city)}</div>
+        <div class="weather-country">\${escHtml(country)}</div>
+      </div>
+      <div class="weather-current">
+        <div class="weather-temp">\${temp}<span class="weather-temp-unit">°\${unit}</span></div>
+        <div class="weather-condition">\${curInfo.icon} \${curInfo.desc}</div>
+      </div>
+    </div>
+    <div class="weather-stats">
+      <div class="weather-stat">
+        <div class="weather-stat-label">Feels like</div>
+        <div class="weather-stat-val">\${feelsLike}°\${unit}</div>
+      </div>
+      <div class="weather-stat">
+        <div class="weather-stat-label">Humidity</div>
+        <div class="weather-stat-val">\${cur.relative_humidity_2m}%</div>
+      </div>
+      <div class="weather-stat">
+        <div class="weather-stat-label">Wind</div>
+        <div class="weather-stat-val">\${wind} km/h</div>
+      </div>
+      <div class="weather-stat">
+        <div class="weather-stat-label">Rain now</div>
+        <div class="weather-stat-val">\${cur.precipitation} mm</div>
+      </div>
+    </div>
+    <div class="weather-forecast">\${dayCards}</div>
+    <div class="weather-footer">
+      <div class="weather-updated">Updated \${timeStr}</div>
+      <div class="weather-unit-toggle">
+        <button class="wut\${!isF ? ' active' : ''}" onclick="switchWeatherUnit('\${cardId}', 'C')">°C</button>
+        <button class="wut\${isF ? ' active' : ''}" onclick="switchWeatherUnit('\${cardId}', 'F')">°F</button>
+      </div>
+    </div>\`;
+}
+
+// Store raw data on card element for unit switching
+window._weatherCache = window._weatherCache || {};
+
+window.switchWeatherUnit = function(cardId, unit) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  const cached = window._weatherCache[cardId];
+  if (!cached) return;
+  const { city, country, cur, daily } = cached;
+  const curInfo = weatherCodeInfo(cur.weather_code);
+  card.innerHTML = buildWeatherHTML(cardId, city, country, cur, daily, curInfo, unit);
+  // Re-cache since innerHTML was replaced
+  window._weatherCache[cardId] = { city, country, cur, daily };
+};
+
+// Version for restoring from trip history
+export async function restoreWeatherCard(cityData) {
+  // Just re-fetch live — weather should always be fresh anyway
+  await fetchAndRenderWeather(cityData, null);
+}
