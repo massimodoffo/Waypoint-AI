@@ -1,23 +1,17 @@
 // ── main.js ───────────────────────────────────────────────────────────────────
 // App entry point: init, sendMessage, generateItinerary, event wiring
 
-import { initTheme, toggleTheme, toggleSidebar } from './theme.js';
-import { saveTrips, loadTrips } from './storage.js';
-import {
   appendMsg, showTyping, removeTyping,
   setAgentState, resetAgents, buildAgentActivityEl, updateTask,
   autoResize, safeJSON, renderMarkdown
 } from './chat.js';
-import {
   buildItinCard, buildResultCards,
   renderRestaurantCards, renderHotelCards, renderActivityCards, renderDirectionsCard, fetchAndRenderWeather
 } from './cards.js';
-import {
   trips, currentTripId, tripCounter, conversationMode,
   setTrips, setCurrentTripId, setTripCounter, setConversationMode,
   getCurrentTrip, newTrip, renderTripList, clearChat, restoreChat
 } from './trips.js';
-import {
   callClaude,
   CHAT_PROMPT, ORCHESTRATOR_PROMPT,
   ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
@@ -47,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── INPUT HELPERS ─────────────────────────────────────────────────────────────
-export function quickStart(text) {
+function quickStart(text) {
   const input = document.getElementById('msgInput');
   input.value = text;
   autoResize(input);
@@ -325,13 +319,4 @@ async function fallbackReply(trip, text) {
   }
 }
 
-// ── GLOBAL FUNCTION EXPOSURE ──────────────────────────────────────────────────
-// Placed at end of file so all functions are defined before being assigned.
-// ES modules don't hoist async functions, so this must come after declarations.
-window.toggleTheme   = toggleTheme;
-window.toggleSidebar = toggleSidebar;
-window.newTrip       = newTrip;
-window.sendMessage   = sendMessage;
-window.handleKey     = handleKey;
-window.autoResize    = autoResize;
-window.quickStart    = quickStart;
+// All functions are global — no window assignment needed
