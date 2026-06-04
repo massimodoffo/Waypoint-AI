@@ -10,7 +10,7 @@ import {
 } from './chat.js';
 import {
   buildItinCard, buildResultCards,
-  renderRestaurantCards, renderHotelCards, renderActivityCards
+  renderRestaurantCards, renderHotelCards, renderActivityCards, renderDirectionsCard
 } from './cards.js';
 import {
   trips, currentTripId, tripCounter, conversationMode,
@@ -21,7 +21,7 @@ import {
   callClaude,
   CHAT_PROMPT, ORCHESTRATOR_PROMPT,
   ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
-  INTENT_PROMPT, RESTAURANT_SPECIALIST_PROMPT,
+  INTENT_PROMPT, DIRECTIONS_PROMPT, RESTAURANT_SPECIALIST_PROMPT,
   HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
 } from './agents.js';
 
@@ -164,6 +164,23 @@ async function sendMessage() {
           trip.history.push({ role: 'assistant', content: 'Showed activity recommendations.', cardType: 'activities', _id: msgId, cardData: activityData });
           saveTrips(trips, currentTripId, tripCounter);
           renderActivityCards(activityData);
+        } else { await fallbackReply(trip, text); }
+
+      } else if (intent === 'DIRECTIONS') {
+        setAgentState('orchestrator', 'running');
+        const dirRaw = await callClaude(DIRECTIONS_PROMPT, text);
+        setAgentState('orchestrator', 'idle');
+        removeTyping();
+        const dirData = safeJSON(dirRaw);
+        if (dirData && dirData.destination) {
+          // If no origin extracted, ask the user for one
+          if (!dirData.origin || dirData.origin.trim() === '') {
+            appendMsg('ai', `Where would you like directions from? For example: "from my hotel" or "from Times Square".`);
+          } else {
+            trip.history.push({ role: 'assistant', content: `Showing directions from ${dirData.origin_label || dirData.origin} to ${dirData.destination_label || dirData.destination}.`, cardType: 'directions', cardData: dirData });
+            saveTrips(trips, currentTripId, tripCounter);
+            renderDirectionsCard(dirData);
+          }
         } else { await fallbackReply(trip, text); }
 
       } else {
