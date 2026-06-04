@@ -1,7 +1,7 @@
 // ── theme.js ──────────────────────────────────────────────────────────────────
 // Handles light/dark mode toggle and system preference detection
 
-export function toggleTheme() {
+function toggleTheme() {
   const root = document.documentElement;
   const isLight = root.classList.toggle('light');
   root.classList.remove(isLight ? 'dark' : 'light');
@@ -9,12 +9,12 @@ export function toggleTheme() {
   localStorage.setItem('wp_theme', isLight ? 'light' : 'dark');
 }
 
-export function toggleSidebar() {
+function toggleSidebar() {
   document.querySelector('aside').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('visible');
 }
 
-export function initTheme() {
+function initTheme() {
   const root = document.documentElement;
   const isMobile = window.matchMedia('(max-width: 700px)').matches;
   const saved = localStorage.getItem('wp_theme');
