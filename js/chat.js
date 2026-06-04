@@ -1,7 +1,7 @@
 // ── chat.js ───────────────────────────────────────────────────────────────────
 // Chat UI utilities: message rendering, markdown, typing indicators
 
-export function escHtml(s) {
+function escHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -15,7 +15,7 @@ function fixMapsUrl(url) {
   return url;
 }
 
-export function renderMarkdown(text) {
+function renderMarkdown(text) {
   let s = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -49,7 +49,7 @@ export function renderMarkdown(text) {
   return s;
 }
 
-export function appendMsg(role, content) {
+function appendMsg(role, content) {
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
   const chat = document.getElementById('chat');
@@ -65,7 +65,7 @@ export function appendMsg(role, content) {
   return wrap;
 }
 
-export function showTyping() {
+function showTyping() {
   const chat = document.getElementById('chat');
   const wrap = document.createElement('div');
   wrap.className = 'msg ai';
@@ -75,12 +75,12 @@ export function showTyping() {
   chat.scrollTop = chat.scrollHeight;
 }
 
-export function removeTyping() {
+function removeTyping() {
   const t = document.getElementById('typing');
   if (t) t.remove();
 }
 
-export function setAgentState(agent, state) {
+function setAgentState(agent, state) {
   const dot = document.getElementById('ad-' + agent);
   const pill = document.getElementById('ap-' + agent);
   if (!dot) return;
@@ -88,11 +88,11 @@ export function setAgentState(agent, state) {
   pill.classList.toggle('running', state === 'running');
 }
 
-export function resetAgents() {
+function resetAgents() {
   ['orchestrator', 'itinerary', 'budget', 'hotels', 'local'].forEach(a => setAgentState(a, 'idle'));
 }
 
-export function buildAgentActivityEl(tasks) {
+function buildAgentActivityEl(tasks) {
   const div = document.createElement('div');
   div.className = 'agent-activity';
   div.innerHTML = `<div class="agent-activity-header"><span style="color:var(--accent)">◈</span> Agent pipeline</div><div class="agent-tasks" id="atasks"></div>`;
@@ -107,7 +107,7 @@ export function buildAgentActivityEl(tasks) {
   return div;
 }
 
-export function updateTask(idx, state) {
+function updateTask(idx, state) {
   const row = document.getElementById('at-' + idx);
   const badge = document.getElementById('atb-' + idx);
   if (!row || !badge) return;
@@ -116,12 +116,12 @@ export function updateTask(idx, state) {
   badge.textContent = state === 'done' ? 'done' : state === 'running' ? 'running…' : 'waiting';
 }
 
-export function autoResize(el) {
+function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-export function formatDate(d) {
+function formatDate(d) {
   const now = new Date();
   const diff = (now - d) / 1000;
   if (diff < 60) return 'Just now';
@@ -129,6 +129,6 @@ export function formatDate(d) {
   return d.toLocaleDateString();
 }
 
-export function safeJSON(str) {
+function safeJSON(str) {
   try { return JSON.parse(str.replace(/```json|```/g, '').trim()); } catch { return null; }
 }
