@@ -1,6 +1,8 @@
 // ── cards.js ──────────────────────────────────────────────────────────────────
 // All card builders: itinerary, results, restaurant, hotel, activity
 
+import { escHtml, appendMsg } from './chat.js';
+
 
 // ── ITINERARY CARD ────────────────────────────────────────────────────────────
 function buildItinCard(itin, dest, dur) {
@@ -337,20 +339,19 @@ function renderDirectionsCard(data) {
   const modeIcon = { driving: '🚗', walking: '🚶', transit: '🚇' };
   const modeLabel = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
 
-  // Build Google Maps embed URL
+  // Build Google Maps embed URL.
+  // NOTE: the www.google.com/maps?...&output=embed host now returns
+  // X-Frame-Options: DENY and refuses to load in an iframe. The maps.google.com
+  // host still serves an embeddable (keyless) map, so we use that instead.
   function buildEmbedUrl(origin, destination, mode) {
-    const base = 'https://www.google.com/maps/embed/v1/directions';
-    const key = 'AIzaSyD-placeholder'; // No key needed for basic embed
-    const params = new URLSearchParams({
-      origin: origin || destination,
-      destination: destination,
-      mode: mode,
-    });
-    // Use the non-API embed which doesn't need a key
-    const mapsMode = mode === 'transit' ? 'transit' : mode === 'walking' ? 'walking' : 'driving';
-    const originEnc = encodeURIComponent(origin || destination);
     const destEnc = encodeURIComponent(destination);
-    return `https://www.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd'}&output=embed`;
+    if (!origin || origin.trim() === '') {
+      // Destination only → show a place/search map
+      return `https://maps.google.com/maps?q=${destEnc}&z=14&output=embed`;
+    }
+    const originEnc = encodeURIComponent(origin);
+    const dirflg = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
+    return `https://maps.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${dirflg}&output=embed`;
   }
 
   function buildOpenUrl(origin, destination, mode) {
@@ -416,7 +417,7 @@ window.switchDirectionsMode = function(iframeId, origin, destination, mode, btn)
   const modeFlag = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
   const originEnc = encodeURIComponent(origin || destination);
   const destEnc = encodeURIComponent(destination);
-  iframe.src = `https://www.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${modeFlag}&output=embed`;
+  iframe.src = `https://maps.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${modeFlag}&output=embed`;
 
   // Update open-in-maps link
   const footer = iframe.nextElementSibling;
@@ -453,13 +454,11 @@ function formatDay(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-US', { weekday: 'short' });
 }
-
 async function fetchAndRenderWeather(cityData, trip) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.remove();
 
-  // Show loading card while fetching
   const wrap = document.createElement('div');
   wrap.className = 'msg ai';
   wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
@@ -471,7 +470,7 @@ async function fetchAndRenderWeather(cityData, trip) {
   chat.scrollTop = chat.scrollHeight;
 
   try {
-    // Step 1: Geocode city name → lat/lng using Open-Meteo geocoding (free, no key)
+    // 1) Geocode city name → lat/lng (Open-Meteo geocoding, free, no key)
     const geoRes = await fetch(
       'https://geocoding-api.open-meteo.com/v1/search?name=' +
       encodeURIComponent(cityData.city) + '&count=1&language=en&format=json'
@@ -482,118 +481,158 @@ async function fetchAndRenderWeather(cityData, trip) {
     }
     const { latitude, longitude, name, country } = geoData.results[0];
 
-    // Step 2: Fetch 7-day forecast from Open-Meteo (free, no key)
+    // 2) 7-day forecast. We pull per-day aggregates (feels-like, wind, rain)
+    //    so any day can be inspected individually — not just today.
     const wxRes = await fetch(
       'https://api.open-meteo.com/v1/forecast?' +
       'latitude=' + latitude + '&longitude=' + longitude +
       '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation' +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,' +
+      'wind_speed_10m_max,precipitation_probability_max,precipitation_sum' +
       '&timezone=auto&forecast_days=7'
     );
     const wx = await wxRes.json();
-    const cur = wx.current;
-    const daily = wx.daily;
-    const curInfo = weatherCodeInfo(cur.weather_code);
 
-    // Build card HTML
     const cardId = 'wx-' + Date.now();
-    loadingCard.innerHTML = buildWeatherHTML(cardId, name, country, cur, daily, curInfo, 'C');
+    loadingCard.id = cardId;
 
-    // Cache for unit switching
+    // Cache everything needed to re-render on day / unit changes
     window._weatherCache = window._weatherCache || {};
-    window._weatherCache[cardId] = { city: name, country, cur, daily };
+    window._weatherCache[cardId] = {
+      city: name, country,
+      cur: wx.current, daily: wx.daily,
+      unit: 'C', selectedDay: 0
+    };
 
-    // Save to trip history
+    loadingCard.innerHTML = buildWeatherHTML(cardId);
+
     if (trip) {
       trip.history.push({ role: 'assistant', content: 'Showed weather for ' + name + '.', cardType: 'weather', cardData: { city: name, country } });
     }
-
   } catch (err) {
     loadingCard.innerHTML = '<div class="weather-loading" style="color:var(--accent4)">Could not load weather: ' + escHtml(err.message) + '</div>';
   }
   chat.scrollTop = chat.scrollHeight;
 }
 
-function buildWeatherHTML(cardId, city, country, cur, daily, curInfo, unit) {
+function formatLongDay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+// Build the entire card from cached state. Driven by cardId so day/unit
+// toggles are a one-line state change + re-render.
+function buildWeatherHTML(cardId) {
+  const data = window._weatherCache[cardId];
+  if (!data) return '';
+  const { city, country, cur, daily, unit, selectedDay } = data;
   const isF = unit === 'F';
-  const temp = isF ? celsiusToF(cur.temperature_2m) : Math.round(cur.temperature_2m);
-  const feelsLike = isF ? celsiusToF(cur.apparent_temperature) : Math.round(cur.apparent_temperature);
-  const wind = Math.round(cur.wind_speed_10m);
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const conv = (c) => (isF ? celsiusToF(c) : Math.round(c));
+  const isToday = selectedDay === 0;
+
+  const dayInfo = weatherCodeInfo(daily.weather_code[selectedDay]);
+  const heroTemp = isToday ? conv(cur.temperature_2m) : conv(daily.temperature_2m_max[selectedDay]);
+  const heroLabel = isToday ? 'Now' : formatLongDay(daily.time[selectedDay]);
+  const hiSel = conv(daily.temperature_2m_max[selectedDay]);
+  const loSel = conv(daily.temperature_2m_min[selectedDay]);
+
+  // Per-day stat boxes — today uses live "current" readings, other days use
+  // the daily aggregates we requested above.
+  const stats = isToday
+    ? [
+        ['Feels like', conv(cur.apparent_temperature) + '°' + unit],
+        ['Humidity', cur.relative_humidity_2m + '%'],
+        ['Wind', Math.round(cur.wind_speed_10m) + ' km/h'],
+        ['Rain now', cur.precipitation + ' mm'],
+      ]
+    : [
+        ['Feels like', conv(daily.apparent_temperature_max[selectedDay]) + '°' + unit],
+        ['Rain chance', (daily.precipitation_probability_max[selectedDay] ?? 0) + '%'],
+        ['Wind', Math.round(daily.wind_speed_10m_max[selectedDay]) + ' km/h'],
+        ['Precip', (daily.precipitation_sum[selectedDay] ?? 0) + ' mm'],
+      ];
+
+  const statsHtml = stats.map(s => `
+      <div class="weather-stat">
+        <div class="weather-stat-label">${s[0]}</div>
+        <div class="weather-stat-val">${s[1]}</div>
+      </div>`).join('');
 
   const dayCards = daily.time.map((date, i) => {
-    const hi = isF ? celsiusToF(daily.temperature_2m_max[i]) : Math.round(daily.temperature_2m_max[i]);
-    const lo = isF ? celsiusToF(daily.temperature_2m_min[i]) : Math.round(daily.temperature_2m_min[i]);
+    const hi = conv(daily.temperature_2m_max[i]);
+    const lo = conv(daily.temperature_2m_min[i]);
     const info = weatherCodeInfo(daily.weather_code[i]);
     const rain = daily.precipitation_probability_max[i];
-    const isToday = i === 0;
-    return \`
-      <div class="weather-day\${isToday ? '" style="border-color:var(--accent);background:rgba(200,184,122,0.06)' : ''}">
-        <div class="weather-day-name">\${isToday ? 'Today' : formatDay(date)}</div>
-        <div class="weather-day-icon">\${info.icon}</div>
-        <div class="weather-day-high">\${hi}°</div>
-        <div class="weather-day-low">\${lo}°</div>
-        \${rain > 20 ? \`<div class="weather-day-rain">💧 \${rain}%</div>\` : ''}
-      </div>\`;
+    const cls = 'weather-day' + (i === selectedDay ? ' selected' : '');
+    return `
+      <button type="button" class="${cls}" onclick="selectWeatherDay('${cardId}', ${i})">
+        <div class="weather-day-name">${i === 0 ? 'Today' : formatDay(date)}</div>
+        <div class="weather-day-icon">${info.icon}</div>
+        <div class="weather-day-high">${hi}°</div>
+        <div class="weather-day-low">${lo}°</div>
+        ${rain > 20 ? `<div class="weather-day-rain">💧 ${rain}%</div>` : ''}
+      </button>`;
   }).join('');
 
-  return \`
+  const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  return `
     <div class="weather-hero">
       <div class="weather-location">
-        <div class="weather-city">\${escHtml(city)}</div>
-        <div class="weather-country">\${escHtml(country)}</div>
+        <div class="weather-city">${escHtml(city)}</div>
+        <div class="weather-country">${escHtml(country)}</div>
+        <div class="weather-sel-day">${heroLabel}</div>
       </div>
       <div class="weather-current">
-        <div class="weather-temp">\${temp}<span class="weather-temp-unit">°\${unit}</span></div>
-        <div class="weather-condition">\${curInfo.icon} \${curInfo.desc}</div>
+        <div class="weather-temp">${heroTemp}<span class="weather-temp-unit">°${unit}</span></div>
+        <div class="weather-condition">${dayInfo.icon} ${dayInfo.desc}</div>
+        <div class="weather-hilo">H ${hiSel}° · L ${loSel}°</div>
       </div>
     </div>
-    <div class="weather-stats">
-      <div class="weather-stat">
-        <div class="weather-stat-label">Feels like</div>
-        <div class="weather-stat-val">\${feelsLike}°\${unit}</div>
-      </div>
-      <div class="weather-stat">
-        <div class="weather-stat-label">Humidity</div>
-        <div class="weather-stat-val">\${cur.relative_humidity_2m}%</div>
-      </div>
-      <div class="weather-stat">
-        <div class="weather-stat-label">Wind</div>
-        <div class="weather-stat-val">\${wind} km/h</div>
-      </div>
-      <div class="weather-stat">
-        <div class="weather-stat-label">Rain now</div>
-        <div class="weather-stat-val">\${cur.precipitation} mm</div>
-      </div>
-    </div>
-    <div class="weather-forecast">\${dayCards}</div>
+    <div class="weather-stats">${statsHtml}</div>
+    <div class="weather-forecast">${dayCards}</div>
     <div class="weather-footer">
-      <div class="weather-updated">Updated \${timeStr}</div>
+      <div class="weather-updated">Updated ${now} · tap a day for details</div>
       <div class="weather-unit-toggle">
-        <button class="wut\${!isF ? ' active' : ''}" onclick="switchWeatherUnit('\${cardId}', 'C')">°C</button>
-        <button class="wut\${isF ? ' active' : ''}" onclick="switchWeatherUnit('\${cardId}', 'F')">°F</button>
+        <button class="wut${!isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'C')">°C</button>
+        <button class="wut${isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'F')">°F</button>
       </div>
-    </div>\`;
+    </div>`;
 }
 
-// Store raw data on card element for unit switching
 window._weatherCache = window._weatherCache || {};
 
-window.switchWeatherUnit = function(cardId, unit) {
+function rerenderWeather(cardId) {
   const card = document.getElementById(cardId);
-  if (!card) return;
-  const cached = window._weatherCache[cardId];
-  if (!cached) return;
-  const { city, country, cur, daily } = cached;
-  const curInfo = weatherCodeInfo(cur.weather_code);
-  card.innerHTML = buildWeatherHTML(cardId, city, country, cur, daily, curInfo, unit);
-  // Re-cache since innerHTML was replaced
-  window._weatherCache[cardId] = { city, country, cur, daily };
+  if (!card || !window._weatherCache[cardId]) return;
+  card.innerHTML = buildWeatherHTML(cardId);
+}
+
+// Called from inline onclick on each forecast day — retarget the card to that day
+window.selectWeatherDay = function(cardId, dayIndex) {
+  const data = window._weatherCache[cardId];
+  if (!data) return;
+  data.selectedDay = dayIndex;
+  rerenderWeather(cardId);
 };
 
-// Version for restoring from trip history
+window.switchWeatherUnit = function(cardId, unit) {
+  const data = window._weatherCache[cardId];
+  if (!data) return;
+  data.unit = unit;
+  rerenderWeather(cardId);
+};
+
+// Restoring from trip history → re-fetch live (weather should always be fresh)
 async function restoreWeatherCard(cityData) {
-  // Just re-fetch live — weather should always be fresh anyway
   await fetchAndRenderWeather(cityData, null);
 }
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export {
+  buildItinCard, buildResultCards,
+  buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML,
+  renderRestaurantCards, renderHotelCards, renderActivityCards,
+  renderDirectionsCard,
+  fetchAndRenderWeather, restoreWeatherCard
+};
