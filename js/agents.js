@@ -192,3 +192,12 @@ Return ONLY a JSON object (no markdown, no preamble):
   ]
 }
 price_per_person = realistic USD per person. Use 0 for free activities.`;
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export {
+  callClaude,
+  CHAT_PROMPT, ORCHESTRATOR_PROMPT,
+  ITINERARY_PROMPT, BUDGET_PROMPT, HOTELS_PROMPT, LOCAL_PROMPT,
+  INTENT_PROMPT, DIRECTIONS_PROMPT, WEATHER_PROMPT,
+  RESTAURANT_SPECIALIST_PROMPT, HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
+};
