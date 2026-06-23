@@ -312,6 +312,11 @@ textarea::placeholder { color: var(--text3); }
 .directions-mode-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); flex-shrink: 0; }
 .directions-context { padding: 0.65rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.5; border-bottom: 1px solid var(--border); }
 .directions-map { width: 100%; height: 320px; border: none; display: block; }
+.directions-map-cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 180px; text-decoration: none; background: linear-gradient(135deg, var(--bg3), var(--bg2)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: background 0.2s; }
+.directions-map-cta:hover { background: linear-gradient(135deg, var(--bg2), var(--bg3)); }
+.directions-map-cta-icon { font-size: 2rem; opacity: 0.85; }
+.directions-map-cta-text { font-size: 14px; color: var(--text); font-weight: 500; }
+.directions-map-cta-sub { font-size: 12px; color: var(--accent); }
 .directions-footer { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
 .directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
