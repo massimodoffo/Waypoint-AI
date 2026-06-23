@@ -318,9 +318,11 @@ async function fallbackReply(trip, text) {
   }
 }
 
-// Export key functions to window so the plain script in index.html can call them
+// Export key functions to window so the plain inline handlers in index.html can call them
 window.sendMessage   = sendMessage;
 window.toggleSidebar = toggleSidebar;
 window.toggleTheme   = toggleTheme;
 window.newTrip       = newTrip;
 window.quickStart    = quickStart;
+window.handleKey     = handleKey;
+window.autoResize    = autoResize;
