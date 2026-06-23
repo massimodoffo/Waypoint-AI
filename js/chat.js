@@ -132,3 +132,11 @@ function formatDate(d) {
 function safeJSON(str) {
   try { return JSON.parse(str.replace(/```json|```/g, '').trim()); } catch { return null; }
 }
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export {
+  escHtml, fixMapsUrl, renderMarkdown,
+  appendMsg, showTyping, removeTyping,
+  setAgentState, resetAgents, buildAgentActivityEl, updateTask,
+  autoResize, formatDate, safeJSON
+};
