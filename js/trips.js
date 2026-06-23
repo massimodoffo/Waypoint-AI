@@ -1,6 +1,13 @@
 // ── trips.js ──────────────────────────────────────────────────────────────────
 // Trip state management: create, delete, switch, sidebar rendering, chat restore
 
+import { saveTrips } from './storage.js';
+import { appendMsg, formatDate } from './chat.js';
+import {
+  buildItinCard, buildResultCards,
+  buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML,
+  renderDirectionsCard, restoreWeatherCard
+} from './cards.js';
 
 // Shared mutable state — imported by main.js
 let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
@@ -97,8 +104,8 @@ function clearChat() {
     btn.addEventListener('click', () => {
       const input = document.getElementById('msgInput');
       if (input) { input.value = btn.getAttribute('data-prompt'); }
-      // autoResize and sendMessage are global from main.js scope via module
-      if (typeof sendMessage === 'function') sendMessage();
+      // autoResize and sendMessage are exposed on window by main.js
+      if (typeof window.sendMessage === 'function') window.sendMessage();
     });
   });
 }
@@ -177,15 +184,7 @@ function restoreChat() {
         appendMsg('ai', 'Restoring live weather for ' + m.cardData.city + '...');
         restoreWeatherCard(m.cardData);
       } else if (m.cardType === 'directions' && m.cardData) {
-        const wrap = document.createElement('div');
-        wrap.className = 'msg ai';
-        wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
-        // Re-import renderDirectionsCard dynamically
-        import('./cards.js').then(({ renderDirectionsCard }) => {
-          // render directly into chat
-          const chat = document.getElementById('chat');
-          renderDirectionsCard(m.cardData);
-        });
+        renderDirectionsCard(m.cardData);
       } else if (!m.content.startsWith('Full itinerary generated')) {
         appendMsg('ai', m.content);
       }
@@ -193,3 +192,10 @@ function restoreChat() {
   });
   chat.scrollTop = chat.scrollHeight;
 }
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export {
+  trips, currentTripId, tripCounter, conversationMode,
+  setTrips, setCurrentTripId, setTripCounter, setConversationMode,
+  getCurrentTrip, newTrip, renderTripList, clearChat, restoreChat
+};
