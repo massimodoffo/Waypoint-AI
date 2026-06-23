@@ -324,17 +324,13 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 };
 
 // ── DIRECTIONS CARD ───────────────────────────────────────────────────────────
-// IMPORTANT: Google removed the old keyless `?...&output=embed` map embed, so an
-// embedded *interactive* route now requires the Maps Embed API, which needs a key.
-// The key is free with unlimited usage. Set it below to show the live route map
-// inside the card. Get one (2 min): create a Google Cloud project, enable
-// "Maps Embed API", make an API key, and restrict it to your site's domain.
-//   https://developers.google.com/maps/documentation/embed/get-started
+// A free, keyless built-in map. Google retired its keyless embed, so the map
+// itself is rendered with Leaflet + OpenStreetMap tiles (no key, no billing),
+// places markers for both points, and draws the real route via the free OSRM
+// service (falling back to a straight line if OSRM is unavailable). The
+// "Open in Maps" button still hands off to Google for full turn-by-turn.
 //
-// Left blank, the card still works fully — it shows the route summary plus an
-// "Open in Google Maps" button (turn-by-turn in a new tab) that always works.
-const MAPS_EMBED_KEY = '';
-
+// Requires Leaflet to be loaded on the page (added via CDN in index.html).
 const DIR_MODE_ICON = { driving: '🚗', walking: '🚶', transit: '🚇' };
 const DIR_MODE_LABEL = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
 
@@ -344,31 +340,32 @@ function dirOpenUrl(origin, destination, mode) {
   return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
 }
 
-function dirEmbedUrl(origin, destination, mode) {
-  const key = encodeURIComponent(MAPS_EMBED_KEY);
-  const d = encodeURIComponent(destination || '');
-  if (origin && origin.trim() !== '') {
-    const o = encodeURIComponent(origin);
-    return `https://www.google.com/maps/embed/v1/directions?key=${key}&origin=${o}&destination=${d}&mode=${mode}`;
-  }
-  return `https://www.google.com/maps/embed/v1/place?key=${key}&q=${d}`;
+// Geocode a place name → {lat, lon} using OpenStreetMap Nominatim (free, no key)
+async function geocodeOSM(query) {
+  if (!query || !query.trim()) return null;
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+}
+
+// Get a road-following route geometry between two points via the free OSRM demo
+async function routeOSM(a, b) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code !== 'Ok' || !data.routes || !data.routes.length) return null;
+    // GeoJSON coords are [lon, lat]; Leaflet wants [lat, lon]
+    return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  } catch { return null; }
 }
 
 function buildDirectionsHTML(domId, data, mode) {
   const hasOrigin = data.origin && data.origin.trim() !== '';
-
-  // Real embedded map when a key is configured; otherwise a clean "open route" panel
-  const mapArea = MAPS_EMBED_KEY
-    ? `<iframe class="directions-map" src="${dirEmbedUrl(data.origin, data.destination, mode)}"
-         allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`
-    : `<a class="directions-map-cta" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">
-         <div class="directions-map-cta-icon">🗺</div>
-         <div class="directions-map-cta-text">Open the live ${DIR_MODE_LABEL[mode].toLowerCase()} route</div>
-         <div class="directions-map-cta-sub">in Google Maps ↗</div>
-       </a>`;
-
   const modeBtns = ['driving','walking','transit'].map(m =>
-    `<button class="dmb${m === mode ? ' active' : ''}" onclick="switchDirectionsMode('${domId}', '${m}')">${DIR_MODE_ICON[m]} ${DIR_MODE_LABEL[m]}</button>`
+    `<button class="dmb${m === mode ? ' active' : ''}" data-mode="${m}" onclick="switchDirectionsMode('${domId}', '${m}')">${DIR_MODE_ICON[m]} ${DIR_MODE_LABEL[m]}</button>`
   ).join('');
 
   return `
@@ -388,11 +385,64 @@ function buildDirectionsHTML(domId, data, mode) {
       <div class="directions-mode-badge">${DIR_MODE_ICON[mode] || '🗺'} ${DIR_MODE_LABEL[mode] || mode}</div>
     </div>
     ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
-    ${mapArea}
+    <div class="directions-map" id="dmap-${domId}"><div class="directions-map-loading">Loading map…</div></div>
     <div class="directions-footer">
       <div class="directions-mode-btns">${modeBtns}</div>
       <a class="directions-open-btn" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">Open in Maps ↗</a>
     </div>`;
+}
+
+// Build the Leaflet map inside the card's map container
+async function initDirectionsMap(domId) {
+  const entry = window._dirCache[domId];
+  if (!entry) return;
+  const mapDiv = document.getElementById('dmap-' + domId);
+  if (!mapDiv) return;
+  const { data } = entry;
+
+  if (!window.L) {
+    mapDiv.innerHTML = `<a class="directions-map-cta" href="${dirOpenUrl(data.origin, data.destination, entry.mode)}" target="_blank" rel="noopener"><div class="directions-map-cta-icon">🗺</div><div class="directions-map-cta-text">Open the route in Google Maps</div><div class="directions-map-cta-sub">↗</div></a>`;
+    return;
+  }
+
+  try {
+    const dest = await geocodeOSM(data.destination);
+    if (!dest) throw new Error('Could not locate ' + data.destination);
+    const origin = data.origin && data.origin.trim() ? await geocodeOSM(data.origin) : null;
+
+    mapDiv.innerHTML = '';
+    const map = window.L.map(mapDiv, { zoomControl: true, scrollWheelZoom: false });
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap'
+    }).addTo(map);
+    entry.map = map;
+
+    window.L.circleMarker([dest.lat, dest.lon], { radius: 8, color: '#c8b87a', fillColor: '#c8b87a', fillOpacity: 1, weight: 2 })
+      .addTo(map).bindPopup(data.destination_label || data.destination);
+
+    if (origin) {
+      window.L.circleMarker([origin.lat, origin.lon], { radius: 6, color: '#c8b87a', fillColor: '#1e1f1c', fillOpacity: 1, weight: 2 })
+        .addTo(map).bindPopup(data.origin_label || data.origin);
+
+      const route = await routeOSM(origin, dest);
+      if (route) {
+        window.L.polyline(route, { color: '#c8b87a', weight: 4, opacity: 0.9 }).addTo(map);
+        map.fitBounds(window.L.latLngBounds(route).pad(0.12));
+      } else {
+        const line = [[origin.lat, origin.lon], [dest.lat, dest.lon]];
+        window.L.polyline(line, { color: '#c8b87a', weight: 3, opacity: 0.7, dashArray: '6,7' }).addTo(map);
+        map.fitBounds(window.L.latLngBounds(line).pad(0.2));
+      }
+    } else {
+      map.setView([dest.lat, dest.lon], 14);
+    }
+
+    // Leaflet needs a size recalc once the card has settled into the layout
+    setTimeout(() => map.invalidateSize(), 250);
+  } catch (err) {
+    console.error('[Waypoint] directions map failed:', err);
+    mapDiv.innerHTML = `<a class="directions-map-cta" href="${dirOpenUrl(data.origin, data.destination, entry.mode)}" target="_blank" rel="noopener"><div class="directions-map-cta-icon">🗺</div><div class="directions-map-cta-text">Open the route in Google Maps</div><div class="directions-map-cta-sub">↗</div></a>`;
+  }
 }
 
 function renderDirectionsCard(data) {
@@ -411,23 +461,34 @@ function renderDirectionsCard(data) {
 
   const mode = data.travel_mode || 'driving';
   window._dirCache = window._dirCache || {};
-  window._dirCache[domId] = { data, mode };
+  window._dirCache[domId] = { data, mode, map: null };
   card.innerHTML = buildDirectionsHTML(domId, data, mode);
 
   wrap.appendChild(card);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
+
+  // Build the map after the card is in the DOM
+  initDirectionsMap(domId);
 }
 
 window._dirCache = window._dirCache || {};
 
-// Called from inline onclick — re-render the card for the chosen travel mode
+// Switch travel mode WITHOUT tearing down the map — just update the badge,
+// the active button, and the Google hand-off link.
 window.switchDirectionsMode = function(domId, mode) {
   const card = document.getElementById(domId);
   const entry = window._dirCache[domId];
   if (!card || !entry) return;
   entry.mode = mode;
-  card.innerHTML = buildDirectionsHTML(domId, entry.data, mode);
+
+  const badge = card.querySelector('.directions-mode-badge');
+  if (badge) badge.textContent = (DIR_MODE_ICON[mode] || '🗺') + ' ' + (DIR_MODE_LABEL[mode] || mode);
+
+  const openBtn = card.querySelector('.directions-open-btn');
+  if (openBtn) openBtn.href = dirOpenUrl(entry.data.origin, entry.data.destination, mode);
+
+  card.querySelectorAll('.dmb').forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === mode));
 };
 
 
