@@ -324,6 +324,77 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 };
 
 // ── DIRECTIONS CARD ───────────────────────────────────────────────────────────
+// IMPORTANT: Google removed the old keyless `?...&output=embed` map embed, so an
+// embedded *interactive* route now requires the Maps Embed API, which needs a key.
+// The key is free with unlimited usage. Set it below to show the live route map
+// inside the card. Get one (2 min): create a Google Cloud project, enable
+// "Maps Embed API", make an API key, and restrict it to your site's domain.
+//   https://developers.google.com/maps/documentation/embed/get-started
+//
+// Left blank, the card still works fully — it shows the route summary plus an
+// "Open in Google Maps" button (turn-by-turn in a new tab) that always works.
+const MAPS_EMBED_KEY = '';
+
+const DIR_MODE_ICON = { driving: '🚗', walking: '🚶', transit: '🚇' };
+const DIR_MODE_LABEL = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
+
+function dirOpenUrl(origin, destination, mode) {
+  const o = encodeURIComponent(origin || '');
+  const d = encodeURIComponent(destination || '');
+  return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
+}
+
+function dirEmbedUrl(origin, destination, mode) {
+  const key = encodeURIComponent(MAPS_EMBED_KEY);
+  const d = encodeURIComponent(destination || '');
+  if (origin && origin.trim() !== '') {
+    const o = encodeURIComponent(origin);
+    return `https://www.google.com/maps/embed/v1/directions?key=${key}&origin=${o}&destination=${d}&mode=${mode}`;
+  }
+  return `https://www.google.com/maps/embed/v1/place?key=${key}&q=${d}`;
+}
+
+function buildDirectionsHTML(domId, data, mode) {
+  const hasOrigin = data.origin && data.origin.trim() !== '';
+
+  // Real embedded map when a key is configured; otherwise a clean "open route" panel
+  const mapArea = MAPS_EMBED_KEY
+    ? `<iframe class="directions-map" src="${dirEmbedUrl(data.origin, data.destination, mode)}"
+         allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`
+    : `<a class="directions-map-cta" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">
+         <div class="directions-map-cta-icon">🗺</div>
+         <div class="directions-map-cta-text">Open the live ${DIR_MODE_LABEL[mode].toLowerCase()} route</div>
+         <div class="directions-map-cta-sub">in Google Maps ↗</div>
+       </a>`;
+
+  const modeBtns = ['driving','walking','transit'].map(m =>
+    `<button class="dmb${m === mode ? ' active' : ''}" onclick="switchDirectionsMode('${domId}', '${m}')">${DIR_MODE_ICON[m]} ${DIR_MODE_LABEL[m]}</button>`
+  ).join('');
+
+  return `
+    <div class="directions-header">
+      <div class="directions-route">
+        ${hasOrigin ? `
+          <div class="directions-from">
+            <div class="directions-dot from"></div>
+            <span>${escHtml(data.origin_label || data.origin)}</span>
+          </div>
+          <div class="directions-line"></div>` : ''}
+        <div class="directions-to">
+          <div class="directions-dot to"></div>
+          <span>${escHtml(data.destination_label || data.destination)}</span>
+        </div>
+      </div>
+      <div class="directions-mode-badge">${DIR_MODE_ICON[mode] || '🗺'} ${DIR_MODE_LABEL[mode] || mode}</div>
+    </div>
+    ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
+    ${mapArea}
+    <div class="directions-footer">
+      <div class="directions-mode-btns">${modeBtns}</div>
+      <a class="directions-open-btn" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">Open in Maps ↗</a>
+    </div>`;
+}
+
 function renderDirectionsCard(data) {
   const chat = document.getElementById('chat');
   const welcome = document.getElementById('welcome');
@@ -335,100 +406,28 @@ function renderDirectionsCard(data) {
 
   const card = document.createElement('div');
   card.className = 'directions-card';
+  const domId = 'dir-' + Date.now();
+  card.id = domId;
 
-  const modeIcon = { driving: '🚗', walking: '🚶', transit: '🚇' };
-  const modeLabel = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
-
-  // Build Google Maps embed URL.
-  // NOTE: the www.google.com/maps?...&output=embed host now returns
-  // X-Frame-Options: DENY and refuses to load in an iframe. The maps.google.com
-  // host still serves an embeddable (keyless) map, so we use that instead.
-  function buildEmbedUrl(origin, destination, mode) {
-    const destEnc = encodeURIComponent(destination);
-    if (!origin || origin.trim() === '') {
-      // Destination only → show a place/search map
-      return `https://maps.google.com/maps?q=${destEnc}&z=14&output=embed`;
-    }
-    const originEnc = encodeURIComponent(origin);
-    const dirflg = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
-    return `https://maps.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${dirflg}&output=embed`;
-  }
-
-  function buildOpenUrl(origin, destination, mode) {
-    const modeFlag = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
-    const o = encodeURIComponent(origin || '');
-    const d = encodeURIComponent(destination);
-    return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
-  }
-
-  const currentMode = data.travel_mode || 'driving';
-  const iframeId = 'dir-iframe-' + Date.now();
-  const hasOrigin = data.origin && data.origin.trim() !== '';
-
-  card.innerHTML = `
-    <div class="directions-header">
-      <div class="directions-route">
-        ${hasOrigin ? `
-          <div class="directions-from">
-            <div class="directions-dot from"></div>
-            <span>${escHtml(data.origin_label || data.origin)}</span>
-          </div>
-          <div class="directions-line"></div>
-        ` : ''}
-        <div class="directions-to">
-          <div class="directions-dot to"></div>
-          <span>${escHtml(data.destination_label || data.destination)}</span>
-        </div>
-      </div>
-      <div class="directions-mode-badge">${modeIcon[currentMode] || '🗺'} ${modeLabel[currentMode] || currentMode}</div>
-    </div>
-    ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
-    <iframe
-      id="${iframeId}"
-      class="directions-map"
-      src="${buildEmbedUrl(data.origin, data.destination, currentMode)}"
-      allowfullscreen
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-    ></iframe>
-    <div class="directions-footer">
-      <div class="directions-mode-btns">
-        ${['driving','walking','transit'].map(m => `
-          <button class="dmb${m === currentMode ? ' active' : ''}"
-            onclick="switchDirectionsMode('${iframeId}', '${escHtml(data.origin)}', '${escHtml(data.destination)}', '${m}', this)">
-            ${modeIcon[m]} ${modeLabel[m]}
-          </button>`).join('')}
-      </div>
-      <a class="directions-open-btn" href="${buildOpenUrl(data.origin, data.destination, currentMode)}" target="_blank" rel="noopener">
-        Open in Maps ↗
-      </a>
-    </div>
-  `;
+  const mode = data.travel_mode || 'driving';
+  window._dirCache = window._dirCache || {};
+  window._dirCache[domId] = { data, mode };
+  card.innerHTML = buildDirectionsHTML(domId, data, mode);
 
   wrap.appendChild(card);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 }
 
-// Called from inline onclick — must be on window
-window.switchDirectionsMode = function(iframeId, origin, destination, mode, btn) {
-  const iframe = document.getElementById(iframeId);
-  if (!iframe) return;
-  const modeFlag = mode === 'transit' ? 'r' : mode === 'walking' ? 'w' : 'd';
-  const originEnc = encodeURIComponent(origin || destination);
-  const destEnc = encodeURIComponent(destination);
-  iframe.src = `https://maps.google.com/maps?saddr=${originEnc}&daddr=${destEnc}&dirflg=${modeFlag}&output=embed`;
+window._dirCache = window._dirCache || {};
 
-  // Update open-in-maps link
-  const footer = iframe.nextElementSibling;
-  if (footer) {
-    const openBtn = footer.querySelector('.directions-open-btn');
-    if (openBtn) openBtn.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${mode}`;
-  }
-
-  // Update active button
-  btn.closest('.directions-mode-btns').querySelectorAll('.dmb').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+// Called from inline onclick — re-render the card for the chosen travel mode
+window.switchDirectionsMode = function(domId, mode) {
+  const card = document.getElementById(domId);
+  const entry = window._dirCache[domId];
+  if (!card || !entry) return;
+  entry.mode = mode;
+  card.innerHTML = buildDirectionsHTML(domId, entry.data, mode);
 };
 
 
@@ -493,6 +492,12 @@ async function fetchAndRenderWeather(cityData, trip) {
     );
     const wx = await wxRes.json();
 
+    // Surface API-level errors instead of failing silently downstream
+    if (wx.error) throw new Error(wx.reason || 'Open-Meteo error');
+    if (!wx.current || !wx.daily || !Array.isArray(wx.daily.time)) {
+      throw new Error('Weather data was incomplete for ' + name);
+    }
+
     const cardId = 'wx-' + Date.now();
     loadingCard.id = cardId;
 
@@ -510,6 +515,7 @@ async function fetchAndRenderWeather(cityData, trip) {
       trip.history.push({ role: 'assistant', content: 'Showed weather for ' + name + '.', cardType: 'weather', cardData: { city: name, country } });
     }
   } catch (err) {
+    console.error('[Waypoint] weather card failed:', err);
     loadingCard.innerHTML = '<div class="weather-loading" style="color:var(--accent4)">Could not load weather: ' + escHtml(err.message) + '</div>';
   }
   chat.scrollTop = chat.scrollHeight;
