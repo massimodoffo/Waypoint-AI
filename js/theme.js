@@ -46,3 +46,6 @@ function initTheme() {
     });
   }
 }
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export { toggleTheme, toggleSidebar, initTheme };
