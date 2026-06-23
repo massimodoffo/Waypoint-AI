@@ -37,3 +37,6 @@ function loadTrips() {
     return null;
   }
 }
+
+// ── EXPORTS ───────────────────────────────────────────────────────────────────
+export { saveTrips, loadTrips };
