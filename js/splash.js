@@ -1,9 +1,9 @@
 // ── splash.js ─────────────────────────────────────────────────────────────────
-// Full-screen entry splash: a spinning 3D globe with land/ocean continents and
-// planes flying continent-to-continent along tracer-marked arcs, the Waypoint
-// AI wordmark, and a single "Explore" button. Clicking the button
-// grows a color-matched circle over the globe until it blocks out the whole
-// screen, then reveals the main app underneath.
+// Full-screen entry splash: a spinning 3D globe with land/ocean continents,
+// planes flying continent-to-continent along tracer-marked arcs, the
+// Waypoint AI wordmark, and a single "Explore" button. Clicking it grows a
+// color-matched circle over the globe until it blocks out the whole screen,
+// then reveals the main app underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
 
@@ -29,31 +29,14 @@ const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
-// Bare "r,g,b" triplets rather than #hex/rgba() strings, since dotTexture()
-// splices them into rgba(...) at three different alpha values for its
-// gradient. The takeoff dot matches the tracer line's own gold so it reads
-// as "the trail just started here"; the landing dot stays yellow so its
-// bounce pop is the more attention-grabbing of the two.
-const TAKEOFF_DOT_COLOR = '200,184,122';
-const TAKEOFF_DOT_DURATION_MS = 450;
-const TAKEOFF_DOT_MAX_SCALE = 0.13;
-
-const LANDING_DOT_COLOR = '255,210,63';
-const LANDING_DOT_DURATION_MS = 850;
-const LANDING_DOT_MAX_SCALE = 0.17;
-
-// Robert Penner's easeOutBounce: eases 0→1 with a couple of decaying
-// bounces, like a ball dropped and settling — used for the landing dot's
-// "pop" instead of a smooth symmetric grow/fade.
-function easeOutBounce(t) {
-  const n1 = 7.5625;
-  const d1 = 2.75;
-  if (t < 1 / d1) return n1 * t * t;
-  if (t < 2 / d1) { t -= 1.5 / d1; return n1 * t * t + 0.75; }
-  if (t < 2.5 / d1) { t -= 2.25 / d1; return n1 * t * t + 0.9375; }
-  t -= 2.625 / d1;
-  return n1 * t * t + 0.984375;
-}
+// Color is a bare "r,g,b" triplet rather than a #hex/rgba() string, since
+// dotTexture() splices it into rgba(...) at three different alpha values
+// for its gradient. The takeoff dot matches the tracer line's own gold so
+// it reads as "the trail just started here"; the landing dot stays yellow
+// so its bounce pop is the more attention-grabbing of the two. Shaped to
+// match createDotPool's spawn(position, {...}) config directly.
+const TAKEOFF_DOT = { color: '200,184,122', style: 'flash', duration: 450, maxScale: 0.13 };
+const LANDING_DOT = { color: '255,210,63', style: 'bounce', duration: 850, maxScale: 0.17 };
 
 function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
@@ -157,6 +140,19 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
   }
   const lift = Math.sin(t * Math.PI) * bulge;
   return point.normalize().multiplyScalar(radius + lift);
+}
+
+// Robert Penner's easeOutBounce: eases 0→1 with a couple of decaying
+// bounces, like a ball dropped and settling. Used below, in createDotPool's
+// update(), for the landing dot's "pop" instead of a smooth grow/fade.
+function easeOutBounce(t) {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) { t -= 1.5 / d1; return n1 * t * t + 0.75; }
+  if (t < 2.5 / d1) { t -= 2.25 / d1; return n1 * t * t + 0.9375; }
+  t -= 2.625 / d1;
+  return n1 * t * t + 0.984375;
 }
 
 // A pool of brief marks at hub arrivals/departures. Since planes chain
@@ -323,18 +319,12 @@ async function loadGlobe(canvas) {
   key.position.set(3, 2, 4);
   scene.add(key);
 
-  const takeoffDotTex = dotTexture(THREE, TAKEOFF_DOT_COLOR);
-  const landingDotTex = dotTexture(THREE, LANDING_DOT_COLOR);
+  const takeoffDotTex = dotTexture(THREE, TAKEOFF_DOT.color);
+  const landingDotTex = dotTexture(THREE, LANDING_DOT.color);
   const dotPool = createDotPool(THREE, globeGroup);
   function spawnDots(position) {
-    dotPool.spawn(position, {
-      texture: takeoffDotTex, style: 'flash',
-      duration: TAKEOFF_DOT_DURATION_MS, maxScale: TAKEOFF_DOT_MAX_SCALE
-    });
-    dotPool.spawn(position, {
-      texture: landingDotTex, style: 'bounce',
-      duration: LANDING_DOT_DURATION_MS, maxScale: LANDING_DOT_MAX_SCALE
-    });
+    dotPool.spawn(position, { ...TAKEOFF_DOT, texture: takeoffDotTex });
+    dotPool.spawn(position, { ...LANDING_DOT, texture: landingDotTex });
   }
 
   const planeTex = planeTexture(THREE);
