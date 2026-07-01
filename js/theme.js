@@ -10,8 +10,42 @@ function toggleTheme() {
 }
 
 function toggleSidebar() {
-  document.querySelector('aside').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('visible');
+  const sidebar = document.querySelector('aside');
+  if (!sidebar) return;
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  if (isMobile) {
+    sidebar.classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    try { localStorage.setItem('wp_sidebar', collapsed ? 'collapsed' : 'open'); } catch (e) { /* storage unavailable */ }
+  }
+}
+
+// Restores sidebar collapsed state on desktop from localStorage and handles resize cleanup
+function initSidebar() {
+  const mq = window.matchMedia('(max-width: 700px)');
+
+  function applyStateForViewport(isMobile) {
+    const sidebar = document.querySelector('aside');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar) return;
+    if (isMobile) {
+      // Entering mobile: strip desktop collapsed class
+      sidebar.classList.remove('collapsed');
+    } else {
+      // Entering desktop: strip mobile open state
+      sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('visible');
+      // Restore persisted collapsed preference
+      try {
+        if (localStorage.getItem('wp_sidebar') === 'collapsed') sidebar.classList.add('collapsed');
+      } catch (e) { /* storage unavailable */ }
+    }
+  }
+
+  applyStateForViewport(mq.matches);
+  mq.addEventListener('change', e => applyStateForViewport(e.matches));
 }
 
 function initTheme() {
@@ -48,4 +82,4 @@ function initTheme() {
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-export { toggleTheme, toggleSidebar, initTheme };
+export { toggleTheme, toggleSidebar, initTheme, initSidebar };

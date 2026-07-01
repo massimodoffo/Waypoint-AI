@@ -10,6 +10,7 @@
   --radius: 10px; --radius-lg: 16px;
   --nav-bg: rgba(14,15,14,0.92);
   --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --shadow-hover: 0 4px 18px rgba(0,0,0,0.32);
 }
 
 /* LIGHT MODE */
@@ -20,6 +21,7 @@
   --accent: #9a7d2e; --accent2: #4a7a3a; --accent3: #2a6b78; --accent4: #7a3a5e; --accent5: #7a5a2e;
   --nav-bg: rgba(247,245,240,0.94);
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-hover: 0 4px 18px rgba(0,0,0,0.12);
 }
 
 html { font-size: 16px; }
@@ -37,7 +39,8 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
 .app { display: flex; flex: 1; height: calc(100vh - 57px); }
 
 /* ── SIDEBAR ─────────────────────────────────────────────────────────────────── */
-aside { width: 260px; min-width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); overflow: hidden; }
+aside { width: 260px; min-width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); overflow: hidden; transition: width 0.25s ease, min-width 0.25s ease, border-color 0.25s ease, visibility 0s; }
+aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visibility: hidden; }
 .sidebar-top { padding: 1.25rem 1rem 0.75rem; }
 .sidebar-top h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
 .new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
@@ -65,14 +68,14 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ── WELCOME ─────────────────────────────────────────────────────────────────── */
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; }
-.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; }
-.welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; }
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; animation: slideUp 0.45s ease both; }
+.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; animation: slideUp 0.45s ease 0.05s both; }
+.welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; animation: slideUp 0.45s ease 0.1s both; }
 .welcome h1 em { font-style: italic; color: var(--accent); }
-.welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; animation: slideUp 0.45s ease 0.18s both; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; animation: slideUp 0.45s ease 0.26s both; }
 .chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
-.chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+.chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(-1px); }
 
 /* ── MESSAGES ────────────────────────────────────────────────────────────────── */
 .msg { display: flex; gap: 12px; animation: slideUp 0.3s ease; max-width: 800px; }
@@ -136,8 +139,8 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
 .resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.resto-card:hover { border-color: var(--border2); }
+.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.resto-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .resto-name-row { flex: 1; }
 .resto-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
@@ -166,8 +169,8 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
 .hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.hotel-card:hover { border-color: var(--border2); }
+.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.hotel-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hotel-name-row { flex: 1; }
 .hotel-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
@@ -197,8 +200,8 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
 .activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s; }
-.activity-card:hover { border-color: var(--border2); }
+.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.activity-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .activity-name-row { flex: 1; }
 .activity-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
@@ -249,8 +252,10 @@ textarea::placeholder { color: var(--text3); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ── HAMBURGER ───────────────────────────────────────────────────────────────── */
-.hamburger { display: none; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 4px; }
-.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: all 0.2s; display: block; }
+.hamburger { display: flex; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.15s; }
+.hamburger:hover { background: var(--bg3); }
+.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s; display: block; }
+.hamburger:hover span { background: var(--text); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }
 
@@ -334,9 +339,9 @@ textarea::placeholder { color: var(--text3); }
 /* ── MOBILE ──────────────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   nav { padding: 0.9rem 1rem; }
-  .hamburger { display: flex; }
   .theme-label { display: flex; }
   .nav-status { display: none; }
+  /* transition overrides desktop width/collapse animations — mobile slides in from left instead */
   aside { position: fixed; left: -280px; top: 0; height: 100vh; width: 280px; z-index: 95; transition: left 0.3s ease; }
   aside.open { left: 0; }
   .app { height: calc(100vh - 53px); }

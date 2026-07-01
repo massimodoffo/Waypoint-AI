@@ -1,5 +1,5 @@
 // ── main.js ───────────────────────────────────────────────────────────────────
-import { initTheme, toggleTheme, toggleSidebar } from './theme.js';
+import { initTheme, initSidebar, toggleTheme, toggleSidebar } from './theme.js';
 import { saveTrips, loadTrips } from './storage.js';
 import {
   appendMsg, showTyping, removeTyping,
@@ -27,6 +27,7 @@ import {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initSidebar();
 
   const saved = loadTrips();
   if (saved) {
