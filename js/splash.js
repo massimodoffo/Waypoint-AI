@@ -30,7 +30,7 @@ const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
 // Where takeoff/landing markers sit — just above the wireframe sphere
-// (1.42) so the pin's base and the ripple ring don't z-fight with it, but
+// (1.42) so the flat dot and the ripple ring don't z-fight with it, but
 // well below flight altitude (ARC_RADIUS 1.46) so they read as sitting on
 // the map rather than floating at cruising height.
 const MARKER_RADIUS = 1.425;
@@ -43,8 +43,8 @@ const MARKER_RADIUS = 1.425;
 // the two events. Shaped to match createMarkerPool's spawn(position, {...})
 // config, aside from ringTexture, which is merged in at the call site since
 // textures are created once in loadGlobe() rather than duplicated per mark.
-const TAKEOFF_MARK = { color: '200,184,122', duration: 550, pinHeight: 0.07, ringCount: 1, ringMaxScale: 0.4 };
-const LANDING_MARK = { color: '255,210,63', duration: 900, pinHeight: 0.09, ringCount: 2, ringMaxScale: 0.55 };
+const TAKEOFF_MARK = { color: '200,184,122', duration: 550, dotRadius: 0.05, ringCount: 1, ringMaxScale: 0.4 };
+const LANDING_MARK = { color: '255,210,63', duration: 900, dotRadius: 0.065, ringCount: 2, ringMaxScale: 0.55 };
 
 function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
@@ -154,83 +154,86 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
 }
 
 // Robert Penner's easeOutBack: eases 0→1, overshooting slightly past 1
-// before settling — a springy "pop" rather than a linear rise. Used below,
-// in createMarkerPool's update(), for the pin rising out of the surface.
+// before settling — a springy "pop" rather than a linear grow. Used below,
+// in createMarkerPool's update(), for the dot popping onto the surface.
 function easeOutBack(t) {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
-// A pool of brief takeoff/landing marks: a small 3D pin (cylinder) standing
-// on the globe surface, plus one or more expanding-and-fading ripple rings
-// lying flat against the surface around its base — the classic look of a
-// droplet hitting water. Since planes chain journeys (each arrival becomes
-// the next departure), both a takeoff mark and a landing mark spawn at the
-// same shared hub point. Unlike createPlane(), this manages a variable-size
-// pool of short-lived objects rather than one persistent one, so it exposes
-// spawn()/update(now) instead of createPlane's single-object
-// { sprite, tracer, update() } shape. It also takes two shared geometries
-// (pinGeometry, ringGeometry) rather than createPlane's single shared
-// texture, since each mark needs both a pin mesh and one or more ring
-// meshes, all built once in loadGlobe() and reused across every spawn.
-function createMarkerPool(THREE, globeGroup, pinGeometry, ringGeometry) {
+// A pool of brief takeoff/landing marks: a flat circular dot lying flush
+// against the globe surface, plus one or more expanding-and-fading ripple
+// rings around it — the classic look of a droplet hitting water. Since
+// planes chain journeys (each arrival becomes the next departure), both a
+// takeoff mark and a landing mark spawn at the same shared hub point.
+// Unlike createPlane(), this manages a variable-size pool of short-lived
+// objects rather than one persistent one, so it exposes spawn()/update(now)
+// instead of createPlane's single-object { sprite, tracer, update() }
+// shape. It also takes two shared geometries (dotGeometry, ringGeometry)
+// rather than createPlane's single shared texture, since each mark needs
+// both a dot mesh and one or more ring meshes, all built once in
+// loadGlobe() and reused across every spawn.
+function createMarkerPool(THREE, globeGroup, dotGeometry, ringGeometry) {
   const active = [];
-  const UP = new THREE.Vector3(0, 1, 0);
   const FORWARD = new THREE.Vector3(0, 0, 1);
 
   return {
-    spawn(position, { color, duration, pinHeight, ringCount, ringMaxScale, ringTexture }) {
+    spawn(position, { color, duration, dotRadius, ringCount, ringMaxScale, ringTexture }) {
       const normal = position.clone().normalize();
-      const surfaceQuat = new THREE.Quaternion().setFromUnitVectors(UP, normal);
-      const ringQuat = new THREE.Quaternion().setFromUnitVectors(FORWARD, normal);
+      // Both the dot and the rings are flat discs whose face should lie in
+      // the plane tangent to the sphere at this point, so they share the
+      // same orientation: their shared local "faces +Z" default rotated to
+      // face along the surface normal.
+      const surfaceQuat = new THREE.Quaternion().setFromUnitVectors(FORWARD, normal);
       const colorNum = parseInt(color.split(',').map((c) => Number(c).toString(16).padStart(2, '0')).join(''), 16);
+      const offset = normal.clone().multiplyScalar(0.003); // clears the surface, avoids z-fighting
 
-      const pinMaterial = new THREE.MeshStandardMaterial({
+      const dotMaterial = new THREE.MeshStandardMaterial({
         color: colorNum, emissive: colorNum, emissiveIntensity: 0.45,
         roughness: 0.4, metalness: 0.25, transparent: true
       });
-      const pin = new THREE.Mesh(pinGeometry, pinMaterial);
-      pin.quaternion.copy(surfaceQuat);
-      pin.position.copy(position);
-      pin.scale.set(1, 0, 1);
-      globeGroup.add(pin);
+      const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+      dot.quaternion.copy(surfaceQuat);
+      dot.position.copy(position).add(offset);
+      dot.scale.set(0.001, 0.001, 1);
+      globeGroup.add(dot);
 
       const rings = [];
-      const ringOffset = normal.clone().multiplyScalar(0.003); // clears the pin/surface, avoids z-fighting
       for (let i = 0; i < ringCount; i++) {
         const ringMaterial = new THREE.MeshBasicMaterial({
           map: ringTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide
         });
         const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-        ring.quaternion.copy(ringQuat);
-        ring.position.copy(position).add(ringOffset);
+        ring.quaternion.copy(surfaceQuat);
+        ring.position.copy(position).add(offset);
         ring.scale.set(0.001, 0.001, 1);
         globeGroup.add(ring);
         rings.push({ mesh: ring, material: ringMaterial, delayMs: i * 180 });
       }
 
-      active.push({ pin, pinMaterial, pinHeight, rings, ringMaxScale, duration, start: performance.now() });
+      active.push({ dot, dotMaterial, dotRadius, rings, ringMaxScale, duration, start: performance.now() });
     },
     update(now) {
       for (let i = active.length - 1; i >= 0; i--) {
         const mark = active[i];
         const t = (now - mark.start) / mark.duration;
         if (t >= 1) {
-          globeGroup.remove(mark.pin);
-          mark.pinMaterial.dispose();
+          globeGroup.remove(mark.dot);
+          mark.dotMaterial.dispose();
           mark.rings.forEach((ring) => { globeGroup.remove(ring.mesh); ring.material.dispose(); });
           active.splice(i, 1);
           continue;
         }
 
-        // Pin: springs up to full height over the first 30% of the
-        // duration, holds, then fades out over the last 35%. pinGeometry is
-        // a shared unit-height cylinder, so pinHeight scales it to size here
-        // rather than being baked into the (shared, reused) geometry itself.
+        // Dot: pops to full size over the first 30% of the duration, holds,
+        // then fades out over the last 35%. dotGeometry is a shared
+        // unit-radius circle, so dotRadius scales it to size here rather
+        // than being baked into the (shared, reused) geometry itself.
         const riseT = easeOutBack(Math.min(t / 0.3, 1));
-        mark.pin.scale.set(1, Math.max(0, riseT) * mark.pinHeight, 1);
-        mark.pinMaterial.opacity = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
+        const dotScale = Math.max(0, riseT) * mark.dotRadius;
+        mark.dot.scale.set(dotScale, dotScale, 1);
+        mark.dotMaterial.opacity = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
 
         // Ripple rings: each starts on its own delay, then expands
         // outward while fading — the ring itself carries the "impact".
@@ -247,8 +250,8 @@ function createMarkerPool(THREE, globeGroup, pinGeometry, ringGeometry) {
     },
     dispose() {
       active.forEach((mark) => {
-        globeGroup.remove(mark.pin);
-        mark.pinMaterial.dispose();
+        globeGroup.remove(mark.dot);
+        mark.dotMaterial.dispose();
         mark.rings.forEach((ring) => { globeGroup.remove(ring.mesh); ring.material.dispose(); });
       });
       active.length = 0;
@@ -368,15 +371,14 @@ async function loadGlobe(canvas) {
   key.position.set(3, 2, 4);
   scene.add(key);
 
-  // Unit-height cylinder (base at y=0, not centered) shared by every pin —
-  // per-spawn height comes from scaling it, not from separate geometries.
-  const pinGeometry = new THREE.CylinderGeometry(0.018, 0.024, 1, 10);
-  pinGeometry.translate(0, 0.5, 0);
+  // Unit-radius flat circle shared by every dot — per-spawn size comes from
+  // scaling it, not from separate geometries.
+  const dotGeometry = new THREE.CircleGeometry(1, 24);
   const ringGeometry = new THREE.PlaneGeometry(1, 1);
 
   const takeoffRingTex = rippleTexture(THREE, TAKEOFF_MARK.color);
   const landingRingTex = rippleTexture(THREE, LANDING_MARK.color);
-  const markerPool = createMarkerPool(THREE, globeGroup, pinGeometry, ringGeometry);
+  const markerPool = createMarkerPool(THREE, globeGroup, dotGeometry, ringGeometry);
   function spawnMarkers(position) {
     markerPool.spawn(position, { ...TAKEOFF_MARK, ringTexture: takeoffRingTex });
     markerPool.spawn(position, { ...LANDING_MARK, ringTexture: landingRingTex });
@@ -413,7 +415,7 @@ async function loadGlobe(canvas) {
       planes.forEach((p) => p.dispose());
       planeTex.dispose();
       markerPool.dispose();
-      pinGeometry.dispose();
+      dotGeometry.dispose();
       ringGeometry.dispose();
       takeoffRingTex.dispose();
       landingRingTex.dispose();
