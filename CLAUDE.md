@@ -53,6 +53,7 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 - `js/chat.js` — DOM helpers for messages, typing indicator, agent status dots, markdown rendering
 - `js/storage.js` — `localStorage` persistence for trips and chat history
 - `js/theme.js` — Dark/light theme toggle, sidebar toggle
+- `js/interactive.js` — Card tilt-on-hover and welcome-screen parallax hover effects
 
 **Conversation modes:** `main.js` tracks `conversationMode` with three states:
 1. `chat` — gathering trip preferences; uses `CHAT_PROMPT`
