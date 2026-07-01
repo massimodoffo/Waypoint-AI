@@ -55,6 +55,7 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 - `js/theme.js` — Dark/light theme toggle, sidebar toggle
 - `js/interactive.js` — Card tilt-on-hover and welcome-screen parallax hover effects
 - `js/splash.js` — Entry splash screen: 3D globe (Three.js, loaded via CDN import map) and the "Start new chat" transition into the main app
+- `js/globe-coastlines.js` — Static coastline/flight-hub coordinate data consumed by `js/splash.js`
 
 **Conversation modes:** `main.js` tracks `conversationMode` with three states:
 1. `chat` — gathering trip preferences; uses `CHAT_PROMPT`

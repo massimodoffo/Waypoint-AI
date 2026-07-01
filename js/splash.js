@@ -5,6 +5,8 @@
 // grows a color-matched circle over the globe until it blocks out the whole
 // screen, then reveals the main app underneath.
 
+import { CONTINENTS, HUBS } from './globe-coastlines.js';
+
 const GROW_MS = 800;
 const FADE_MS = 350;
 const GROW_MS_REDUCED = 120;
@@ -19,51 +21,9 @@ function reducedMotionPreferred() {
 }
 
 // ── GLOBE ────────────────────────────────────────────────────────────────────
-const OCEAN_COLOR = '#15171b';
-const LAND_COLOR = '#8a7048';
-const LAND_OUTLINE = 'rgba(200,184,122,0.5)';
-
-// Simplified, hand-drawn continent silhouettes as [lon, lat] point lists on
-// an equirectangular projection — not geographically precise, just enough to
-// read as continents on a stylized globe. Antarctica is omitted.
-const CONTINENTS = [
-  [ // North America
-    [-160,68], [-140,70], [-95,72], [-75,68], [-60,50], [-55,45], [-65,25],
-    [-80,20], [-95,18], [-105,20], [-115,30], [-125,40], [-124,48], [-130,55], [-145,60],
-  ],
-  [ // South America
-    [-80,10], [-77,5], [-70,-5], [-70,-18], [-72,-30], [-70,-40], [-68,-50],
-    [-65,-55], [-58,-52], [-53,-35], [-48,-20], [-40,-10], [-38,0], [-50,8], [-60,10], [-70,12],
-  ],
-  [ // Africa
-    [-17,15], [-10,30], [0,35], [10,37], [20,33], [32,31], [35,20], [43,12],
-    [51,10], [48,0], [42,-10], [40,-20], [35,-30], [28,-34], [20,-35], [15,-28], [12,-18], [10,-5], [8,5], [0,8], [-10,10],
-  ],
-  [ // Europe
-    [-9,38], [-5,43], [0,44], [5,43], [10,45], [15,42], [20,40], [25,38],
-    [28,42], [30,45], [28,50], [20,54], [15,55], [10,58], [5,58], [0,60], [-5,60], [-8,55], [-10,50], [-9,45],
-  ],
-  [ // Asia
-    [28,42], [35,45], [45,42], [55,45], [60,55], [70,55], [80,50], [95,50],
-    [110,50], [120,45], [130,42], [140,45], [142,50], [135,55], [120,60], [100,65], [80,70], [60,72], [45,68], [35,60], [26,48],
-    [70,15], [80,10], [95,10], [105,8], [110,20], [100,25], [90,22], [75,18], [70,15],
-  ],
-  [ // Australia
-    [114,-22], [114,-34], [120,-34], [130,-32], [140,-38], [150,-37],
-    [153,-28], [153,-20], [145,-15], [135,-12], [125,-13],
-  ],
-];
-
-// Rough continent-center hubs used as flight endpoints, roughly matching the
-// silhouettes above so planes fly between visible landmasses.
-const HUBS = [
-  { name: 'na', lat: 40, lon: -95 },
-  { name: 'sa', lat: -15, lon: -60 },
-  { name: 'af', lat: 5, lon: 20 },
-  { name: 'eu', lat: 48, lon: 12 },
-  { name: 'as', lat: 35, lon: 100 },
-  { name: 'au', lat: -25, lon: 135 },
-];
+const OCEAN_COLOR = '#1c4258';
+const LAND_COLOR = '#4f7a3d';
+const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
 const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
@@ -73,8 +33,11 @@ function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
 }
 
-// Draws a stylized land/ocean map for the globe's base sphere — avoids
-// needing an image asset for a static, no-build-step site.
+// Draws a land/ocean map for the globe's base sphere from real coastline
+// data — avoids needing an image asset for a static, no-build-step site.
+// Each ring is drawn three times, offset a full map-width left/right, so
+// landmasses that cross the antimeridian (like Afro-Eurasia's Siberian
+// edge) wrap correctly instead of leaving a seam artifact.
 function earthTexture(THREE) {
   const w = 1024;
   const h = 512;
@@ -88,16 +51,18 @@ function earthTexture(THREE) {
 
   ctx.fillStyle = LAND_COLOR;
   ctx.strokeStyle = LAND_OUTLINE;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1;
   CONTINENTS.forEach((points) => {
-    ctx.beginPath();
-    points.forEach(([lon, lat], i) => {
-      const [x, y] = equirectXY(lon, lat, w, h);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    const xy = points.map(([lon, lat]) => equirectXY(lon, lat, w, h));
+    [-w, 0, w].forEach((offsetX) => {
+      ctx.beginPath();
+      xy.forEach(([x, y], i) => {
+        if (i === 0) ctx.moveTo(x + offsetX, y); else ctx.lineTo(x + offsetX, y);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
     });
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
   });
 
   const texture = new THREE.CanvasTexture(c);
@@ -121,9 +86,7 @@ function planeTexture(THREE) {
 
 // Standard lat/lon → sphere position, using the same convention as the
 // equirectangular UV mapping THREE.SphereGeometry expects, so flight paths
-// line up with the continents drawn onto earthTexture(). Verified visually
-// (marker spheres placed at every HUBS entry all land on their intended
-// continent, including after rotating the globe 180° to check the far side).
+// line up with the continents drawn onto earthTexture().
 function latLonToVector3(THREE, lat, lon, radius) {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
@@ -218,10 +181,12 @@ function createPlane(THREE, texture, globeGroup, camera, startHub) {
       // Orient the sprite to face its direction of travel in screen space
       // (a sprite's own rotation is the only part of it that isn't
       // auto-billboarded to the camera, so this needs an explicit angle).
+      // The "✈" glyph's own nose already points along rotation=0 (screen
+      // +X, i.e. "right"), so no extra offset is needed here.
       const ahead = arcPoint(THREE, journey.fromV, journey.toV, Math.min(1, progress + 0.01), ARC_RADIUS, ARC_BULGE);
       const p1 = globeGroup.localToWorld(pos.clone()).project(camera);
       const p2 = globeGroup.localToWorld(ahead.clone()).project(camera);
-      sprite.material.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x) - Math.PI / 2;
+      sprite.material.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x);
     },
     dispose() {
       sprite.material.dispose();
