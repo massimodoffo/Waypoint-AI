@@ -10,8 +10,22 @@ function toggleTheme() {
 }
 
 function toggleSidebar() {
-  document.querySelector('aside').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('visible');
+  const sidebar = document.querySelector('aside');
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  if (isMobile) {
+    sidebar.classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
+  } else {
+    const collapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem('wp_sidebar', collapsed ? 'collapsed' : 'open');
+  }
+}
+
+function initSidebar() {
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  if (!isMobile && localStorage.getItem('wp_sidebar') === 'collapsed') {
+    document.querySelector('aside')?.classList.add('collapsed');
+  }
 }
 
 function initTheme() {
@@ -48,4 +62,4 @@ function initTheme() {
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-export { toggleTheme, toggleSidebar, initTheme };
+export { toggleTheme, toggleSidebar, initTheme, initSidebar };
