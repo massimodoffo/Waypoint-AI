@@ -1,9 +1,9 @@
 // ── splash.js ─────────────────────────────────────────────────────────────────
-// Full-screen entry splash: a spinning 3D globe with land/ocean continents and
-// planes flying continent-to-continent along tracer-marked arcs, the Waypoint
-// AI wordmark, and a single "Start new chat" button. Clicking the button
-// grows a color-matched circle over the globe until it blocks out the whole
-// screen, then reveals the main app underneath.
+// Full-screen entry splash: a spinning 3D globe with land/ocean continents,
+// planes flying continent-to-continent along tracer-marked arcs, the
+// Waypoint AI wordmark, and a single "Explore" button. Clicking it grows a
+// color-matched circle over the globe until it blocks out the whole screen,
+// then reveals the main app underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
 
@@ -29,11 +29,14 @@ const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
-// A bare "r,g,b" triplet rather than a #hex/rgba() string, since dotTexture()
-// splices it into rgba(...) at three different alpha values for its gradient.
-const DOT_COLOR = '255,210,63';
-const DOT_DURATION_MS = 700;
-const DOT_MAX_SCALE = 0.16;
+// Color is a bare "r,g,b" triplet rather than a #hex/rgba() string, since
+// dotTexture() splices it into rgba(...) at three different alpha values
+// for its gradient. The takeoff dot matches the tracer line's own gold so
+// it reads as "the trail just started here"; the landing dot stays yellow
+// so its bounce pop is the more attention-grabbing of the two. Shaped to
+// match createDotPool's spawn(position, {...}) config directly.
+const TAKEOFF_DOT = { color: '200,184,122', style: 'flash', duration: 450, maxScale: 0.13 };
+const LANDING_DOT = { color: '255,210,63', style: 'bounce', duration: 850, maxScale: 0.17 };
 
 function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
@@ -90,15 +93,16 @@ function planeTexture(THREE) {
   return new THREE.CanvasTexture(c);
 }
 
-// A soft-edged yellow dot used for the takeoff/landing pop flash.
-function dotTexture(THREE) {
+// A soft-edged dot used for the takeoff/landing pop, in the given "r,g,b"
+// color triplet.
+function dotTexture(THREE, colorTriplet) {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
   const ctx = c.getContext('2d');
   const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  grad.addColorStop(0, `rgba(${DOT_COLOR},1)`);
-  grad.addColorStop(0.55, `rgba(${DOT_COLOR},0.8)`);
-  grad.addColorStop(1, `rgba(${DOT_COLOR},0)`);
+  grad.addColorStop(0, `rgba(${colorTriplet},1)`);
+  grad.addColorStop(0.55, `rgba(${colorTriplet},0.8)`);
+  grad.addColorStop(1, `rgba(${colorTriplet},0)`);
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(16, 16, 16, 0, Math.PI * 2);
@@ -138,39 +142,62 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
   return point.normalize().multiplyScalar(radius + lift);
 }
 
-// A pool of brief "pop" flashes marking hub arrivals/departures. Since
-// planes chain journeys (each arrival becomes the next departure), a single
-// flash at the shared hub point serves as both the landing mark for the
-// finishing leg and the takeoff mark for the one starting right after.
+// Robert Penner's easeOutBounce: eases 0→1 with a couple of decaying
+// bounces, like a ball dropped and settling. Used below, in createDotPool's
+// update(), for the landing dot's "pop" instead of a smooth grow/fade.
+function easeOutBounce(t) {
+  const n1 = 7.5625;
+  const d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) { t -= 1.5 / d1; return n1 * t * t + 0.75; }
+  if (t < 2.5 / d1) { t -= 2.25 / d1; return n1 * t * t + 0.9375; }
+  t -= 2.625 / d1;
+  return n1 * t * t + 0.984375;
+}
+
+// A pool of brief marks at hub arrivals/departures. Since planes chain
+// journeys (each arrival becomes the next departure), both a takeoff dot
+// and a landing dot spawn at the same shared hub point — one quickly
+// appears in the tracer's own gold to mark the new leg starting, the other
+// pops up in yellow with a bounce to mark the finishing leg's arrival.
 // Unlike createPlane(), this manages a variable-size pool of short-lived
 // sprites rather than one persistent object, so it exposes spawn()/update(now)
 // instead of createPlane's single-object { sprite, tracer, update() } shape.
-function createDotPool(THREE, texture, globeGroup) {
+function createDotPool(THREE, globeGroup) {
   const active = [];
 
   return {
-    spawn(position) {
+    spawn(position, { texture, style, duration, maxScale }) {
       const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
       const sprite = new THREE.Sprite(material);
       sprite.position.copy(position);
       sprite.scale.set(0, 0, 1);
       globeGroup.add(sprite);
-      active.push({ sprite, material, start: performance.now() });
+      active.push({ sprite, material, style, duration, maxScale, start: performance.now() });
     },
     update(now) {
       for (let i = active.length - 1; i >= 0; i--) {
         const dot = active[i];
-        const t = (now - dot.start) / DOT_DURATION_MS;
+        const t = (now - dot.start) / dot.duration;
         if (t >= 1) {
           globeGroup.remove(dot.sprite);
           dot.material.dispose();
           active.splice(i, 1);
           continue;
         }
-        const envelope = Math.sin(t * Math.PI); // 0 → 1 → 0: pop in, fade out
-        const scale = DOT_MAX_SCALE * envelope;
+        let scaleT, opacity;
+        if (dot.style === 'bounce') {
+          // Bounce in across the first 65% of the duration, hold at full
+          // size, then fade out over the remainder.
+          scaleT = easeOutBounce(Math.min(t / 0.65, 1));
+          opacity = t < 0.65 ? 1 : 1 - (t - 0.65) / 0.35;
+        } else {
+          scaleT = Math.sin(t * Math.PI); // 0 → 1 → 0: quick pop in, fade out
+          opacity = scaleT;
+        }
+        const scale = dot.maxScale * scaleT;
         dot.sprite.scale.set(scale, scale, 1);
-        dot.material.opacity = envelope;
+        dot.material.opacity = Math.max(0, opacity);
       }
     },
     dispose() {
@@ -199,7 +226,7 @@ function buildJourney(THREE, fromHub, toHub) {
 // Each arrival becomes the next departure, so it reads as an ongoing route
 // network rather than random hops. Returns a dispose-handle object mirroring
 // the shape loadGlobe() itself returns, so the two compose the same way.
-function createPlane(THREE, texture, globeGroup, camera, startHub, spawnDot) {
+function createPlane(THREE, texture, globeGroup, camera, startHub, spawnDots) {
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
   sprite.scale.set(0.22, 0.22, 1);
   globeGroup.add(sprite);
@@ -235,7 +262,7 @@ function createPlane(THREE, texture, globeGroup, camera, startHub, spawnDot) {
       progress += speed;
       if (progress >= 1) {
         progress = 0;
-        spawnDot(journey.toV); // old journey's arrival point — read before journey is reassigned below
+        spawnDots(journey.toV); // old journey's arrival point — read before journey is reassigned below
         journey = buildJourney(THREE, journey.toHub, pickHub(journey.toHub.name));
         setTracerGeometry();
       }
@@ -292,11 +319,16 @@ async function loadGlobe(canvas) {
   key.position.set(3, 2, 4);
   scene.add(key);
 
-  const dotTex = dotTexture(THREE);
-  const dotPool = createDotPool(THREE, dotTex, globeGroup);
+  const takeoffDotTex = dotTexture(THREE, TAKEOFF_DOT.color);
+  const landingDotTex = dotTexture(THREE, LANDING_DOT.color);
+  const dotPool = createDotPool(THREE, globeGroup);
+  function spawnDots(position) {
+    dotPool.spawn(position, { ...TAKEOFF_DOT, texture: takeoffDotTex });
+    dotPool.spawn(position, { ...LANDING_DOT, texture: landingDotTex });
+  }
 
   const planeTex = planeTexture(THREE);
-  const planes = [0, 1, 2].map(() => createPlane(THREE, planeTex, globeGroup, camera, pickHub(), dotPool.spawn));
+  const planes = [0, 1, 2].map(() => createPlane(THREE, planeTex, globeGroup, camera, pickHub(), spawnDots));
 
   const reduced = reducedMotionPreferred();
   let frameId = null;
@@ -326,7 +358,8 @@ async function loadGlobe(canvas) {
       planes.forEach((p) => p.dispose());
       planeTex.dispose();
       dotPool.dispose();
-      dotTex.dispose();
+      takeoffDotTex.dispose();
+      landingDotTex.dispose();
       globeGeometry.dispose();
       globeMaterial.dispose();
       globeTexture.dispose();
