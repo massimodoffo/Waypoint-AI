@@ -2,6 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## PR workflow (required)
+
+Before opening any pull request:
+
+1. Run `/commit-hygiene` to clean up and split staged changes into atomic, well-formed commits.
+2. Run `/pre-pr-review` — this launches three subagents (`bug-hunter`, `security-reviewer`, `consistency-reviewer`) in parallel against the diff, then cross-references their findings. Fix any Must-fix issues and re-run before proceeding.
+3. Run `/pr-description` to draft and open the PR once review is clean.
+
+Never open a PR by running `gh pr create` directly without going through `/pre-pr-review` first.
+
+### Subagents
+
+- `bug-hunter`, `security-reviewer`, `consistency-reviewer` are read-only (no Edit/Write/Bash-write access). They report findings; the main session applies fixes.
+- Don't ask them to fix issues directly — they diagnose, the main session (with your approval) fixes.
+
+### Commit style
+
+Conventional Commits: `type(scope): summary`. Types: feat, fix, refactor, chore, docs, style, test, perf.
+
+### Lint / test / build
+
+- Lint: `npm run lint` (fix: `npm run lint:fix`)
+- Test: `npm run test` (pure functions only — formatters, parsers, route math; not Leaflet/DOM/network code)
+- Build: no bundler in use. `npm run build` is a no-op placeholder — this project deploys static ES modules directly to Netlify. Add a real build step here if a bundler (Vite/esbuild) is introduced later.
+- `pre-pr-review` and `commit-hygiene` should run lint before reporting findings — if lint fails, treat lint errors as must-fix alongside subagent findings.
+
 ## Deployment
 
 This is a static frontend deployed on **Netlify**. There is no build step — files are served directly. The only backend is a Netlify serverless function at `netlify/functions/proxy.js`.
