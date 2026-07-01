@@ -10,6 +10,15 @@ const FADE_MS = 350;
 const GROW_MS_REDUCED = 120;
 const FADE_MS_REDUCED = 100;
 
+// Named distinctly from interactive.js's motionAllowed() — that one also
+// gates on (hover: hover)/(pointer: fine) because it guards hover-only
+// effects. The splash's globe/transition should still play on touch
+// devices, so it only needs the reduced-motion check, not the hover check.
+function reducedMotionPreferred() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// ── GLOBE ────────────────────────────────────────────────────────────────────
 const OCEAN_COLOR = '#15171b';
 const LAND_COLOR = '#8a7048';
 const LAND_OUTLINE = 'rgba(200,184,122,0.5)';
@@ -18,18 +27,31 @@ const LAND_OUTLINE = 'rgba(200,184,122,0.5)';
 // an equirectangular projection — not geographically precise, just enough to
 // read as continents on a stylized globe. Antarctica is omitted.
 const CONTINENTS = [
-  // North America
-  [[-160,68],[-140,70],[-95,72],[-75,68],[-60,50],[-55,45],[-65,25],[-80,20],[-95,18],[-105,20],[-115,30],[-125,40],[-124,48],[-130,55],[-145,60]],
-  // South America
-  [[-80,10],[-77,5],[-70,-5],[-70,-18],[-72,-30],[-70,-40],[-68,-50],[-65,-55],[-58,-52],[-53,-35],[-48,-20],[-40,-10],[-38,0],[-50,8],[-60,10],[-70,12]],
-  // Africa
-  [[-17,15],[-10,30],[0,35],[10,37],[20,33],[32,31],[35,20],[43,12],[51,10],[48,0],[42,-10],[40,-20],[35,-30],[28,-34],[20,-35],[15,-28],[12,-18],[10,-5],[8,5],[0,8],[-10,10]],
-  // Europe
-  [[-9,38],[-5,43],[0,44],[5,43],[10,45],[15,42],[20,40],[25,38],[28,42],[30,45],[28,50],[20,54],[15,55],[10,58],[5,58],[0,60],[-5,60],[-8,55],[-10,50],[-9,45]],
-  // Asia
-  [[28,42],[35,45],[45,42],[55,45],[60,55],[70,55],[80,50],[95,50],[110,50],[120,45],[130,42],[140,45],[142,50],[135,55],[120,60],[100,65],[80,70],[60,72],[45,68],[35,60],[26,48],[70,15],[80,10],[95,10],[105,8],[110,20],[100,25],[90,22],[75,18],[70,15]],
-  // Australia
-  [[114,-22],[114,-34],[120,-34],[130,-32],[140,-38],[150,-37],[153,-28],[153,-20],[145,-15],[135,-12],[125,-13]],
+  [ // North America
+    [-160,68], [-140,70], [-95,72], [-75,68], [-60,50], [-55,45], [-65,25],
+    [-80,20], [-95,18], [-105,20], [-115,30], [-125,40], [-124,48], [-130,55], [-145,60],
+  ],
+  [ // South America
+    [-80,10], [-77,5], [-70,-5], [-70,-18], [-72,-30], [-70,-40], [-68,-50],
+    [-65,-55], [-58,-52], [-53,-35], [-48,-20], [-40,-10], [-38,0], [-50,8], [-60,10], [-70,12],
+  ],
+  [ // Africa
+    [-17,15], [-10,30], [0,35], [10,37], [20,33], [32,31], [35,20], [43,12],
+    [51,10], [48,0], [42,-10], [40,-20], [35,-30], [28,-34], [20,-35], [15,-28], [12,-18], [10,-5], [8,5], [0,8], [-10,10],
+  ],
+  [ // Europe
+    [-9,38], [-5,43], [0,44], [5,43], [10,45], [15,42], [20,40], [25,38],
+    [28,42], [30,45], [28,50], [20,54], [15,55], [10,58], [5,58], [0,60], [-5,60], [-8,55], [-10,50], [-9,45],
+  ],
+  [ // Asia
+    [28,42], [35,45], [45,42], [55,45], [60,55], [70,55], [80,50], [95,50],
+    [110,50], [120,45], [130,42], [140,45], [142,50], [135,55], [120,60], [100,65], [80,70], [60,72], [45,68], [35,60], [26,48],
+    [70,15], [80,10], [95,10], [105,8], [110,20], [100,25], [90,22], [75,18], [70,15],
+  ],
+  [ // Australia
+    [114,-22], [114,-34], [120,-34], [130,-32], [140,-38], [150,-37],
+    [153,-28], [153,-20], [145,-15], [135,-12], [125,-13],
+  ],
 ];
 
 // Rough continent-center hubs used as flight endpoints, roughly matching the
@@ -99,7 +121,9 @@ function planeTexture(THREE) {
 
 // Standard lat/lon → sphere position, using the same convention as the
 // equirectangular UV mapping THREE.SphereGeometry expects, so flight paths
-// line up with the continents drawn onto earthTexture().
+// line up with the continents drawn onto earthTexture(). Verified visually
+// (marker spheres placed at every HUBS entry all land on their intended
+// continent, including after rotating the globe 180° to check the far side).
 function latLonToVector3(THREE, lat, lon, radius) {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
@@ -143,7 +167,8 @@ function buildJourney(THREE, fromHub, toHub) {
 
 // A plane sprite + its trailing tracer line, flying continent-to-continent.
 // Each arrival becomes the next departure, so it reads as an ongoing route
-// network rather than random hops.
+// network rather than random hops. Returns a dispose-handle object mirroring
+// the shape loadGlobe() itself returns, so the two compose the same way.
 function createPlane(THREE, texture, globeGroup, camera, startHub) {
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
   sprite.scale.set(0.22, 0.22, 1);
@@ -273,14 +298,7 @@ async function loadGlobe(canvas) {
   };
 }
 
-// Named distinctly from interactive.js's motionAllowed() — that one also
-// gates on (hover: hover)/(pointer: fine) because it guards hover-only
-// effects. The splash's globe/transition should still play on touch
-// devices, so it only needs the reduced-motion check, not the hover check.
-function reducedMotionPreferred() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
+// ── SPLASH TRANSITION ───────────────────────────────────────────────────────
 function initSplash() {
   const splash = document.getElementById('splash');
   const startBtn = document.getElementById('splashStartBtn');
