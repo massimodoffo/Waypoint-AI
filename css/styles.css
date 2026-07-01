@@ -385,7 +385,10 @@ textarea::placeholder { color: var(--text3); }
 /* ── SPLASH ──────────────────────────────────────────────────────────────────── */
 /* The splash always renders as a dark, cosmic scene regardless of the app's
    light/dark theme setting, so its colors are hardcoded rather than pulled
-   from the theme --variables (which flip to dark-on-dark in light mode). */
+   from the theme --variables (which flip to dark-on-dark in light mode).
+   body.pre-start is the single, intentional coupling point between
+   splash.js and the rest of the app — it's toggled once in splash.js and
+   nowhere else; don't grow it into a general-purpose state flag. */
 body.pre-start nav,
 body.pre-start .sidebar-overlay,
 body.pre-start .app { display: none; }

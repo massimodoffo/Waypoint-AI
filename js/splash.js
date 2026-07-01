@@ -9,8 +9,12 @@ const FADE_MS = 350;
 const GROW_MS_REDUCED = 120;
 const FADE_MS_REDUCED = 100;
 
-function motionAllowed() {
-  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Named distinctly from interactive.js's motionAllowed() — that one also
+// gates on (hover: hover)/(pointer: fine) because it guards hover-only
+// effects. The splash's globe/transition should still play on touch
+// devices, so it only needs the reduced-motion check, not the hover check.
+function reducedMotionPreferred() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 // Draws a "✈" glyph to an offscreen canvas for use as a billboard sprite
@@ -68,7 +72,7 @@ async function loadGlobe(canvas) {
     return { orbit, speed: 0.006 + i * 0.002 };
   });
 
-  const reduced = !motionAllowed();
+  const reduced = reducedMotionPreferred();
   let frameId = null;
 
   function render() {
@@ -105,7 +109,16 @@ function initSplash() {
   if (!splash || !startBtn || !blockout || !canvas) return;
 
   let globeHandle = null;
-  loadGlobe(canvas).then((handle) => { globeHandle = handle; }).catch((err) => {
+  let dismissed = false;
+  loadGlobe(canvas).then((handle) => {
+    // import('three') is a real network fetch that can resolve after the
+    // user has already clicked through and the splash is gone. In that
+    // case dispose immediately instead of storing — otherwise the renderer,
+    // its requestAnimationFrame loop, and the resize listener leak for the
+    // rest of the page's lifetime with nothing left to ever clean them up.
+    if (dismissed) { handle.dispose(); return; }
+    globeHandle = handle;
+  }).catch((err) => {
     // Three.js failed to load (offline, blocked CDN, no WebGL, etc). The
     // canvas just stays empty over the splash's dark background — the
     // button below still works, so the user is never blocked from entering.
@@ -116,7 +129,7 @@ function initSplash() {
     startBtn.disabled = true;
     splash.classList.add('splash-leaving');
 
-    const reduced = !motionAllowed();
+    const reduced = reducedMotionPreferred();
     const growMs = reduced ? GROW_MS_REDUCED : GROW_MS;
     const fadeMs = reduced ? FADE_MS_REDUCED : FADE_MS;
 
@@ -127,6 +140,7 @@ function initSplash() {
 
       blockout.classList.add('splash-blockout-fadeout');
       setTimeout(() => {
+        dismissed = true;
         splash.remove();
         if (globeHandle) globeHandle.dispose();
       }, fadeMs);

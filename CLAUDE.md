@@ -65,4 +65,4 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 
 **Maps:** Leaflet.js (loaded via CDN) is used for the directions card. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
 
-**3D:** Three.js is loaded via a `<script type="importmap">` in `index.html` (bare `import 'three'` specifier resolves to the CDN build), used only by `js/splash.js` for the entry globe. `splash.js` dynamically `import()`s it and fails gracefully (button still works) if the CDN is unreachable or WebGL is unavailable.
+**3D:** Three.js (loaded via a CDN import map in `index.html`) is used only by `js/splash.js` for the entry globe. It's dynamically imported and fails gracefully — the splash button still works — if the CDN or WebGL is unavailable.
