@@ -29,6 +29,8 @@ const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
+// A bare "r,g,b" triplet rather than a #hex/rgba() string, since dotTexture()
+// splices it into rgba(...) at three different alpha values for its gradient.
 const DOT_COLOR = '255,210,63';
 const DOT_DURATION_MS = 700;
 const DOT_MAX_SCALE = 0.16;
@@ -140,6 +142,9 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
 // planes chain journeys (each arrival becomes the next departure), a single
 // flash at the shared hub point serves as both the landing mark for the
 // finishing leg and the takeoff mark for the one starting right after.
+// Unlike createPlane(), this manages a variable-size pool of short-lived
+// sprites rather than one persistent object, so it exposes spawn()/update(now)
+// instead of createPlane's single-object { sprite, tracer, update() } shape.
 function createDotPool(THREE, texture, globeGroup) {
   const active = [];
 
@@ -230,7 +235,7 @@ function createPlane(THREE, texture, globeGroup, camera, startHub, spawnDot) {
       progress += speed;
       if (progress >= 1) {
         progress = 0;
-        spawnDot(journey.toV);
+        spawnDot(journey.toV); // old journey's arrival point — read before journey is reassigned below
         journey = buildJourney(THREE, journey.toHub, pickHub(journey.toHub.name));
         setTracerGeometry();
       }
