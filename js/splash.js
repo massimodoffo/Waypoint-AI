@@ -41,7 +41,8 @@ const MARKER_RADIUS = 1.425;
 // as "the trail just started here"; the landing mark stays yellow and gets
 // a second, larger ripple ring since it's the more attention-grabbing of
 // the two events. Shaped to match createMarkerPool's spawn(position, {...})
-// config directly.
+// config, aside from ringTexture, which is merged in at the call site since
+// textures are created once in loadGlobe() rather than duplicated per mark.
 const TAKEOFF_MARK = { color: '200,184,122', duration: 550, pinHeight: 0.07, ringCount: 1, ringMaxScale: 0.4 };
 const LANDING_MARK = { color: '255,210,63', duration: 900, pinHeight: 0.09, ringCount: 2, ringMaxScale: 0.55 };
 
@@ -169,7 +170,10 @@ function easeOutBack(t) {
 // same shared hub point. Unlike createPlane(), this manages a variable-size
 // pool of short-lived objects rather than one persistent one, so it exposes
 // spawn()/update(now) instead of createPlane's single-object
-// { sprite, tracer, update() } shape.
+// { sprite, tracer, update() } shape. It also takes two shared geometries
+// (pinGeometry, ringGeometry) rather than createPlane's single shared
+// texture, since each mark needs both a pin mesh and one or more ring
+// meshes, all built once in loadGlobe() and reused across every spawn.
 function createMarkerPool(THREE, globeGroup, pinGeometry, ringGeometry) {
   const active = [];
   const UP = new THREE.Vector3(0, 1, 0);
