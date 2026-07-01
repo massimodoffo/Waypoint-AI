@@ -24,6 +24,7 @@ import {
   RESTAURANT_SPECIALIST_PROMPT, HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
 } from './agents.js';
 import { initCardTilt, initWelcomeParallax } from './interactive.js';
+import { initSplash } from './splash.js';
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
   initCardTilt();
   initWelcomeParallax();
+  initSplash();
 
   const saved = loadTrips();
   if (saved) {

@@ -10,8 +10,25 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
 </head>
-<body>
+<body class="pre-start">
+
+<div id="splash">
+  <canvas id="splashCanvas" class="splash-canvas" aria-hidden="true"></canvas>
+  <div class="splash-logo"><span class="splash-logo-dot">✦</span> Waypoint AI</div>
+  <div class="splash-bottom">
+    <div class="splash-slogan">Plan your next <em>adventure</em></div>
+    <button class="splash-start-btn" id="splashStartBtn">Start new chat</button>
+  </div>
+  <div class="splash-blockout" id="splashBlockout"></div>
+</div>
 
 <nav>
   <div style="display:flex;align-items:center;gap:12px">
