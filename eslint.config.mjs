@@ -20,6 +20,7 @@ export default [
         clearInterval: "readonly",
         requestAnimationFrame: "readonly",
         cancelAnimationFrame: "readonly",
+        performance: "readonly",
         L: "readonly"
       }
     },

@@ -21,13 +21,19 @@ function reducedMotionPreferred() {
 }
 
 // ── GLOBE ────────────────────────────────────────────────────────────────────
-const OCEAN_COLOR = '#1c4258';
-const LAND_COLOR = '#4f7a3d';
+const OCEAN_COLOR = '#204c65';
+const LAND_COLOR = '#5b8c46';
 const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
 const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
+
+// A bare "r,g,b" triplet rather than a #hex/rgba() string, since dotTexture()
+// splices it into rgba(...) at three different alpha values for its gradient.
+const DOT_COLOR = '255,210,63';
+const DOT_DURATION_MS = 700;
+const DOT_MAX_SCALE = 0.16;
 
 function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
@@ -84,6 +90,22 @@ function planeTexture(THREE) {
   return new THREE.CanvasTexture(c);
 }
 
+// A soft-edged yellow dot used for the takeoff/landing pop flash.
+function dotTexture(THREE) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, `rgba(${DOT_COLOR},1)`);
+  grad.addColorStop(0.55, `rgba(${DOT_COLOR},0.8)`);
+  grad.addColorStop(1, `rgba(${DOT_COLOR},0)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(16, 16, 16, 0, Math.PI * 2);
+  ctx.fill();
+  return new THREE.CanvasTexture(c);
+}
+
 // Standard lat/lon → sphere position, using the same convention as the
 // equirectangular UV mapping THREE.SphereGeometry expects, so flight paths
 // line up with the continents drawn onto earthTexture().
@@ -116,6 +138,51 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
   return point.normalize().multiplyScalar(radius + lift);
 }
 
+// A pool of brief "pop" flashes marking hub arrivals/departures. Since
+// planes chain journeys (each arrival becomes the next departure), a single
+// flash at the shared hub point serves as both the landing mark for the
+// finishing leg and the takeoff mark for the one starting right after.
+// Unlike createPlane(), this manages a variable-size pool of short-lived
+// sprites rather than one persistent object, so it exposes spawn()/update(now)
+// instead of createPlane's single-object { sprite, tracer, update() } shape.
+function createDotPool(THREE, texture, globeGroup) {
+  const active = [];
+
+  return {
+    spawn(position) {
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.copy(position);
+      sprite.scale.set(0, 0, 1);
+      globeGroup.add(sprite);
+      active.push({ sprite, material, start: performance.now() });
+    },
+    update(now) {
+      for (let i = active.length - 1; i >= 0; i--) {
+        const dot = active[i];
+        const t = (now - dot.start) / DOT_DURATION_MS;
+        if (t >= 1) {
+          globeGroup.remove(dot.sprite);
+          dot.material.dispose();
+          active.splice(i, 1);
+          continue;
+        }
+        const envelope = Math.sin(t * Math.PI); // 0 → 1 → 0: pop in, fade out
+        const scale = DOT_MAX_SCALE * envelope;
+        dot.sprite.scale.set(scale, scale, 1);
+        dot.material.opacity = envelope;
+      }
+    },
+    dispose() {
+      active.forEach((dot) => {
+        globeGroup.remove(dot.sprite);
+        dot.material.dispose();
+      });
+      active.length = 0;
+    }
+  };
+}
+
 function pickHub(excludeName) {
   let h;
   do { h = HUBS[Math.floor(Math.random() * HUBS.length)]; } while (h.name === excludeName);
@@ -132,7 +199,7 @@ function buildJourney(THREE, fromHub, toHub) {
 // Each arrival becomes the next departure, so it reads as an ongoing route
 // network rather than random hops. Returns a dispose-handle object mirroring
 // the shape loadGlobe() itself returns, so the two compose the same way.
-function createPlane(THREE, texture, globeGroup, camera, startHub) {
+function createPlane(THREE, texture, globeGroup, camera, startHub, spawnDot) {
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
   sprite.scale.set(0.22, 0.22, 1);
   globeGroup.add(sprite);
@@ -168,6 +235,7 @@ function createPlane(THREE, texture, globeGroup, camera, startHub) {
       progress += speed;
       if (progress >= 1) {
         progress = 0;
+        spawnDot(journey.toV); // old journey's arrival point — read before journey is reassigned below
         journey = buildJourney(THREE, journey.toHub, pickHub(journey.toHub.name));
         setTracerGeometry();
       }
@@ -224,8 +292,11 @@ async function loadGlobe(canvas) {
   key.position.set(3, 2, 4);
   scene.add(key);
 
+  const dotTex = dotTexture(THREE);
+  const dotPool = createDotPool(THREE, dotTex, globeGroup);
+
   const planeTex = planeTexture(THREE);
-  const planes = [0, 1, 2].map(() => createPlane(THREE, planeTex, globeGroup, camera, pickHub()));
+  const planes = [0, 1, 2].map(() => createPlane(THREE, planeTex, globeGroup, camera, pickHub(), dotPool.spawn));
 
   const reduced = reducedMotionPreferred();
   let frameId = null;
@@ -234,6 +305,7 @@ async function loadGlobe(canvas) {
     if (!reduced) {
       globeGroup.rotation.y += 0.0022;
       planes.forEach((p) => p.update());
+      dotPool.update(performance.now());
       frameId = requestAnimationFrame(render);
     }
     renderer.render(scene, camera);
@@ -253,6 +325,8 @@ async function loadGlobe(canvas) {
       window.removeEventListener('resize', onResize);
       planes.forEach((p) => p.dispose());
       planeTex.dispose();
+      dotPool.dispose();
+      dotTex.dispose();
       globeGeometry.dispose();
       globeMaterial.dispose();
       globeTexture.dispose();
