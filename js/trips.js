@@ -8,6 +8,7 @@ import {
   buildRestoCardHTML, buildHotelCardHTML, buildActivityCardHTML,
   renderDirectionsCard, restoreWeatherCard
 } from './cards.js';
+import { initWelcomeParallax } from './interactive.js';
 
 // Shared mutable state — imported by main.js
 let trips = [{ id: 0, name: 'New trip', history: [], date: new Date() }];
@@ -90,13 +91,16 @@ function clearChat() {
   welcome.className = 'welcome';
   welcome.id = 'welcome';
   welcome.innerHTML = `
-    <div class="welcome-icon">✦</div>
-    <h1>Plan your next <em>adventure</em></h1>
-    <p>Tell me where you want to go and I will get to know your travel style before building your itinerary.</p>
-    <div class="chips">
-      <button class="chip" data-prompt="I want to go to Japan for about 5 days. I love street food and hidden local spots.">Japan · street food</button>
-      <button class="chip" data-prompt="Thinking about Paris for a long weekend. I love art, wine, and staying out late.">Paris · art & nights</button>
-      <button class="chip" data-prompt="I want to explore Colombia. Big into coffee, beaches, and nightlife.">Colombia · coffee & beaches</button>
+    <div class="welcome-ghost" aria-hidden="true">Waypoint</div>
+    <div class="welcome-content">
+      <div class="welcome-icon">✦</div>
+      <h1>Plan your next <em>adventure</em></h1>
+      <p>Tell me where you want to go and I will get to know your travel style before building your itinerary.</p>
+      <div class="chips">
+        <button class="chip" data-prompt="I want to go to Japan for about 5 days. I love street food and hidden local spots.">Japan · street food</button>
+        <button class="chip" data-prompt="Thinking about Paris for a long weekend. I love art, wine, and staying out late.">Paris · art & nights</button>
+        <button class="chip" data-prompt="I want to explore Colombia. Big into coffee, beaches, and nightlife.">Colombia · coffee & beaches</button>
+      </div>
     </div>`;
   chat.appendChild(welcome);
   // Re-wire chip buttons after clearChat rebuilds them
@@ -108,6 +112,8 @@ function clearChat() {
       if (typeof window.sendMessage === 'function') window.sendMessage();
     });
   });
+  // The parallax listener detaches itself once #welcome is gone — reattach for the fresh one
+  initWelcomeParallax();
 }
 
 function restoreChat() {

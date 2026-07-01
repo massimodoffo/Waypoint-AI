@@ -68,12 +68,14 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #chat::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ── WELCOME ─────────────────────────────────────────────────────────────────── */
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; animation: slideUp 0.45s ease both; }
-.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; animation: slideUp 0.45s ease 0.05s both; }
-.welcome h1 { font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; animation: slideUp 0.45s ease 0.1s both; }
+.welcome { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 3rem 2rem; min-height: 400px; overflow: hidden; animation: slideUp 0.45s ease both; }
+.welcome-ghost { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(4rem, 14vw, 11rem); letter-spacing: -0.03em; text-transform: uppercase; color: var(--text3); opacity: 0.08; white-space: nowrap; pointer-events: none; user-select: none; transition: transform 0.2s ease-out; will-change: transform; }
+.welcome-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+.welcome-icon { font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3; animation: slideUp 0.45s ease 0.05s both; transition: transform 0.2s ease-out; will-change: transform; }
+.welcome h1 { font-family: 'Fraunces', serif; font-size: clamp(2.4rem, 6vw, 5.5rem); font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.03em; animation: slideUp 0.45s ease 0.1s both; }
 .welcome h1 em { font-style: italic; color: var(--accent); }
 .welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; animation: slideUp 0.45s ease 0.18s both; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; animation: slideUp 0.45s ease 0.26s both; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; animation: slideUp 0.45s ease 0.26s both; transition: transform 0.2s ease-out; will-change: transform; }
 .chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
 .chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(-1px); }
 
@@ -139,7 +141,7 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
 .resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; will-change: transform; }
 .resto-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .resto-name-row { flex: 1; }
@@ -169,7 +171,7 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
 .hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; will-change: transform; }
 .hotel-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hotel-name-row { flex: 1; }
@@ -200,7 +202,7 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
 .activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; }
+.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; will-change: transform; }
 .activity-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .activity-name-row { flex: 1; }

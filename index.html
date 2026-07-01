@@ -73,24 +73,27 @@
   <main>
     <div id="chat">
       <div class="welcome" id="welcome">
-        <div class="welcome-icon">✦</div>
-        <h1>Plan your next <em>adventure</em></h1>
-        <p>I'm Waypoint, your personal AI travel agent. Tell me where you want to go and I'll get to know your travel style before building your perfect itinerary.</p>
-        <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;max-width:480px;text-align:left;margin-bottom:1.5rem;width:100%">
-          <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0.85rem">How to get started</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.9">
-            <div style="margin-bottom:5px"><span style="color:var(--accent)">1.</span> Tell me <strong style="color:var(--text)">where</strong> you want to go</div>
-            <div style="margin-bottom:5px"><span style="color:var(--accent)">2.</span> Share <strong style="color:var(--text)">how long</strong> you are thinking</div>
-            <div style="margin-bottom:5px"><span style="color:var(--accent)">3.</span> Describe <strong style="color:var(--text)">what you love</strong> — food, culture, nightlife, nature, adventure</div>
-            <div><span style="color:var(--accent)">4.</span> I will ask follow-up questions, then build your full trip</div>
+        <div class="welcome-ghost" aria-hidden="true">Waypoint</div>
+        <div class="welcome-content">
+          <div class="welcome-icon">✦</div>
+          <h1>Plan your next <em>adventure</em></h1>
+          <p>I'm Waypoint, your personal AI travel agent. Tell me where you want to go and I'll get to know your travel style before building your perfect itinerary.</p>
+          <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;max-width:480px;text-align:left;margin-bottom:1.5rem;width:100%">
+            <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0.85rem">How to get started</div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.9">
+              <div style="margin-bottom:5px"><span style="color:var(--accent)">1.</span> Tell me <strong style="color:var(--text)">where</strong> you want to go</div>
+              <div style="margin-bottom:5px"><span style="color:var(--accent)">2.</span> Share <strong style="color:var(--text)">how long</strong> you are thinking</div>
+              <div style="margin-bottom:5px"><span style="color:var(--accent)">3.</span> Describe <strong style="color:var(--text)">what you love</strong> — food, culture, nightlife, nature, adventure</div>
+              <div><span style="color:var(--accent)">4.</span> I will ask follow-up questions, then build your full trip</div>
+            </div>
           </div>
-        </div>
-        <div style="font-size:13px;color:var(--text3);margin-bottom:1rem">Or jump in with one of these:</div>
-        <div class="chips">
-          <button class="chip" onclick="quickStart('I want to go to Japan for about 5 days. I love street food and hidden local spots.')">Japan · street food</button>
-          <button class="chip" onclick="quickStart('Thinking about Paris for a long weekend. I love art, wine, and staying out late.')">Paris · art & nights</button>
-          <button class="chip" onclick="quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee & beaches</button>
-          <button class="chip" onclick="quickStart('Portugal for 10 days, slow travel. Wine, old towns, seafood, maybe some surfing.')">Portugal · slow travel</button>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:1rem">Or jump in with one of these:</div>
+          <div class="chips">
+            <button class="chip" onclick="quickStart('I want to go to Japan for about 5 days. I love street food and hidden local spots.')">Japan · street food</button>
+            <button class="chip" onclick="quickStart('Thinking about Paris for a long weekend. I love art, wine, and staying out late.')">Paris · art & nights</button>
+            <button class="chip" onclick="quickStart('I want to explore Colombia. Big into coffee, beaches, and nightlife.')">Colombia · coffee & beaches</button>
+            <button class="chip" onclick="quickStart('Portugal for 10 days, slow travel. Wine, old towns, seafood, maybe some surfing.')">Portugal · slow travel</button>
+          </div>
         </div>
       </div>
     </div>

@@ -23,11 +23,14 @@ import {
   INTENT_PROMPT, DIRECTIONS_PROMPT, WEATHER_PROMPT,
   RESTAURANT_SPECIALIST_PROMPT, HOTEL_SPECIALIST_PROMPT, ACTIVITY_SPECIALIST_PROMPT
 } from './agents.js';
+import { initCardTilt, initWelcomeParallax } from './interactive.js';
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initSidebar();
+  initCardTilt();
+  initWelcomeParallax();
 
   const saved = loadTrips();
   if (saved) {
