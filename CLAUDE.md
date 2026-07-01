@@ -54,6 +54,7 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 - `js/storage.js` — `localStorage` persistence for trips and chat history
 - `js/theme.js` — Dark/light theme toggle, sidebar toggle
 - `js/interactive.js` — Card tilt-on-hover and welcome-screen parallax hover effects
+- `js/splash.js` — Entry splash screen: 3D globe (Three.js, loaded via CDN import map) and the "Start new chat" transition into the main app
 
 **Conversation modes:** `main.js` tracks `conversationMode` with three states:
 1. `chat` — gathering trip preferences; uses `CHAT_PROMPT`
@@ -63,3 +64,5 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 **API proxy:** All Claude calls go through `/.netlify/functions/proxy` to keep the API key server-side. The proxy calls `claude-sonnet-4-5` with a 1000-token limit and trims history to the last 20 messages.
 
 **Maps:** Leaflet.js (loaded via CDN) is used for the directions card. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
+
+**3D:** Three.js is loaded via a `<script type="importmap">` in `index.html` (bare `import 'three'` specifier resolves to the CDN build), used only by `js/splash.js` for the entry globe. `splash.js` dynamically `import()`s it and fails gracefully (button still works) if the CDN is unreachable or WebGL is unavailable.

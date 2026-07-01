@@ -18,6 +18,8 @@ export default [
         clearTimeout: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
+        requestAnimationFrame: "readonly",
+        cancelAnimationFrame: "readonly",
         L: "readonly"
       }
     },
