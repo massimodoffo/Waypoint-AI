@@ -64,6 +64,6 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 
 **API proxy:** All Claude calls go through `/.netlify/functions/proxy` to keep the API key server-side. The proxy calls `claude-sonnet-4-5` with a 1000-token limit and trims history to the last 20 messages.
 
-**Maps:** Leaflet.js (loaded via CDN) is used for the directions card. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
+**Maps:** Leaflet.js (vendored locally under `vendor/leaflet/`, not CDN-loaded — a blocked/slow CDN silently degraded every directions card to its link fallback) is used for the directions card. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
 
 **3D:** Three.js (loaded via a CDN import map in `index.html`) is used only by `js/splash.js` for the entry globe. It's dynamically imported and fails gracefully — the splash button still works — if the CDN or WebGL is unavailable.

@@ -59,6 +59,6 @@ export default [
     }
   },
   {
-    ignores: ["node_modules/**", "dist/**", ".netlify/**"]
+    ignores: ["node_modules/**", "dist/**", ".netlify/**", "vendor/**"]
   }
 ];
