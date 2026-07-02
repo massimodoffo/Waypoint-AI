@@ -118,11 +118,16 @@ const DIRECTIONS_PROMPT = `You are a Waypoint directions specialist. The user is
   "destination": "Full address or place name, City, Country",
   "origin_label": "Short readable name (e.g. Beekman Hotel)",
   "destination_label": "Short readable name (e.g. TAO Hudson Yards)",
+  "origin_lat": 40.7107,
+  "origin_lon": -74.0072,
+  "destination_lat": 40.7549,
+  "destination_lon": -73.9973,
   "travel_mode": "driving|walking|transit",
   "context": "1 sentence of helpful context about this journey (distance, typical time, best mode)"
 }
 
-If the user only mentions one location (destination only, no origin), set origin to "" and origin_label to "".
+If the user only mentions one location (destination only, no origin), set origin to "", origin_label to "", and origin_lat/origin_lon to 0.
+origin_lat/origin_lon/destination_lat/destination_lon = your best-knowledge decimal-degree coordinates for each place — the map renders directly from these rather than re-geocoding the address client-side, so give your most accurate estimate rather than a rough city-center guess.
 Infer the most appropriate travel_mode from context — walking for short city distances, transit or driving for longer.`;
 
 const RESTAURANT_SPECIALIST_PROMPT = `You are a Waypoint restaurant specialist. You know this destination deeply — its food culture, hidden gems, and iconic spots. Based on the trip context and user message, recommend 3-4 restaurants.
