@@ -127,7 +127,7 @@ const DIRECTIONS_PROMPT = `You are a Waypoint directions specialist. The user is
 }
 
 If the user only mentions one location (destination only, no origin), set origin to "", origin_label to "", and origin_lat/origin_lon to 0.
-origin_lat/origin_lon/destination_lat/destination_lon = your best-knowledge decimal-degree coordinates for each place — the map renders directly from these rather than re-geocoding the address client-side, so give your most accurate estimate rather than a rough city-center guess.
+origin_lat/origin_lon/destination_lat/destination_lon = your best-knowledge decimal-degree coordinates for each place — give your most accurate estimate, not a rough city-center guess.
 Infer the most appropriate travel_mode from context — walking for short city distances, transit or driving for longer.`;
 
 const RESTAURANT_SPECIALIST_PROMPT = `You are a Waypoint restaurant specialist. You know this destination deeply — its food culture, hidden gems, and iconic spots. Based on the trip context and user message, recommend 3-4 restaurants.

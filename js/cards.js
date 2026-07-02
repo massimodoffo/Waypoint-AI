@@ -345,8 +345,12 @@ function dirOpenUrl(origin, destination, mode) {
   return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
 }
 
+// Range-checked, not just type-checked — a hallucinated or lat/lon-transposed
+// value from the model would otherwise render silently at the wrong spot
+// with no fallback trigger, since it's still a valid finite number.
 function hasCoords(lat, lon) {
-  return Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0);
+  return Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0) &&
+    Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
 }
 
 // Geocode a place name → {lat, lon} using OpenStreetMap Nominatim (free, no key).
