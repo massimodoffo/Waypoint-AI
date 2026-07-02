@@ -329,20 +329,61 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 };
 
 // ── DIRECTIONS CARD ───────────────────────────────────────────────────────────
-// A free, keyless built-in map. Google retired its keyless embed, so the map
-// itself is rendered with Leaflet + OpenStreetMap tiles (no key, no billing),
-// places markers for both points, and draws the real route via the free OSRM
-// service (falling back to a straight line if OSRM is unavailable). The
-// "Open in Maps" button still hands off to Google for full turn-by-turn.
+// Renders Google's own Maps Embed API (google.com/maps/embed/v1) — the real
+// Google Maps UI, geocoded and routed on Google's own infrastructure — when a
+// GOOGLE_MAPS_EMBED_KEY is configured (see netlify/functions/maps-key.js).
+// Falls back to a free, keyless map (Leaflet + OpenStreetMap tiles, OSRM
+// routing) when no key is set, so the card still works with zero setup. The
+// "Open in Maps" button always hands off to Google for full turn-by-turn,
+// regardless of which renderer drew the embedded map.
 //
-// Requires Leaflet to be loaded on the page (vendored locally, see index.html).
+// The fallback path requires Leaflet, vendored locally (see index.html).
 const DIR_MODE_ICON = { driving: '🚗', walking: '🚶', transit: '🚇' };
 const DIR_MODE_LABEL = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
+
+function hasOrigin(origin) {
+  return Boolean(origin && origin.trim() !== '');
+}
 
 function dirOpenUrl(origin, destination, mode) {
   const o = encodeURIComponent(origin || '');
   const d = encodeURIComponent(destination || '');
   return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
+}
+
+// Embed API URLs are query-string based, so every value that lands in one
+// goes through encodeURIComponent() — same treatment as dirOpenUrl() above.
+function googleEmbedUrl(key, origin, destination, mode) {
+  if (!hasOrigin(origin)) {
+    return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(destination)}`;
+  }
+  const o = encodeURIComponent(origin);
+  const d = encodeURIComponent(destination);
+  return `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(key)}&origin=${o}&destination=${d}&mode=${encodeURIComponent(mode)}`;
+}
+
+// Fetched once and cached for the page's lifetime — undefined/null means "no
+// key configured," not an error, so the map falls back to the Leaflet
+// renderer below rather than surfacing anything to the user. A *failed*
+// fetch (network blip, cold-start timeout) is different from "no key" and
+// isn't cached — clearing the promise lets the next directions card retry
+// instead of every card for the rest of the session being stuck on Leaflet
+// because of one transient hiccup.
+let _googleMapsKeyPromise = null;
+async function getGoogleMapsKey() {
+  if (_googleMapsKeyPromise) return _googleMapsKeyPromise;
+  _googleMapsKeyPromise = (async () => {
+    try {
+      const res = await fetch('/.netlify/functions/maps-key', { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) return null; // legitimately not configured — worth caching
+      const json = await res.json();
+      return json?.key || null;
+    } catch {
+      _googleMapsKeyPromise = null; // transient failure — let the next card retry
+      return null;
+    }
+  })();
+  return _googleMapsKeyPromise;
 }
 
 // Range-checked, not just type-checked — a hallucinated or lat/lon-transposed
@@ -389,7 +430,7 @@ async function routeOSM(a, b) {
 }
 
 function buildDirectionsHTML(domId, data, mode) {
-  const hasOrigin = data.origin && data.origin.trim() !== '';
+  const originKnown = hasOrigin(data.origin);
   const modeBtns = ['driving','walking','transit'].map(m =>
     `<button class="dmb${m === mode ? ' active' : ''}" data-mode="${m}" onclick="switchDirectionsMode('${domId}', '${m}')">${DIR_MODE_ICON[m]} ${DIR_MODE_LABEL[m]}</button>`
   ).join('');
@@ -397,7 +438,7 @@ function buildDirectionsHTML(domId, data, mode) {
   return `
     <div class="directions-header">
       <div class="directions-route">
-        ${hasOrigin ? `
+        ${originKnown ? `
           <div class="directions-from">
             <div class="directions-dot from"></div>
             <span>${escHtml(data.origin_label || data.origin)}</span>
@@ -418,13 +459,26 @@ function buildDirectionsHTML(domId, data, mode) {
     </div>`;
 }
 
-// Build the Leaflet map inside the card's map container
+// Build the map inside the card's map container — Google's own embed when a
+// key is configured, else the Leaflet/OSM fallback.
 async function initDirectionsMap(domId) {
   const entry = window._dirCache[domId];
   if (!entry) return;
   const mapDiv = document.getElementById('dmap-' + domId);
   if (!mapDiv) return;
   const { data } = entry;
+
+  // getGoogleMapsKey() awaits a network round-trip on its first call, during
+  // which the user could already have clicked a mode button — read
+  // entry.mode now rather than a value destructured before the await, or a
+  // mode switch mid-fetch would render with a stale mode until the user
+  // clicked a mode button a second time to correct it.
+  const googleKey = await getGoogleMapsKey();
+  if (googleKey) {
+    entry.googleKey = googleKey;
+    mapDiv.innerHTML = `<iframe src="${googleEmbedUrl(googleKey, data.origin, data.destination, entry.mode)}" width="100%" height="100%" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>`;
+    return;
+  }
 
   if (!window.L) {
     mapDiv.innerHTML = `<a class="directions-map-cta" href="${dirOpenUrl(data.origin, data.destination, entry.mode)}" target="_blank" rel="noopener"><div class="directions-map-cta-icon">🗺</div><div class="directions-map-cta-text">Open the route in Google Maps</div><div class="directions-map-cta-sub">↗</div></a>`;
@@ -434,7 +488,7 @@ async function initDirectionsMap(domId) {
   try {
     const dest = await resolvePoint(data.destination_lat, data.destination_lon, data.destination);
     if (!dest) throw new Error('Could not locate ' + data.destination);
-    const origin = data.origin && data.origin.trim()
+    const origin = hasOrigin(data.origin)
       ? await resolvePoint(data.origin_lat, data.origin_lon, data.origin)
       : null;
 
@@ -503,7 +557,10 @@ function renderDirectionsCard(data) {
 window._dirCache = window._dirCache || {};
 
 // Switch travel mode WITHOUT tearing down the map — just update the badge,
-// the active button, and the Google hand-off link.
+// the active button, the Google hand-off link, and (Google embed only) the
+// embedded route itself. The Leaflet fallback's route is left as-is on a
+// mode switch, same as before this feature — OSRM is only ever queried with
+// a driving profile there regardless of the selected mode.
 window.switchDirectionsMode = function(domId, mode) {
   const card = document.getElementById(domId);
   const entry = window._dirCache[domId];
@@ -517,6 +574,11 @@ window.switchDirectionsMode = function(domId, mode) {
   if (openBtn) openBtn.href = dirOpenUrl(entry.data.origin, entry.data.destination, mode);
 
   card.querySelectorAll('.dmb').forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === mode));
+
+  if (entry.googleKey) {
+    const iframe = card.querySelector('.directions-map iframe');
+    if (iframe) iframe.src = googleEmbedUrl(entry.googleKey, entry.data.origin, entry.data.destination, mode);
+  }
 };
 
 

@@ -13,6 +13,7 @@ export default [
         document: "readonly",
         console: "readonly",
         fetch: "readonly",
+        AbortSignal: "readonly",
         localStorage: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
