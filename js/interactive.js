@@ -9,7 +9,10 @@ function motionAllowed() {
 }
 
 // ── CARD TILT ────────────────────────────────────────────────────────────────
-const TILT_SELECTOR = '.resto-card, .hotel-card, .activity-card';
+// Every result card gets the tilt except .directions-card — tilting the map
+// iframe/canvas would fight its own drag/zoom interactions and make the route
+// harder to read.
+const TILT_SELECTOR = '.resto-card, .hotel-card, .activity-card, .result-card, .weather-card, .itin-full';
 const TILT_MAX_DEG = 6;
 
 function applyTilt(card, e) {
