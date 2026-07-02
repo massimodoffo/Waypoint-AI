@@ -27,12 +27,21 @@ const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
 const TRACER_SEGMENTS = 48;
 
+// How many routes animate at once. Higher than the visual minimum needed at
+// any single instant so that, with routes starting at staggered random
+// progress and taking ~15-25s each, there's essentially always at least one
+// visible mid-flight rather than occasional gaps between landings.
+const TRACER_COUNT = 5;
+
 // Half-width, in world units, of the tracer ribbon on either side of its
 // centerline — ~4-5px on a typical desktop viewport (globe radius 1.4 maps
 // to roughly 270px there), scaling down naturally on smaller screens since
 // it's sized in world units rather than fixed pixels. Enough to read clearly
 // against the dark splash background without turning into a bold band.
 const TRACER_HALF_WIDTH = 0.01;
+
+// 15% slower than the original 0.0022 rad/frame.
+const GLOBE_ROTATION_SPEED = 0.0022 * 0.85;
 
 // FPS-based degrade: WebGL support doesn't mean the device can drive this
 // scene smoothly (Three.js failing to load is the only case handled before
@@ -419,7 +428,7 @@ async function loadGlobe(canvas) {
     markerPool.spawn(position, { ...LANDING_MARK, ringTexture: landingRingTex });
   }
 
-  const tracers = [0, 1, 2].map(() => createTracer(THREE, globeGroup, pickHub(), spawnMarkers));
+  const tracers = Array.from({ length: TRACER_COUNT }, () => createTracer(THREE, globeGroup, pickHub(), spawnMarkers));
 
   const reduced = reducedMotionPreferred();
   let frameId = null;
@@ -472,7 +481,7 @@ async function loadGlobe(canvas) {
   function render() {
     if (!reduced) {
       const now = performance.now();
-      globeGroup.rotation.y += 0.0022;
+      globeGroup.rotation.y += GLOBE_ROTATION_SPEED;
       tracers.forEach((t) => t.update());
       markerPool.update(now);
       maybeDegrade(now);
