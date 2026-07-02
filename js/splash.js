@@ -1,8 +1,8 @@
 // ── splash.js ─────────────────────────────────────────────────────────────────
 // Full-screen entry splash: a spinning 3D globe with land/ocean continents,
-// planes flying continent-to-continent along tracer-marked arcs, the
-// Waypoint AI wordmark, and a single "Explore" button. Clicking it grows a
-// color-matched circle over the globe until it blocks out the whole screen,
+// tracer routes arcing continent-to-continent and landing on ripple markers,
+// the Waypoint AI wordmark, and a single "Explore" button. Clicking it grows
+// a color-matched circle over the globe until it blocks out the whole screen,
 // then reveals the main app underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
@@ -25,16 +25,22 @@ const OCEAN_COLOR = '#204c65';
 const LAND_COLOR = '#5b8c46';
 const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
-const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
+
+// Half-width, in world units, of the tracer ribbon on either side of its
+// centerline — ~4-5px on a typical desktop viewport (globe radius 1.4 maps
+// to roughly 270px there), scaling down naturally on smaller screens since
+// it's sized in world units rather than fixed pixels. Enough to read clearly
+// against the dark splash background without turning into a bold band.
+const TRACER_HALF_WIDTH = 0.01;
 
 // FPS-based degrade: WebGL support doesn't mean the device can drive this
 // scene smoothly (Three.js failing to load is the only case handled before
 // this). FPS_WARMUP_FRAMES skips the first stretch of frames — texture
 // upload and JIT warmup make early frames unreliable — then one rolling
 // FPS_SAMPLE_FRAMES-frame sample is checked; if it's under LOW_FPS_THRESHOLD,
-// degradeQuality() drops to a coarser sphere, a single plane, and pixelRatio
+// degradeQuality() drops to a coarser sphere, a single route, and pixelRatio
 // 1. The globe can run for as long as the splash sits on screen (there's no
 // auto-dismiss), so a slow device isn't just a one-off stutter.
 const FPS_WARMUP_FRAMES = 30;
@@ -42,9 +48,10 @@ const FPS_SAMPLE_FRAMES = 40;
 const LOW_FPS_THRESHOLD = 24;
 
 // Where takeoff/landing markers sit — just above the wireframe sphere
-// (1.42) so the flat dot and the ripple ring don't z-fight with it, but
-// well below flight altitude (ARC_RADIUS 1.46) so they read as sitting on
-// the map rather than floating at cruising height.
+// (1.42) so the flat dot and the ripple ring don't z-fight with it. Tracer
+// routes now use this same radius as their start/end baseline (see
+// createTracer) so a route visibly touches down on its landing marker
+// instead of hovering above it.
 const MARKER_RADIUS = 1.425;
 
 // Color is a bare "r,g,b" triplet rather than a #hex/rgba() string, since
@@ -97,20 +104,6 @@ function earthTexture(THREE) {
   const texture = new THREE.CanvasTexture(c);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
-}
-
-// Draws a "✈" glyph to an offscreen canvas for use as a billboard sprite
-// texture — avoids needing an image asset for a static, no-build-step site.
-function planeTexture(THREE) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const ctx = c.getContext('2d');
-  ctx.font = '46px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#f0ede6';
-  ctx.fillText('✈', 32, 34);
-  return new THREE.CanvasTexture(c);
 }
 
 // A soft annular band — transparent center, bright ring, fading to
@@ -177,15 +170,13 @@ function easeOutBack(t) {
 // A pool of brief takeoff/landing marks: a flat circular dot lying flush
 // against the globe surface, plus one or more expanding-and-fading ripple
 // rings around it — the classic look of a droplet hitting water. Since
-// planes chain journeys (each arrival becomes the next departure), both a
+// routes chain journeys (each arrival becomes the next departure), both a
 // takeoff mark and a landing mark spawn at the same shared hub point.
-// Unlike createPlane(), this manages a variable-size pool of short-lived
+// Unlike createTracer(), this manages a variable-size pool of short-lived
 // objects rather than one persistent one, so it exposes spawn()/update(now)
-// instead of createPlane's single-object { sprite, tracer, update() }
-// shape. It also takes two shared geometries (dotGeometry, ringGeometry)
-// rather than createPlane's single shared texture, since each mark needs
-// both a dot mesh and one or more ring meshes, all built once in
-// loadGlobe() and reused across every spawn.
+// instead of createTracer's single-object { tracer, update() } shape. It
+// also takes two shared geometries (dotGeometry, ringGeometry), all built
+// once in loadGlobe() and reused across every spawn.
 function createMarkerPool(THREE, globeGroup, dotGeometry, ringGeometry) {
   const active = [];
   const FORWARD = new THREE.Vector3(0, 0, 1);
@@ -277,40 +268,65 @@ function pickHub(excludeName) {
   return h;
 }
 
+// fromV/toV only encode direction here — arcPoint() re-normalizes them and
+// scales by its own radius argument, so the magnitude passed in is discarded.
 function buildJourney(THREE, fromHub, toHub) {
-  const fromV = latLonToVector3(THREE, fromHub.lat, fromHub.lon, ARC_RADIUS);
-  const toV = latLonToVector3(THREE, toHub.lat, toHub.lon, ARC_RADIUS);
+  const fromV = latLonToVector3(THREE, fromHub.lat, fromHub.lon, 1);
+  const toV = latLonToVector3(THREE, toHub.lat, toHub.lon, 1);
   return { fromHub, toHub, fromV, toV };
 }
 
-// A plane sprite + its trailing tracer line, flying continent-to-continent.
+// A flat ribbon mesh tracing a route continent-to-continent, revealed
+// progressively as it "flies" and landing on a ripple marker at each hub.
 // Each arrival becomes the next departure, so it reads as an ongoing route
 // network rather than random hops. Returns a dispose-handle object mirroring
 // the shape loadGlobe() itself returns, so the two compose the same way.
-function createPlane(THREE, texture, globeGroup, camera, startHub, spawnMarkers) {
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
-  sprite.scale.set(0.22, 0.22, 1);
-  globeGroup.add(sprite);
-
-  const tracerMaterial = new THREE.LineBasicMaterial({ color: 0xc8b87a, transparent: true, opacity: 0.55 });
-  const tracer = new THREE.Line(new THREE.BufferGeometry(), tracerMaterial);
+function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
+  const tracerMaterial = new THREE.MeshBasicMaterial({
+    color: 0xc8b87a, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false
+  });
+  const tracer = new THREE.Mesh(new THREE.BufferGeometry(), tracerMaterial);
   tracer.frustumCulled = false;
   globeGroup.add(tracer);
 
+  // Triangle connectivity is identical for every journey (same sample
+  // count each time) — built once here and reused across setTracerGeometry
+  // calls, which only need to rebuild vertex positions.
+  const indices = new Uint16Array(TRACER_SEGMENTS * 6);
+  for (let i = 0; i < TRACER_SEGMENTS; i++) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.set([a, b, c, b, d, c], i * 6);
+  }
+
   let journey = buildJourney(THREE, startHub, pickHub(startHub.name));
-  let progress = Math.random(); // stagger so all planes don't launch in sync
+  let progress = Math.random(); // stagger so all routes don't launch in sync
   const speed = 0.0007 + Math.random() * 0.0004;
 
   function setTracerGeometry() {
-    const positions = new Float32Array((TRACER_SEGMENTS + 1) * 3);
+    const positions = new Float32Array((TRACER_SEGMENTS + 1) * 2 * 3);
     for (let i = 0; i <= TRACER_SEGMENTS; i++) {
-      const p = arcPoint(THREE, journey.fromV, journey.toV, i / TRACER_SEGMENTS, ARC_RADIUS, ARC_BULGE);
-      positions[i * 3] = p.x;
-      positions[i * 3 + 1] = p.y;
-      positions[i * 3 + 2] = p.z;
+      const t = i / TRACER_SEGMENTS;
+      const p = arcPoint(THREE, journey.fromV, journey.toV, t, MARKER_RADIUS, ARC_BULGE);
+      // Offset sideways along the tangent-plane binormal (tangent × radial
+      // normal) rather than billboarding to the camera — this keeps the
+      // ribbon correctly aligned with the arc as the globe rotates under a
+      // static camera, since it's computed in the same rotating local space
+      // as the geometry itself.
+      const ahead = arcPoint(THREE, journey.fromV, journey.toV, Math.min(1, t + 0.01), MARKER_RADIUS, ARC_BULGE);
+      const tangent = ahead.clone().sub(p).normalize();
+      const side = tangent.clone().cross(p.clone().normalize()).normalize().multiplyScalar(TRACER_HALF_WIDTH);
+      const left = p.clone().sub(side);
+      const right = p.clone().add(side);
+      const idx = i * 6;
+      positions[idx] = left.x; positions[idx + 1] = left.y; positions[idx + 2] = left.z;
+      positions[idx + 3] = right.x; positions[idx + 4] = right.y; positions[idx + 5] = right.z;
     }
     const newGeometry = new THREE.BufferGeometry();
     newGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    newGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
     newGeometry.setDrawRange(0, 0);
     tracer.geometry.dispose();
     tracer.geometry = newGeometry;
@@ -318,39 +334,22 @@ function createPlane(THREE, texture, globeGroup, camera, startHub, spawnMarkers)
   setTracerGeometry();
 
   return {
-    sprite, tracer,
+    tracer,
     update() {
       progress += speed;
       if (progress >= 1) {
         progress = 0;
-        // Marker sits on the surface (MARKER_RADIUS), not at flight
-        // altitude (ARC_RADIUS) — recomputed from the old journey's arrival
-        // hub, read before journey is reassigned below.
         spawnMarkers(latLonToVector3(THREE, journey.toHub.lat, journey.toHub.lon, MARKER_RADIUS));
         journey = buildJourney(THREE, journey.toHub, pickHub(journey.toHub.name));
         setTracerGeometry();
       }
 
-      const pos = arcPoint(THREE, journey.fromV, journey.toV, progress, ARC_RADIUS, ARC_BULGE);
-      sprite.position.copy(pos);
-
-      const revealed = Math.min(TRACER_SEGMENTS, Math.floor(progress * TRACER_SEGMENTS) + 1);
-      tracer.geometry.setDrawRange(0, revealed);
-
-      // Orient the sprite to face its direction of travel in screen space
-      // (a sprite's own rotation is the only part of it that isn't
-      // auto-billboarded to the camera, so this needs an explicit angle).
-      // The "✈" glyph's own nose already points along rotation=0 (screen
-      // +X, i.e. "right"), so no extra offset is needed here.
-      const ahead = arcPoint(THREE, journey.fromV, journey.toV, Math.min(1, progress + 0.01), ARC_RADIUS, ARC_BULGE);
-      const p1 = globeGroup.localToWorld(pos.clone()).project(camera);
-      const p2 = globeGroup.localToWorld(ahead.clone()).project(camera);
-      sprite.material.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const revealedPoints = Math.min(TRACER_SEGMENTS, Math.floor(progress * TRACER_SEGMENTS) + 1);
+      const revealedSegments = Math.max(0, revealedPoints - 1);
+      tracer.geometry.setDrawRange(0, revealedSegments * 6);
     },
     dispose() {
-      globeGroup.remove(sprite);
       globeGroup.remove(tracer);
-      sprite.material.dispose();
       tracer.geometry.dispose();
       tracerMaterial.dispose();
     }
@@ -402,8 +401,7 @@ async function loadGlobe(canvas) {
     markerPool.spawn(position, { ...LANDING_MARK, ringTexture: landingRingTex });
   }
 
-  const planeTex = planeTexture(THREE);
-  const planes = [0, 1, 2].map(() => createPlane(THREE, planeTex, globeGroup, camera, pickHub(), spawnMarkers));
+  const tracers = [0, 1, 2].map(() => createTracer(THREE, globeGroup, pickHub(), spawnMarkers));
 
   const reduced = reducedMotionPreferred();
   let frameId = null;
@@ -419,7 +417,7 @@ async function loadGlobe(canvas) {
   function degradeQuality() {
     degraded = true;
     renderer.setPixelRatio(1);
-    while (planes.length > 1) planes.pop().dispose();
+    while (tracers.length > 1) tracers.pop().dispose();
     globeGeometry.dispose();
     globeGeometry = new THREE.SphereGeometry(1.4, 24, 24);
     globeMesh.geometry = globeGeometry;
@@ -457,7 +455,7 @@ async function loadGlobe(canvas) {
     if (!reduced) {
       const now = performance.now();
       globeGroup.rotation.y += 0.0022;
-      planes.forEach((p) => p.update());
+      tracers.forEach((t) => t.update());
       markerPool.update(now);
       maybeDegrade(now);
       frameId = requestAnimationFrame(render);
@@ -478,8 +476,7 @@ async function loadGlobe(canvas) {
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      planes.forEach((p) => p.dispose());
-      planeTex.dispose();
+      tracers.forEach((t) => t.dispose());
       markerPool.dispose();
       dotGeometry.dispose();
       ringGeometry.dispose();
