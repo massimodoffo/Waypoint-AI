@@ -61,7 +61,12 @@ aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visib
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
 /* ── MAIN ────────────────────────────────────────────────────────────────────── */
+/* tabindex="-1" + focus() in splash.js's dismissal handler moves focus here once the
+   splash is torn down, so keyboard users don't lose focus to <body>. outline is
+   suppressed since this is a landmark hand-off (screen readers still announce
+   entering <main>), not a visible interactive control. */
 main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+main:focus { outline: none; }
 #chat { flex: 1; overflow-y: auto; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth; }
 #chat::-webkit-scrollbar { width: 4px; }
 #chat::-webkit-scrollbar-track { background: transparent; }

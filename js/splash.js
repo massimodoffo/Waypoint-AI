@@ -29,6 +29,18 @@ const ARC_RADIUS = 1.46;
 const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
+// FPS-based degrade: WebGL support doesn't mean the device can drive this
+// scene smoothly (Three.js failing to load is the only case handled before
+// this). FPS_WARMUP_FRAMES skips the first stretch of frames — texture
+// upload and JIT warmup make early frames unreliable — then one rolling
+// FPS_SAMPLE_FRAMES-frame sample is checked; if it's under LOW_FPS_THRESHOLD,
+// degradeQuality() drops to a coarser sphere, a single plane, and pixelRatio
+// 1. The globe can run for as long as the splash sits on screen (there's no
+// auto-dismiss), so a slow device isn't just a one-off stutter.
+const FPS_WARMUP_FRAMES = 30;
+const FPS_SAMPLE_FRAMES = 40;
+const LOW_FPS_THRESHOLD = 24;
+
 // Where takeoff/landing markers sit — just above the wireframe sphere
 // (1.42) so the flat dot and the ripple ring don't z-fight with it, but
 // well below flight altitude (ARC_RADIUS 1.46) so they read as sitting on
@@ -336,6 +348,8 @@ function createPlane(THREE, texture, globeGroup, camera, startHub, spawnMarkers)
       sprite.material.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x);
     },
     dispose() {
+      globeGroup.remove(sprite);
+      globeGroup.remove(tracer);
       sprite.material.dispose();
       tracer.geometry.dispose();
       tracerMaterial.dispose();
@@ -358,13 +372,17 @@ async function loadGlobe(canvas) {
   scene.add(globeGroup);
 
   const globeTexture = earthTexture(THREE);
-  const globeGeometry = new THREE.SphereGeometry(1.4, 48, 48);
+  // Reassigned by degradeQuality() to a coarser geometry — dispose() below
+  // always disposes whatever these currently point to.
+  let globeGeometry = new THREE.SphereGeometry(1.4, 48, 48);
   const globeMaterial = new THREE.MeshStandardMaterial({ map: globeTexture, roughness: 0.65, metalness: 0.05 });
-  globeGroup.add(new THREE.Mesh(globeGeometry, globeMaterial));
+  const globeMesh = new THREE.Mesh(globeGeometry, globeMaterial);
+  globeGroup.add(globeMesh);
 
-  const wireGeometry = new THREE.SphereGeometry(1.42, 24, 16);
+  let wireGeometry = new THREE.SphereGeometry(1.42, 24, 16);
   const wireMaterial = new THREE.MeshBasicMaterial({ color: 0xc8b87a, wireframe: true, transparent: true, opacity: 0.22 });
-  globeGroup.add(new THREE.Mesh(wireGeometry, wireMaterial));
+  const wireMesh = new THREE.Mesh(wireGeometry, wireMaterial);
+  globeGroup.add(wireMesh);
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
   const key = new THREE.PointLight(0xc8b87a, 1.4, 20);
@@ -390,11 +408,58 @@ async function loadGlobe(canvas) {
   const reduced = reducedMotionPreferred();
   let frameId = null;
 
+  // WebGL working doesn't mean it's working smoothly — this is the fallback
+  // for a slow device, distinct from the try/catch in initSplash() that
+  // handles WebGL/network being absent entirely.
+  let degraded = false;
+  let framesSeen = 0;
+  let sampleStart = 0;
+  let framesSinceSampleStart = 0;
+
+  function degradeQuality() {
+    degraded = true;
+    renderer.setPixelRatio(1);
+    while (planes.length > 1) planes.pop().dispose();
+    globeGeometry.dispose();
+    globeGeometry = new THREE.SphereGeometry(1.4, 24, 24);
+    globeMesh.geometry = globeGeometry;
+    wireGeometry.dispose();
+    wireGeometry = new THREE.SphereGeometry(1.42, 16, 10);
+    wireMesh.geometry = wireGeometry;
+  }
+
+  function maybeDegrade(now) {
+    if (degraded) return;
+    framesSeen++;
+    if (framesSeen <= FPS_WARMUP_FRAMES) { sampleStart = now; framesSinceSampleStart = 0; return; }
+    framesSinceSampleStart++;
+    if (framesSinceSampleStart < FPS_SAMPLE_FRAMES) return;
+    const fps = (framesSinceSampleStart / (now - sampleStart)) * 1000;
+    if (fps < LOW_FPS_THRESHOLD) degradeQuality();
+    sampleStart = now;
+    framesSinceSampleStart = 0;
+  }
+
+  // rAF is paused (or heavily throttled) while the tab is hidden, so a sample
+  // window straddling a backgrounding stretch would divide a real frame count
+  // by a wall-clock gap of minutes — reading as near-zero fps and permanently
+  // degrading a perfectly capable device. Restart the warmup on return instead
+  // of letting stale sampleStart/framesSinceSampleStart feed that calculation.
+  function onVisibilityChange() {
+    if (!document.hidden) {
+      framesSeen = 0;
+      framesSinceSampleStart = 0;
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
   function render() {
     if (!reduced) {
+      const now = performance.now();
       globeGroup.rotation.y += 0.0022;
       planes.forEach((p) => p.update());
-      markerPool.update(performance.now());
+      markerPool.update(now);
+      maybeDegrade(now);
       frameId = requestAnimationFrame(render);
     }
     renderer.render(scene, camera);
@@ -412,6 +477,7 @@ async function loadGlobe(canvas) {
     dispose() {
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       planes.forEach((p) => p.dispose());
       planeTex.dispose();
       markerPool.dispose();
@@ -472,6 +538,12 @@ function initSplash() {
         dismissed = true;
         splash.remove();
         if (globeHandle) globeHandle.dispose();
+        // splash.remove() drops whatever had focus (the button, for keyboard
+        // users who activated it via Enter/Space) back to <body> with no
+        // visible indicator. Hand focus to the <main> landmark instead of
+        // leaving it stranded.
+        const main = document.querySelector('main');
+        if (main) main.focus({ preventScroll: true });
       }, fadeMs);
     }, growMs);
   });

@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const trip = getCurrentTrip();
   if (trip && trip.history && trip.history.length > 0) {
     restoreChat();
+  } else {
+    // index.html ships #chat empty — clearChat() renders the welcome screen
+    clearChat();
   }
 
   // Events are wired in index.html plain script tag
