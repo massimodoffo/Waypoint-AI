@@ -82,7 +82,7 @@ const HOTELS_PROMPT = `You are the Waypoint hotels specialist. Given trip parame
 {
   "neighborhoods": ["Best area 1 with reason", "Best area 2 with reason"],
   "hotel_picks": [
-    { "name": "Hotel name", "type": "boutique|hostel|luxury|airbnb-style", "why": "1 sentence why it fits", "price_range": "$X–$Y/night" }
+    { "name": "Hotel name", "type": "boutique|hostel|luxury|airbnb-style", "why": "1 sentence why it fits", "price_range": "$X–$Y/night", "google_maps_query": "Hotel Name City Country" }
   ],
   "booking_tips": "1–2 sentences on best booking strategy"
 }

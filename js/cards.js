@@ -65,13 +65,18 @@ function buildResultCards(budget, hotels, local) {
   hc.innerHTML = `
     <div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
     <div class="rc-body">
-      ${hotels.hotel_picks.map(h => `
+      ${hotels.hotel_picks.map(h => {
+        // google_maps_query is missing on hotel_picks saved before this field
+        // existed — fall back to searching by name alone for old trip history.
+        const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query || h.name);
+        return `
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-          <div style="font-weight:500;font-size:13px;color:var(--text)">${h.name}</div>
-          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${h.price_range} · ${h.type}</div>
-          <div style="font-size:12px;color:var(--text2)">${h.why}</div>
-        </div>`).join('')}
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${hotels.booking_tips}</div>
+          <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-weight:500;font-size:13px;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:4px">${escHtml(h.name)}<span style="font-size:10px;color:var(--text3)">↗</span></a>
+          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${escHtml(h.price_range)} · ${escHtml(h.type)}</div>
+          <div style="font-size:12px;color:var(--text2)">${escHtml(h.why)}</div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${escHtml(hotels.booking_tips)}</div>
     </div>`;
   grid.appendChild(hc);
 
