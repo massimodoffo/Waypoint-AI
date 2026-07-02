@@ -1,9 +1,9 @@
 // ── splash.js ─────────────────────────────────────────────────────────────────
 // Full-screen entry splash: a spinning 3D globe with land/ocean continents,
-// tracer routes arcing continent-to-continent and landing on ripple markers,
-// the Waypoint AI wordmark, and a single "Explore" button. Clicking it grows
-// a color-matched circle over the globe until it blocks out the whole screen,
-// then reveals the main app underneath.
+// tracer routes lying flat against the surface continent-to-continent and
+// landing on ripple markers, the Waypoint AI wordmark, and a single
+// "Explore" button. Clicking it grows a color-matched circle over the globe
+// until it blocks out the whole screen, then reveals the main app underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
 
@@ -25,7 +25,6 @@ const OCEAN_COLOR = '#204c65';
 const LAND_COLOR = '#5b8c46';
 const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
-const ARC_BULGE = 0.32;
 const TRACER_SEGMENTS = 48;
 
 // Half-width, in world units, of the tracer ribbon on either side of its
@@ -49,9 +48,10 @@ const LOW_FPS_THRESHOLD = 24;
 
 // Where takeoff/landing markers sit — just above the wireframe sphere
 // (1.42) so the flat dot and the ripple ring don't z-fight with it. Tracer
-// routes now use this same radius as their start/end baseline (see
-// createTracer) so a route visibly touches down on its landing marker
-// instead of hovering above it.
+// routes now use this same radius for their entire length (see
+// createTracer), lying flat against the globe rather than arcing above it,
+// so a route visibly touches down on its landing marker instead of
+// hovering above it.
 const MARKER_RADIUS = 1.425;
 
 // Color is a bare "r,g,b" triplet rather than a #hex/rgba() string, since
@@ -139,10 +139,10 @@ function latLonToVector3(THREE, lat, lon, radius) {
   );
 }
 
-// Spherical-linear-interpolates between two surface points and lifts the
-// midpoint outward, so the path arcs above the globe instead of cutting
-// through it — the classic "flight route" curve.
-function arcPoint(THREE, fromV, toV, t, radius, bulge) {
+// Spherical-linear-interpolates between two surface points at a constant
+// radius, so the resulting path lies flat against the globe — a great-circle
+// route arc rather than one that lifts above the surface.
+function arcPoint(THREE, fromV, toV, t, radius) {
   const v = fromV.clone().normalize();
   const w = toV.clone().normalize();
   const omega = Math.acos(THREE.MathUtils.clamp(v.dot(w), -1, 1));
@@ -154,8 +154,7 @@ function arcPoint(THREE, fromV, toV, t, radius, bulge) {
     point = v.clone().multiplyScalar(Math.sin((1 - t) * omega) / s)
       .add(w.clone().multiplyScalar(Math.sin(t * omega) / s));
   }
-  const lift = Math.sin(t * Math.PI) * bulge;
-  return point.normalize().multiplyScalar(radius + lift);
+  return point.normalize().multiplyScalar(radius);
 }
 
 // Robert Penner's easeOutBack: eases 0→1, overshooting slightly past 1
@@ -304,25 +303,37 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
   let journey = buildJourney(THREE, startHub, pickHub(startHub.name));
   let progress = Math.random(); // stagger so all routes don't launch in sync
   const speed = 0.0007 + Math.random() * 0.0004;
+  // Backs the position BufferAttribute — kept as a closure reference (rather
+  // than only living inside the attribute) so the per-frame tip update below
+  // can write directly into it instead of rebuilding the whole geometry.
+  let positions = null;
+
+  // Computes the ribbon's left/right offset vertices at parameter t and
+  // writes them into `positions` at sample slot i (each slot holds one
+  // left/right pair = 6 floats). Shared by the full-path bake in
+  // setTracerGeometry() and by the per-frame leading-edge update in
+  // update(), so both use identical offset math.
+  function writeRibbonPoint(i, t) {
+    const p = arcPoint(THREE, journey.fromV, journey.toV, t, MARKER_RADIUS);
+    // Offset sideways along the tangent-plane binormal (tangent × radial
+    // normal) rather than billboarding to the camera — this keeps the
+    // ribbon correctly aligned with the arc as the globe rotates under a
+    // static camera, since it's computed in the same rotating local space
+    // as the geometry itself.
+    const ahead = arcPoint(THREE, journey.fromV, journey.toV, Math.min(1, t + 0.01), MARKER_RADIUS);
+    const tangent = ahead.clone().sub(p).normalize();
+    const side = tangent.clone().cross(p.clone().normalize()).normalize().multiplyScalar(TRACER_HALF_WIDTH);
+    const left = p.clone().sub(side);
+    const right = p.clone().add(side);
+    const idx = i * 6;
+    positions[idx] = left.x; positions[idx + 1] = left.y; positions[idx + 2] = left.z;
+    positions[idx + 3] = right.x; positions[idx + 4] = right.y; positions[idx + 5] = right.z;
+  }
 
   function setTracerGeometry() {
-    const positions = new Float32Array((TRACER_SEGMENTS + 1) * 2 * 3);
+    positions = new Float32Array((TRACER_SEGMENTS + 1) * 2 * 3);
     for (let i = 0; i <= TRACER_SEGMENTS; i++) {
-      const t = i / TRACER_SEGMENTS;
-      const p = arcPoint(THREE, journey.fromV, journey.toV, t, MARKER_RADIUS, ARC_BULGE);
-      // Offset sideways along the tangent-plane binormal (tangent × radial
-      // normal) rather than billboarding to the camera — this keeps the
-      // ribbon correctly aligned with the arc as the globe rotates under a
-      // static camera, since it's computed in the same rotating local space
-      // as the geometry itself.
-      const ahead = arcPoint(THREE, journey.fromV, journey.toV, Math.min(1, t + 0.01), MARKER_RADIUS, ARC_BULGE);
-      const tangent = ahead.clone().sub(p).normalize();
-      const side = tangent.clone().cross(p.clone().normalize()).normalize().multiplyScalar(TRACER_HALF_WIDTH);
-      const left = p.clone().sub(side);
-      const right = p.clone().add(side);
-      const idx = i * 6;
-      positions[idx] = left.x; positions[idx + 1] = left.y; positions[idx + 2] = left.z;
-      positions[idx + 3] = right.x; positions[idx + 4] = right.y; positions[idx + 5] = right.z;
+      writeRibbonPoint(i, i / TRACER_SEGMENTS);
     }
     const newGeometry = new THREE.BufferGeometry();
     newGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -344,9 +355,16 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
         setTracerGeometry();
       }
 
-      const revealedPoints = Math.min(TRACER_SEGMENTS, Math.floor(progress * TRACER_SEGMENTS) + 1);
-      const revealedSegments = Math.max(0, revealedPoints - 1);
-      tracer.geometry.setDrawRange(0, revealedSegments * 6);
+      // Every fully-passed sample point stays at its baked position from
+      // setTracerGeometry(); only the leading edge (the point just past the
+      // last fully-revealed segment) is rewritten every frame, at the exact
+      // continuous `progress` value rather than the nearest baked sample —
+      // this is what makes the ribbon grow smoothly instead of popping
+      // forward in whole 1/TRACER_SEGMENTS steps.
+      const segIdx = Math.min(TRACER_SEGMENTS - 1, Math.floor(progress * TRACER_SEGMENTS));
+      writeRibbonPoint(segIdx + 1, progress);
+      tracer.geometry.attributes.position.needsUpdate = true;
+      tracer.geometry.setDrawRange(0, (segIdx + 1) * 6);
     },
     dispose() {
       globeGroup.remove(tracer);
