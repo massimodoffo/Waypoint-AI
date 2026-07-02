@@ -25,6 +25,11 @@ const OCEAN_COLOR = '#204c65';
 const LAND_COLOR = '#5b8c46';
 const LAND_OUTLINE = 'rgba(233,225,205,0.35)';
 
+// Slow enough that a route's ~15-25s flight reads as unhurried against the
+// backdrop, rather than the globe spinning fast enough to compete with the
+// tracer animations for attention.
+const GLOBE_ROTATION_SPEED = 0.0022 * 0.85;
+
 const TRACER_SEGMENTS = 48;
 
 // How many routes animate at once. Higher than the visual minimum needed at
@@ -33,6 +38,12 @@ const TRACER_SEGMENTS = 48;
 // visible mid-flight rather than occasional gaps between landings.
 const TRACER_COUNT = 5;
 
+// How many routes degradeQuality() leaves running on a slow device. Kept
+// above 1 so the FPS-based fallback (see below) doesn't compound its own
+// sphere/pixelRatio cuts with an equally abrupt drop from 5 routes to a
+// single one in the same frame.
+const DEGRADED_TRACER_COUNT = 2;
+
 // Half-width, in world units, of the tracer ribbon on either side of its
 // centerline — ~4-5px on a typical desktop viewport (globe radius 1.4 maps
 // to roughly 270px there), scaling down naturally on smaller screens since
@@ -40,17 +51,15 @@ const TRACER_COUNT = 5;
 // against the dark splash background without turning into a bold band.
 const TRACER_HALF_WIDTH = 0.01;
 
-// 15% slower than the original 0.0022 rad/frame.
-const GLOBE_ROTATION_SPEED = 0.0022 * 0.85;
-
 // FPS-based degrade: WebGL support doesn't mean the device can drive this
 // scene smoothly (Three.js failing to load is the only case handled before
 // this). FPS_WARMUP_FRAMES skips the first stretch of frames — texture
 // upload and JIT warmup make early frames unreliable — then one rolling
 // FPS_SAMPLE_FRAMES-frame sample is checked; if it's under LOW_FPS_THRESHOLD,
-// degradeQuality() drops to a coarser sphere, a single route, and pixelRatio
-// 1. The globe can run for as long as the splash sits on screen (there's no
-// auto-dismiss), so a slow device isn't just a one-off stutter.
+// degradeQuality() drops to a coarser sphere, DEGRADED_TRACER_COUNT routes,
+// and pixelRatio 1. The globe can run for as long as the splash sits on
+// screen (there's no auto-dismiss), so a slow device isn't just a one-off
+// stutter.
 const FPS_WARMUP_FRAMES = 30;
 const FPS_SAMPLE_FRAMES = 40;
 const LOW_FPS_THRESHOLD = 24;
@@ -339,11 +348,18 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
     positions[idx + 3] = right.x; positions[idx + 4] = right.y; positions[idx + 5] = right.z;
   }
 
+  // Tracks the last segment boundary crossed, so update() can tell when the
+  // live tip has just become a fully-passed point (see the re-snap below).
+  // Reset alongside `positions` on every rebuild since a fresh journey's
+  // sample points are all freshly baked exact, with no live tip yet.
+  let lastRevealedSegment = -1;
+
   function setTracerGeometry() {
     positions = new Float32Array((TRACER_SEGMENTS + 1) * 2 * 3);
     for (let i = 0; i <= TRACER_SEGMENTS; i++) {
       writeRibbonPoint(i, i / TRACER_SEGMENTS);
     }
+    lastRevealedSegment = -1;
     const newGeometry = new THREE.BufferGeometry();
     newGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     newGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
@@ -370,10 +386,20 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
       // continuous `progress` value rather than the nearest baked sample —
       // this is what makes the ribbon grow smoothly instead of popping
       // forward in whole 1/TRACER_SEGMENTS steps.
-      const segIdx = Math.min(TRACER_SEGMENTS - 1, Math.floor(progress * TRACER_SEGMENTS));
-      writeRibbonPoint(segIdx + 1, progress);
+      const revealedSegment = Math.min(TRACER_SEGMENTS - 1, Math.floor(progress * TRACER_SEGMENTS));
+      if (revealedSegment > lastRevealedSegment) {
+        // `speed` is always well under one segment's width, so at most one
+        // boundary is crossed per frame: the point that was the live tip a
+        // moment ago is now fully passed, but was last written at whatever
+        // continuous `progress` it held right before crossing — snap it back
+        // to its exact baked t = revealedSegment/TRACER_SEGMENTS position so
+        // it doesn't sit a fraction of a frame short forever.
+        writeRibbonPoint(revealedSegment, revealedSegment / TRACER_SEGMENTS);
+        lastRevealedSegment = revealedSegment;
+      }
+      writeRibbonPoint(revealedSegment + 1, progress);
       tracer.geometry.attributes.position.needsUpdate = true;
-      tracer.geometry.setDrawRange(0, (segIdx + 1) * 6);
+      tracer.geometry.setDrawRange(0, (revealedSegment + 1) * 6);
     },
     dispose() {
       globeGroup.remove(tracer);
@@ -444,7 +470,7 @@ async function loadGlobe(canvas) {
   function degradeQuality() {
     degraded = true;
     renderer.setPixelRatio(1);
-    while (tracers.length > 1) tracers.pop().dispose();
+    while (tracers.length > DEGRADED_TRACER_COUNT) tracers.pop().dispose();
     globeGeometry.dispose();
     globeGeometry = new THREE.SphereGeometry(1.4, 24, 24);
     globeMesh.geometry = globeGeometry;
