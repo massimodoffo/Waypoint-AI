@@ -538,6 +538,12 @@ function initSplash() {
         dismissed = true;
         splash.remove();
         if (globeHandle) globeHandle.dispose();
+        // splash.remove() drops whatever had focus (the button, for keyboard
+        // users who activated it via Enter/Space) back to <body> with no
+        // visible indicator. Hand focus to the <main> landmark instead of
+        // leaving it stranded.
+        const main = document.querySelector('main');
+        if (main) main.focus({ preventScroll: true });
       }, fadeMs);
     }, growMs);
   });
