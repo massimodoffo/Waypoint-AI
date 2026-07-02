@@ -335,7 +335,7 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 // service (falling back to a straight line if OSRM is unavailable). The
 // "Open in Maps" button still hands off to Google for full turn-by-turn.
 //
-// Requires Leaflet to be loaded on the page (added via CDN in index.html).
+// Requires Leaflet to be loaded on the page (vendored locally, see index.html).
 const DIR_MODE_ICON = { driving: '🚗', walking: '🚶', transit: '🚇' };
 const DIR_MODE_LABEL = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
 
@@ -345,7 +345,19 @@ function dirOpenUrl(origin, destination, mode) {
   return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
 }
 
-// Geocode a place name → {lat, lon} using OpenStreetMap Nominatim (free, no key)
+// Range-checked, not just type-checked — a hallucinated or lat/lon-transposed
+// value from the model would otherwise render silently at the wrong spot
+// with no fallback trigger, since it's still a valid finite number.
+function hasCoords(lat, lon) {
+  return Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0) &&
+    Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
+}
+
+// Geocode a place name → {lat, lon} using OpenStreetMap Nominatim (free, no key).
+// Only used as a fallback (see resolvePoint below) — Nominatim is unreliable for
+// direct client-side/browser use (rate limits, occasional CORS/blocking on
+// shared or datacenter IPs), which used to make it the map's single point of
+// failure: any geocoding hiccup fell all the way back to the plain link.
 async function geocodeOSM(query) {
   if (!query || !query.trim()) return null;
   const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
@@ -353,6 +365,15 @@ async function geocodeOSM(query) {
   const data = await res.json();
   if (!Array.isArray(data) || data.length === 0) return null;
   return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+}
+
+// Prefer the coordinates DIRECTIONS_PROMPT already asked the model for — no
+// network round-trip, and not subject to Nominatim's reliability issues. Only
+// falls back to geocoding by name for trip history saved before this field
+// existed.
+async function resolvePoint(lat, lon, query) {
+  if (hasCoords(lat, lon)) return { lat, lon };
+  return geocodeOSM(query);
 }
 
 // Get a road-following route geometry between two points via the free OSRM demo
@@ -411,9 +432,11 @@ async function initDirectionsMap(domId) {
   }
 
   try {
-    const dest = await geocodeOSM(data.destination);
+    const dest = await resolvePoint(data.destination_lat, data.destination_lon, data.destination);
     if (!dest) throw new Error('Could not locate ' + data.destination);
-    const origin = data.origin && data.origin.trim() ? await geocodeOSM(data.origin) : null;
+    const origin = data.origin && data.origin.trim()
+      ? await resolvePoint(data.origin_lat, data.origin_lon, data.origin)
+      : null;
 
     mapDiv.innerHTML = '';
     const map = window.L.map(mapDiv, { zoomControl: true, scrollWheelZoom: false });

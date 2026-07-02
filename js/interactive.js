@@ -9,10 +9,13 @@ function motionAllowed() {
 }
 
 // ── CARD TILT ────────────────────────────────────────────────────────────────
-// Every result card gets the tilt except .directions-card — tilting the map
-// iframe/canvas would fight its own drag/zoom interactions and make the route
-// harder to read.
-const TILT_SELECTOR = '.resto-card, .hotel-card, .activity-card, .result-card, .weather-card, .itin-full';
+const TILT_SELECTOR = '.resto-card, .hotel-card, .activity-card, .result-card, .weather-card, .itin-full, .directions-card';
+// .directions-card gets the tilt everywhere except its embedded Leaflet map —
+// Leaflet drags/pans the map on the same raw mousemove events, so tilting the
+// whole card at the same time reads as broken exactly while the user is
+// trying to read the route. The rest of the card (header, footer, mode
+// buttons) still tilts normally.
+const TILT_EXCLUDE_SELECTOR = '.directions-map';
 const TILT_MAX_DEG = 6;
 
 function applyTilt(card, e) {
@@ -36,7 +39,9 @@ function initCardTilt() {
 
   chat.addEventListener('mousemove', (e) => {
     const card = e.target.closest(TILT_SELECTOR);
-    if (card) applyTilt(card, e);
+    if (!card) return;
+    if (e.target.closest(TILT_EXCLUDE_SELECTOR)) { resetTilt(card); return; }
+    applyTilt(card, e);
   });
 
   chat.addEventListener('mouseout', (e) => {

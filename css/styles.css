@@ -322,7 +322,8 @@ textarea::placeholder { color: var(--text3); }
 }
 
 /* ── DIRECTIONS CARD ─────────────────────────────────────────────────────────── */
-.directions-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; }
+.directions-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; will-change: transform; }
+.directions-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .directions-header { padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .directions-route { flex: 1; }
 .directions-from { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
