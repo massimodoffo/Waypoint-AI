@@ -41,7 +41,7 @@ python3 -m http.server
 
 The Netlify functions require environment variables set in the Netlify dashboard:
 - `ANTHROPIC_API_KEY` (required) — used by `proxy.js` for all Claude calls.
-- `GOOGLE_MAPS_EMBED_KEY` (optional) — used by `maps-key.js` to enable the real Google Maps embed on directions cards. Must be a Maps Embed API key restricted (in Google Cloud Console) to the deployed domain's HTTP referrer — that restriction is what makes it safe to hand to the client, the same way any client-side Google Maps key works. Without it, directions cards fall back to the free Leaflet/OpenStreetMap map — no functionality is lost, just the Google-branded look.
+- `GOOGLE_MAPS_EMBED_KEY` (optional) — a domain-restricted Maps Embed API key used by `maps-key.js` to enable the real Google Maps embed on directions cards (see that file's header comment for the security rationale); without it, directions cards fall back to the free Leaflet/OpenStreetMap map.
 
 Functions will not work locally without a local Netlify dev setup (`netlify dev`).
 

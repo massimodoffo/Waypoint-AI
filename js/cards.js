@@ -341,36 +341,49 @@ window.changeNights = function(cardId, pricePerNight, delta) {
 const DIR_MODE_ICON = { driving: '🚗', walking: '🚶', transit: '🚇' };
 const DIR_MODE_LABEL = { driving: 'Driving', walking: 'Walking', transit: 'Transit' };
 
+function hasOrigin(origin) {
+  return Boolean(origin && origin.trim() !== '');
+}
+
 function dirOpenUrl(origin, destination, mode) {
   const o = encodeURIComponent(origin || '');
   const d = encodeURIComponent(destination || '');
   return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${mode}`;
 }
 
-// Fetched once and cached for the page's lifetime — undefined/null means "no
-// key configured," not an error, so the map falls back to the Leaflet
-// renderer below rather than surfacing anything to the user.
-let _googleMapsKeyPromise = null;
-function getGoogleMapsKey() {
-  if (!_googleMapsKeyPromise) {
-    _googleMapsKeyPromise = fetch('/.netlify/functions/maps-key')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => json?.key || null)
-      .catch(() => null);
-  }
-  return _googleMapsKeyPromise;
-}
-
 // Embed API URLs are query-string based, so every value that lands in one
 // goes through encodeURIComponent() — same treatment as dirOpenUrl() above.
-function googleEmbedUrl(key, data, mode) {
-  const hasOrigin = data.origin && data.origin.trim() !== '';
-  if (!hasOrigin) {
-    return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(data.destination)}`;
+function googleEmbedUrl(key, origin, destination, mode) {
+  if (!hasOrigin(origin)) {
+    return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(destination)}`;
   }
-  const o = encodeURIComponent(data.origin);
-  const d = encodeURIComponent(data.destination);
+  const o = encodeURIComponent(origin);
+  const d = encodeURIComponent(destination);
   return `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(key)}&origin=${o}&destination=${d}&mode=${encodeURIComponent(mode)}`;
+}
+
+// Fetched once and cached for the page's lifetime — undefined/null means "no
+// key configured," not an error, so the map falls back to the Leaflet
+// renderer below rather than surfacing anything to the user. A *failed*
+// fetch (network blip, cold-start timeout) is different from "no key" and
+// isn't cached — clearing the promise lets the next directions card retry
+// instead of every card for the rest of the session being stuck on Leaflet
+// because of one transient hiccup.
+let _googleMapsKeyPromise = null;
+async function getGoogleMapsKey() {
+  if (_googleMapsKeyPromise) return _googleMapsKeyPromise;
+  _googleMapsKeyPromise = (async () => {
+    try {
+      const res = await fetch('/.netlify/functions/maps-key', { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) return null; // legitimately not configured — worth caching
+      const json = await res.json();
+      return json?.key || null;
+    } catch {
+      _googleMapsKeyPromise = null; // transient failure — let the next card retry
+      return null;
+    }
+  })();
+  return _googleMapsKeyPromise;
 }
 
 // Range-checked, not just type-checked — a hallucinated or lat/lon-transposed
@@ -417,7 +430,7 @@ async function routeOSM(a, b) {
 }
 
 function buildDirectionsHTML(domId, data, mode) {
-  const hasOrigin = data.origin && data.origin.trim() !== '';
+  const originKnown = hasOrigin(data.origin);
   const modeBtns = ['driving','walking','transit'].map(m =>
     `<button class="dmb${m === mode ? ' active' : ''}" data-mode="${m}" onclick="switchDirectionsMode('${domId}', '${m}')">${DIR_MODE_ICON[m]} ${DIR_MODE_LABEL[m]}</button>`
   ).join('');
@@ -425,7 +438,7 @@ function buildDirectionsHTML(domId, data, mode) {
   return `
     <div class="directions-header">
       <div class="directions-route">
-        ${hasOrigin ? `
+        ${originKnown ? `
           <div class="directions-from">
             <div class="directions-dot from"></div>
             <span>${escHtml(data.origin_label || data.origin)}</span>
@@ -453,12 +466,17 @@ async function initDirectionsMap(domId) {
   if (!entry) return;
   const mapDiv = document.getElementById('dmap-' + domId);
   if (!mapDiv) return;
-  const { data, mode } = entry;
+  const { data } = entry;
 
+  // getGoogleMapsKey() awaits a network round-trip on its first call, during
+  // which the user could already have clicked a mode button — read
+  // entry.mode now rather than a value destructured before the await, or a
+  // mode switch mid-fetch would render with a stale mode until the user
+  // clicked a mode button a second time to correct it.
   const googleKey = await getGoogleMapsKey();
   if (googleKey) {
     entry.googleKey = googleKey;
-    mapDiv.innerHTML = `<iframe src="${googleEmbedUrl(googleKey, data, mode)}" width="100%" height="100%" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>`;
+    mapDiv.innerHTML = `<iframe src="${googleEmbedUrl(googleKey, data.origin, data.destination, entry.mode)}" width="100%" height="100%" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>`;
     return;
   }
 
@@ -470,7 +488,7 @@ async function initDirectionsMap(domId) {
   try {
     const dest = await resolvePoint(data.destination_lat, data.destination_lon, data.destination);
     if (!dest) throw new Error('Could not locate ' + data.destination);
-    const origin = data.origin && data.origin.trim()
+    const origin = hasOrigin(data.origin)
       ? await resolvePoint(data.origin_lat, data.origin_lon, data.origin)
       : null;
 
@@ -559,7 +577,7 @@ window.switchDirectionsMode = function(domId, mode) {
 
   if (entry.googleKey) {
     const iframe = card.querySelector('.directions-map iframe');
-    if (iframe) iframe.src = googleEmbedUrl(entry.googleKey, entry.data, mode);
+    if (iframe) iframe.src = googleEmbedUrl(entry.googleKey, entry.data.origin, entry.data.destination, mode);
   }
 };
 
