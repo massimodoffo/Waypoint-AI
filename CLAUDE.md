@@ -30,7 +30,7 @@ Conventional Commits: `type(scope): summary`. Types: feat, fix, refactor, chore,
 
 ## Deployment
 
-This is a static frontend deployed on **Netlify**. There is no build step — files are served directly. The only backend is a Netlify serverless function at `netlify/functions/proxy.js`.
+This is a static frontend deployed on **Netlify**. There is no build step — files are served directly. The backend is two Netlify serverless functions: `netlify/functions/proxy.js` and `netlify/functions/maps-key.js`.
 
 To preview locally, use any static file server:
 ```
@@ -39,7 +39,11 @@ npx serve .
 python3 -m http.server
 ```
 
-The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in the Netlify dashboard. It will not work locally without a local Netlify dev setup (`netlify dev`).
+The Netlify functions require environment variables set in the Netlify dashboard:
+- `ANTHROPIC_API_KEY` (required) — used by `proxy.js` for all Claude calls.
+- `GOOGLE_MAPS_EMBED_KEY` (optional) — used by `maps-key.js` to enable the real Google Maps embed on directions cards. Must be a Maps Embed API key restricted (in Google Cloud Console) to the deployed domain's HTTP referrer — that restriction is what makes it safe to hand to the client, the same way any client-side Google Maps key works. Without it, directions cards fall back to the free Leaflet/OpenStreetMap map — no functionality is lost, just the Google-branded look.
+
+Functions will not work locally without a local Netlify dev setup (`netlify dev`).
 
 ## Architecture
 
@@ -64,6 +68,6 @@ The Netlify function requires an `ANTHROPIC_API_KEY` environment variable set in
 
 **API proxy:** All Claude calls go through `/.netlify/functions/proxy` to keep the API key server-side. The proxy calls `claude-sonnet-4-5` with a 1000-token limit and trims history to the last 20 messages.
 
-**Maps:** Leaflet.js (vendored locally under `vendor/leaflet/`, not CDN-loaded — a blocked/slow CDN silently degraded every directions card to its link fallback) is used for the directions card. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
+**Maps:** The directions card renders Google's own Maps Embed API when `GOOGLE_MAPS_EMBED_KEY` is configured (key delivered to the client via `netlify/functions/maps-key.js` — see Deployment above), falling back to Leaflet.js (vendored locally under `vendor/leaflet/`, not CDN-loaded — a blocked/slow CDN silently degraded every directions card to its link fallback) + OpenStreetMap tiles/OSRM routing when no key is set. Weather data is fetched from the Open-Meteo API (free, no key required) via `cards.js`.
 
 **3D:** Three.js (loaded via a CDN import map in `index.html`) is used only by `js/splash.js` for the entry globe. It's dynamically imported and fails gracefully — the splash button still works — if the CDN or WebGL is unavailable.
