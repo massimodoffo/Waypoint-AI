@@ -45,16 +45,16 @@ function buildResultCards(budget, hotels, local) {
     <div class="rc-header"><div class="rc-dot" style="background:var(--accent5)"></div>Budget</div>
     <div class="rc-body">
       <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">
-        ${budget.daily_estimate}<span style="font-size:11px;color:var(--text3)"> /day</span>
+        ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
       </div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${budget.total_estimate}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${escHtml(budget.total_estimate)}</div>
       ${Object.entries(budget.breakdown).map(([k, v]) => `
         <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2);text-transform:capitalize">${k}</span>
-          <span style="color:var(--text)">${v}</span>
+          <span style="color:var(--text2);text-transform:capitalize">${escHtml(k)}</span>
+          <span style="color:var(--text)">${escHtml(v)}</span>
         </div>`).join('')}
       <div style="margin-top:10px;font-size:12px;color:var(--text2)">
-        ${budget.money_tips.map(t => `<div style="margin-bottom:4px">· ${t}</div>`).join('')}
+        ${budget.money_tips.map(t => `<div style="margin-bottom:4px">· ${escHtml(t)}</div>`).join('')}
       </div>
     </div>`;
   grid.appendChild(bc);
@@ -65,13 +65,18 @@ function buildResultCards(budget, hotels, local) {
   hc.innerHTML = `
     <div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
     <div class="rc-body">
-      ${hotels.hotel_picks.map(h => `
+      ${hotels.hotel_picks.map(h => {
+        // google_maps_query is missing on hotel_picks saved before this field
+        // existed — fall back to searching by name alone for old trip history.
+        const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query || h.name);
+        return `
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-          <div style="font-weight:500;font-size:13px;color:var(--text)">${h.name}</div>
-          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${h.price_range} · ${h.type}</div>
-          <div style="font-size:12px;color:var(--text2)">${h.why}</div>
-        </div>`).join('')}
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${hotels.booking_tips}</div>
+          <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-weight:500;font-size:13px;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:4px">${escHtml(h.name)}<span style="font-size:10px;color:var(--text3)">↗</span></a>
+          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${escHtml(h.price_range)} · ${escHtml(h.type)}</div>
+          <div style="font-size:12px;color:var(--text2)">${escHtml(h.why)}</div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${escHtml(hotels.booking_tips)}</div>
     </div>`;
   grid.appendChild(hc);
 
@@ -84,16 +89,16 @@ function buildResultCards(budget, hotels, local) {
     <div class="rc-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div>
         <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Insider tips</div>
-        ${local.insider_tips.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+        ${local.insider_tips.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
       </div>
       <div>
         <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Avoid</div>
-        ${local.avoid.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${t}</div>`).join('')}
+        ${local.avoid.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
         <div style="margin-top:10px;font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Useful phrases</div>
         ${local.phrases.map(p => `
           <div style="font-size:12px;margin-bottom:4px">
-            <span style="color:var(--accent);font-style:italic">${p.phrase}</span>
-            <span style="color:var(--text3)">— ${p.means}</span>
+            <span style="color:var(--accent);font-style:italic">${escHtml(p.phrase)}</span>
+            <span style="color:var(--text3)">— ${escHtml(p.means)}</span>
           </div>`).join('')}
       </div>
     </div>`;
