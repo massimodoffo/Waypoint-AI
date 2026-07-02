@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## PR workflow (required)
 
-Before opening any pull request:
+Always open a pull request once a set of changes is complete — don't wait for it to be explicitly requested. Before opening any pull request:
 
 1. Run `/commit-hygiene` to clean up and split staged changes into atomic, well-formed commits.
 2. Run `/pre-pr-review` — this launches three subagents (`bug-hunter`, `security-reviewer`, `consistency-reviewer`) in parallel against the diff, then cross-references their findings. Fix any Must-fix issues and re-run before proceeding.
