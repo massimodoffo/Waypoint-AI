@@ -280,6 +280,15 @@ function createMarkerPool(THREE, globeGroup, dotGeometry, ringGeometry) {
 }
 
 // ── STARFIELD ────────────────────────────────────────────────────────────────
+// 1200 points reads as a full sky at this camera distance without enough
+// overdraw to show up in the FPS budget degradeQuality() already accounts
+// for (a single Points draw call stays cheap regardless of count in the
+// low thousands — this wasn't tuned against a hard perf ceiling, just
+// against "looks sparse" at the low end and "looks like static/noise" at
+// the high end). The 14-32 shell sits well outside the globe (radius 1.4)
+// and the camera's own travel range (CAMERA_INTRO_START_Z 10.5 down to
+// CAMERA_REST_Z 6.5, both defined below), so the camera can never end up
+// inside the shell or clip through it.
 const STAR_COUNT = 1200;
 const STAR_MIN_RADIUS = 14;
 const STAR_MAX_RADIUS = 32;
@@ -349,6 +358,15 @@ function createStarfield(THREE, scene) {
 // orientation work is needed) rather than a custom shader, matching this
 // file's existing canvas-texture-over-GLSL approach used for the ripple
 // marks above.
+// The gradient's inner stop (radius 60 of 128, i.e. ~47% in) leaves the
+// globe itself (radius 1.4, well inside the sprite's footprint — see scale
+// below) untouched by the glow; it only starts past the globe's own edge.
+// The 0.7 stop is where the glow peaks (alpha 0.16 — low, so it reads as
+// atmosphere rather than a colored ring) before fading back to transparent
+// at the sprite's own edge, so there's no hard cutoff visible. Sprite scale
+// 4.2 (diameter, world units) against the globe's 1.4 radius / 2.8 diameter
+// leaves roughly a 0.7-unit halo beyond the surface on every side — visible
+// without dominating the frame at the camera's resting distance.
 function createAtmosphere(THREE, scene, colorTriplet) {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
@@ -507,11 +525,18 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
   };
 }
 
+// ── CAMERA & PARALLAX ───────────────────────────────────────────────────────
 // Camera opens from further back and settles into its resting distance over
 // CAMERA_INTRO_MS — an arrival shot rather than the scene just appearing
-// already framed. PARALLAX_MAX bounds how far the resting camera drifts
-// toward the pointer afterward, kept small so it reads as "alive" rather
-// than disorienting.
+// already framed. CAMERA_REST_Z (6.5) is the original always-been-static
+// distance this scene used before the intro was added; CAMERA_INTRO_START_Z
+// pulls back an extra ~60% of that so the settle is visible without the
+// globe reading as tiny at the start. PARALLAX_MAX bounds how far the
+// resting camera drifts toward the pointer afterward (in the same world
+// units as CAMERA_REST_Z) — 0.35 against a 6.5-unit viewing distance keeps
+// the drift subtle enough to read as "alive" rather than disorienting.
+// PARALLAX_SMOOTHING is a per-frame lerp factor (toward the pointer target,
+// not a duration) — 0.05 settles in roughly a third of a second at 60fps.
 const CAMERA_REST_Z = 6.5;
 const CAMERA_INTRO_START_Z = 10.5;
 const CAMERA_INTRO_MS = 2200;
@@ -696,21 +721,51 @@ async function loadGlobe(canvas) {
 // to fine-pointer/hover-capable devices (same gate interactive.js's
 // motionAllowed() uses, redefined locally rather than imported since
 // splash.js already keeps its own reducedMotionPreferred() separate from
-// interactive.js's motionAllowed() — see that function's comment above).
+// interactive.js's motionAllowed() — see that function's comment above; the
+// pointer-offset-from-center math below duplicates applyTilt()'s in
+// interactive.js for the same reason — these two files intentionally don't
+// import from each other, each staying a self-contained entry point).
+// MAX_PULL is kept small (8px against a ~150px-wide pill button) so the
+// effect reads as "responsive to the cursor," not as the button chasing it.
+//
+// btn.style.transform is set inline here, which — same hazard documented on
+// interactive.js's applyTilt()/resetTilt() — fully overrides the CSS
+// :hover/:active transforms rather than composing with them. apply() bakes
+// the CSS states' own offsets (hover lift, press scale) directly into the
+// same inline string instead of leaving them to the stylesheet, so the two
+// don't fight; pointerleave AND the click handler below (which disables the
+// button) both reset the inline value so CSS regains control once this
+// effect isn't actively driving the transform.
 function initMagneticButton(btn) {
-  if (reducedMotionPreferred() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  if (reducedMotionPreferred() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return null;
   const MAX_PULL = 8;
+  let pullX = 0;
+  let pullY = 0;
+  let pressed = false;
+
+  function apply() {
+    const scale = pressed ? 0.96 : 1;
+    const lift = pressed ? -1 : -2;
+    btn.style.transform = `translate(${pullX}px, ${pullY + lift}px) scale(${scale})`;
+  }
   function onMove(e) {
     const rect = btn.getBoundingClientRect();
     const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
     const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-    const clampedX = Math.max(-1, Math.min(1, dx)) * MAX_PULL;
-    const clampedY = Math.max(-1, Math.min(1, dy)) * MAX_PULL;
-    btn.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+    pullX = Math.max(-1, Math.min(1, dx)) * MAX_PULL;
+    pullY = Math.max(-1, Math.min(1, dy)) * MAX_PULL;
+    apply();
   }
-  function onLeave() { btn.style.transform = ''; }
+  function reset() { pressed = false; pullX = 0; pullY = 0; btn.style.transform = ''; }
+  function onDown() { pressed = true; apply(); }
+  function onUp() { pressed = false; apply(); }
+
   btn.addEventListener('pointermove', onMove);
-  btn.addEventListener('pointerleave', onLeave);
+  btn.addEventListener('pointerleave', reset);
+  btn.addEventListener('pointerdown', onDown);
+  btn.addEventListener('pointerup', onUp);
+
+  return { reset };
 }
 
 // ── SPLASH TRANSITION ───────────────────────────────────────────────────────
@@ -721,7 +776,7 @@ function initSplash() {
   const canvas = document.getElementById('splashCanvas');
   if (!splash || !startBtn || !blockout || !canvas) return;
 
-  initMagneticButton(startBtn);
+  const magneticBtn = initMagneticButton(startBtn);
 
   let globeHandle = null;
   let dismissed = false;
@@ -742,6 +797,12 @@ function initSplash() {
 
   startBtn.addEventListener('click', () => {
     startBtn.disabled = true;
+    // Disabled elements stop dispatching pointer events, so pointerleave
+    // (which would normally reset the magnetic pull) never fires if the
+    // click landed while the cursor was off-center over the button —
+    // reset explicitly or the inline transform is stuck offset for the
+    // remainder of the leave transition.
+    if (magneticBtn) magneticBtn.reset();
     splash.classList.add('splash-leaving');
 
     const reduced = reducedMotionPreferred();

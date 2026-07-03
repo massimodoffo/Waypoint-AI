@@ -473,6 +473,7 @@ body.pre-start .app { display: none; }
 
 .splash-bottom { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; transition: opacity 250ms ease; }
 .splash-slogan { font-family: 'Clash Display', sans-serif; font-size: 1.6rem; font-weight: 400; color: #f0ede6; letter-spacing: -0.02em; text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.45); animation: slideUp 0.8s var(--ease) 0.35s both; }
+/* Same no-italic-face reasoning as .welcome h1 em above. */
 .splash-slogan em { font-style: normal; font-weight: 600; color: #5b8fff; }
 .splash-start-btn { padding: 0.85rem 2rem; border-radius: 30px; border: none; background: #5b8fff; color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); animation: slideUp 0.8s var(--ease) 0.55s both; }
 .splash-start-btn:hover { transform: translateY(-2px); opacity: 0.92; box-shadow: 0 10px 24px -6px rgba(91,143,255,0.4); }
