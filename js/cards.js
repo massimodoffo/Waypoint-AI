@@ -44,7 +44,7 @@ function buildResultCards(budget, hotels, local) {
   bc.innerHTML = `
     <div class="rc-header"><div class="rc-dot" style="background:var(--accent)"></div>Budget</div>
     <div class="rc-body">
-      <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">
+      <div style="font-size:18px;font-family:'Clash Display',sans-serif;color:var(--text);margin-bottom:6px">
         ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
       </div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${escHtml(budget.total_estimate)}</div>

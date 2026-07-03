@@ -279,6 +279,104 @@ function createMarkerPool(THREE, globeGroup, dotGeometry, ringGeometry) {
   };
 }
 
+// ── STARFIELD ────────────────────────────────────────────────────────────────
+const STAR_COUNT = 1200;
+const STAR_MIN_RADIUS = 14;
+const STAR_MAX_RADIUS = 32;
+
+// A soft circular sprite (radial gradient, no hard edge) shared by every star
+// point — canvas-generated like earthTexture()/rippleTexture() above, so this
+// file keeps its "no external image assets" approach instead of mixing in a
+// texture file for one more effect.
+function starSpriteTexture(THREE) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.7)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(c);
+}
+
+// A distant, non-rotating field of points scattered on a spherical shell well
+// outside the globe/tracer geometry (radius 14-32 vs. the globe's 1.4).
+// Added straight to `scene` rather than `globeGroup` so it reads as a fixed
+// backdrop the globe spins in front of, not part of the globe itself — a
+// single Points draw call, cheap enough that it isn't wired into
+// degradeQuality() below.
+function createStarfield(THREE, scene) {
+  const positions = new Float32Array(STAR_COUNT * 3);
+  for (let i = 0; i < STAR_COUNT; i++) {
+    // Uniform point on a sphere shell: pick a uniformly-distributed direction
+    // via spherical angles (theta around the pole, phi from an inverse-CDF
+    // cosine sample so points don't bunch at the poles), then a random
+    // radius within the shell's thickness.
+    const theta = 2 * Math.PI * Math.random();
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = STAR_MIN_RADIUS + Math.random() * (STAR_MAX_RADIUS - STAR_MIN_RADIUS);
+    const idx = i * 3;
+    positions[idx] = r * Math.sin(phi) * Math.cos(theta);
+    positions[idx + 1] = r * Math.cos(phi);
+    positions[idx + 2] = r * Math.sin(phi) * Math.sin(theta);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const texture = starSpriteTexture(THREE);
+  const material = new THREE.PointsMaterial({
+    size: 0.09, map: texture, transparent: true, depthWrite: false,
+    opacity: 0.75, sizeAttenuation: true
+  });
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+
+  return {
+    dispose() {
+      scene.remove(points);
+      geometry.dispose();
+      material.dispose();
+      texture.dispose();
+    }
+  };
+}
+
+// ── ATMOSPHERE GLOW ─────────────────────────────────────────────────────────
+// A soft, additive-blended halo around the globe's silhouette — a billboarded
+// sprite (Three.js auto-orients it to face the camera, so no per-frame
+// orientation work is needed) rather than a custom shader, matching this
+// file's existing canvas-texture-over-GLSL approach used for the ripple
+// marks above.
+function createAtmosphere(THREE, scene, colorTriplet) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(128, 128, 60, 128, 128, 128);
+  grad.addColorStop(0, `rgba(${colorTriplet},0)`);
+  grad.addColorStop(0.7, `rgba(${colorTriplet},0.16)`);
+  grad.addColorStop(1, `rgba(${colorTriplet},0)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+  const texture = new THREE.CanvasTexture(c);
+
+  const material = new THREE.SpriteMaterial({
+    map: texture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(4.2, 4.2, 1);
+  scene.add(sprite);
+
+  return {
+    dispose() {
+      scene.remove(sprite);
+      material.dispose();
+      texture.dispose();
+    }
+  };
+}
+
 function pickHub(excludeName) {
   let h;
   do { h = HUBS[Math.floor(Math.random() * HUBS.length)]; } while (h.name === excludeName);
@@ -409,12 +507,25 @@ function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
   };
 }
 
+// Camera opens from further back and settles into its resting distance over
+// CAMERA_INTRO_MS — an arrival shot rather than the scene just appearing
+// already framed. PARALLAX_MAX bounds how far the resting camera drifts
+// toward the pointer afterward, kept small so it reads as "alive" rather
+// than disorienting.
+const CAMERA_REST_Z = 6.5;
+const CAMERA_INTRO_START_Z = 10.5;
+const CAMERA_INTRO_MS = 2200;
+const PARALLAX_MAX = 0.35;
+const PARALLAX_SMOOTHING = 0.05;
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
 async function loadGlobe(canvas) {
   const THREE = await import('three');
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.z = 6.5;
+  camera.position.z = CAMERA_REST_Z;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -440,6 +551,9 @@ async function loadGlobe(canvas) {
   const key = new THREE.PointLight(0x5b8fff, 1.4, 20);
   key.position.set(3, 2, 4);
   scene.add(key);
+
+  const starfield = createStarfield(THREE, scene);
+  const atmosphere = createAtmosphere(THREE, scene, '91,143,255');
 
   // Unit-radius flat circle shared by every dot — per-spawn size comes from
   // scaling it, not from separate geometries.
@@ -504,6 +618,24 @@ async function loadGlobe(canvas) {
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
 
+  // Pointer-driven parallax target, in normalized [-1,1] viewport space
+  // scaled by PARALLAX_MAX — smoothed toward in render() rather than applied
+  // directly, so a fast mouse move reads as a gentle drift, not a jump.
+  // Restricted to actual mouse input (pointerType check) since a touch
+  // pointermove is usually a scroll/drag gesture, not a "look around" intent.
+  let parallaxTargetX = 0;
+  let parallaxTargetY = 0;
+  let parallaxX = 0;
+  let parallaxY = 0;
+  function onPointerMove(e) {
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    parallaxTargetX = ((e.clientX / window.innerWidth) * 2 - 1) * PARALLAX_MAX;
+    parallaxTargetY = ((e.clientY / window.innerHeight) * 2 - 1) * PARALLAX_MAX;
+  }
+  if (!reduced) window.addEventListener('pointermove', onPointerMove);
+
+  const introStart = performance.now();
+
   function render() {
     if (!reduced) {
       const now = performance.now();
@@ -511,6 +643,16 @@ async function loadGlobe(canvas) {
       tracers.forEach((t) => t.update());
       markerPool.update(now);
       maybeDegrade(now);
+
+      const introT = Math.min((now - introStart) / CAMERA_INTRO_MS, 1);
+      const introZ = CAMERA_INTRO_START_Z + (CAMERA_REST_Z - CAMERA_INTRO_START_Z) * easeOutCubic(introT);
+      parallaxX += (parallaxTargetX - parallaxX) * PARALLAX_SMOOTHING;
+      parallaxY += (parallaxTargetY - parallaxY) * PARALLAX_SMOOTHING;
+      camera.position.x = parallaxX;
+      camera.position.y = -parallaxY;
+      camera.position.z = introZ;
+      camera.lookAt(0, 0, 0);
+
       frameId = requestAnimationFrame(render);
     }
     renderer.render(scene, camera);
@@ -528,9 +670,12 @@ async function loadGlobe(canvas) {
     dispose() {
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       tracers.forEach((t) => t.dispose());
       markerPool.dispose();
+      starfield.dispose();
+      atmosphere.dispose();
       dotGeometry.dispose();
       ringGeometry.dispose();
       takeoffRingTex.dispose();
@@ -545,6 +690,29 @@ async function loadGlobe(canvas) {
   };
 }
 
+// Pulls the button a few pixels toward the cursor within its own bounds —
+// the single primary CTA of the whole cinematic entry, so it's the one
+// control on this screen that earns a "magnetic" hover treatment. Restricted
+// to fine-pointer/hover-capable devices (same gate interactive.js's
+// motionAllowed() uses, redefined locally rather than imported since
+// splash.js already keeps its own reducedMotionPreferred() separate from
+// interactive.js's motionAllowed() — see that function's comment above).
+function initMagneticButton(btn) {
+  if (reducedMotionPreferred() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const MAX_PULL = 8;
+  function onMove(e) {
+    const rect = btn.getBoundingClientRect();
+    const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+    const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+    const clampedX = Math.max(-1, Math.min(1, dx)) * MAX_PULL;
+    const clampedY = Math.max(-1, Math.min(1, dy)) * MAX_PULL;
+    btn.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+  }
+  function onLeave() { btn.style.transform = ''; }
+  btn.addEventListener('pointermove', onMove);
+  btn.addEventListener('pointerleave', onLeave);
+}
+
 // ── SPLASH TRANSITION ───────────────────────────────────────────────────────
 function initSplash() {
   const splash = document.getElementById('splash');
@@ -552,6 +720,8 @@ function initSplash() {
   const blockout = document.getElementById('splashBlockout');
   const canvas = document.getElementById('splashCanvas');
   if (!splash || !startBtn || !blockout || !canvas) return;
+
+  initMagneticButton(startBtn);
 
   let globeHandle = null;
   let dismissed = false;
