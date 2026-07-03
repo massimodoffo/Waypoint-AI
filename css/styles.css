@@ -37,7 +37,7 @@ html { font-size: 16px; }
 /* height (not min-height) + overflow:hidden caps the page to the viewport, so
    #chat's own overflow-y:auto is the only thing that ever scrolls — #input-wrap
    stays pinned below it instead of getting carried off with a full-page scroll. */
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+body { font-family: 'Switzer', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 /* ── NAV ─────────────────────────────────────────────────────────────────────── */
 /* Detached floating bar (not an edge-to-edge bar glued to the viewport top) —
@@ -45,7 +45,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
    sticky top offset matches the margin so the gap above it stays visible as
    a floating "island" rather than collapsing flush on scroll. */
 nav { display: flex; align-items: center; justify-content: space-between; margin: 0.85rem 1.25rem 0; padding: 0.85rem 1.5rem; border: 1px solid var(--border); border-radius: 20px; position: sticky; top: 0.85rem; background: var(--nav-bg); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); box-shadow: var(--shadow); z-index: 100; }
-.logo { font-family: 'Fraunces', serif; font-size: 1.65rem; font-weight: 400; color: var(--text); letter-spacing: -0.025em; display: flex; align-items: center; gap: 8px; }
+.logo { font-family: 'Clash Display', sans-serif; font-size: 1.65rem; font-weight: 600; color: var(--text); letter-spacing: -0.025em; display: flex; align-items: center; gap: 8px; }
 .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .nav-actions { display: flex; align-items: center; gap: 1.1rem; }
 .nav-status { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
@@ -62,8 +62,8 @@ nav { display: flex; align-items: center; justify-content: space-between; margin
 aside { width: 260px; min-width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); overflow: hidden; transition: width 0.25s ease, min-width 0.25s ease, border-color 0.25s ease, visibility 0s; }
 aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visibility: hidden; }
 .sidebar-top { padding: 1.25rem 1rem 0.75rem; }
-.sidebar-top h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
-.new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.2s var(--ease); }
+.sidebar-top h2 { font-family: 'Clash Display', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'Switzer', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.2s var(--ease); }
 .new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; border-color: var(--accent); }
 .new-trip-btn:active { transform: scale(0.98); }
 .trip-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
@@ -74,7 +74,7 @@ aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visib
 .trip-entry-name { font-weight: 400; }
 .trip-entry-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
 .sidebar-agents { padding: 1rem; border-top: 1px solid var(--border); }
-.sidebar-agents h2 { font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 300; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.sidebar-agents h2 { font-family: 'Clash Display', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
 .agent-pill { display: flex; align-items: center; gap: 8px; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 12px; color: var(--text2); margin-bottom: 4px; border: 1px solid transparent; transition: all 0.2s; }
 .agent-pill.running { border-color: var(--border2); background: var(--bg3); }
 .agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
@@ -95,14 +95,18 @@ main:focus { outline: none; }
 
 /* ── WELCOME ─────────────────────────────────────────────────────────────────── */
 .welcome { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 4rem 2rem; min-height: 400px; overflow: hidden; animation: slideUp 0.5s var(--ease) both; }
-.welcome-ghost { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(4rem, 14vw, 11rem); letter-spacing: -0.03em; text-transform: uppercase; color: var(--text3); opacity: 0.08; white-space: nowrap; pointer-events: none; user-select: none; transition: transform 0.2s ease-out; will-change: transform; }
+.welcome-ghost { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(4rem, 14vw, 11rem); letter-spacing: -0.03em; text-transform: uppercase; color: var(--text3); opacity: 0.08; white-space: nowrap; pointer-events: none; user-select: none; transition: transform 0.2s ease-out; will-change: transform; }
 .welcome-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
 .welcome-icon { font-size: 3.6rem; margin-bottom: 1.5rem; opacity: 0.3; animation: slideUp 0.45s ease 0.05s both; transition: transform 0.2s ease-out; will-change: transform; }
-.welcome h1 { font-family: 'Fraunces', serif; font-size: clamp(2.8rem, 7.5vw, 6.5rem); font-weight: 300; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.035em; line-height: 1.05; animation: slideUp 0.45s ease 0.1s both; }
-.welcome h1 em { font-style: italic; color: var(--accent); }
+.welcome h1 { font-family: 'Clash Display', sans-serif; font-size: clamp(2.8rem, 7.5vw, 6.5rem); font-weight: 400; color: var(--text); margin-bottom: 0.75rem; letter-spacing: -0.035em; line-height: 1.05; animation: slideUp 0.45s ease 0.1s both; }
+/* Clash Display ships no italic face — a synthesized/skewed fake-italic
+   looks poor on a bold geometric display font, so emphasis is weight +
+   color instead (same family, per the "don't mix families for emphasis"
+   rule this file otherwise follows). */
+.welcome h1 em { font-style: normal; font-weight: 600; color: var(--accent); }
 .welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; animation: slideUp 0.45s ease 0.18s both; }
 .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; animation: slideUp 0.45s var(--ease) 0.26s both; transition: transform 0.2s ease-out; will-change: transform; }
-.chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.25s var(--ease); }
+.chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'Switzer', sans-serif; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.25s var(--ease); }
 .chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(-2px); }
 .chip:active { transform: translateY(-2px) scale(0.97); }
 
@@ -153,7 +157,7 @@ main:focus { outline: none; }
 .itin-full { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.75rem; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
 .itin-full:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
 .itin-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
-.itin-hero h2 { font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 400; color: var(--text); letter-spacing: -0.025em; }
+.itin-hero h2 { font-family: 'Clash Display', sans-serif; font-size: 1.9rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
 .itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
 .itin-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
 .itin-days { padding: 0.75rem; }
@@ -194,7 +198,7 @@ main:focus { outline: none; }
 .resto-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
 .resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .resto-name-row { flex: 1; }
-.resto-name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
+.resto-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
 .resto-name:hover { color: var(--accent); }
 .resto-name-link-icon { font-size: 11px; color: var(--text3); }
 .resto-cuisine { font-size: 12px; color: var(--text3); margin-top: 3px; }
@@ -209,14 +213,14 @@ main:focus { outline: none; }
 .resto-pricing-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
 .resto-pricing-row { display: flex; justify-content: space-between; align-items: center; }
 .resto-people-btns { display: flex; gap: 4px; }
-.rpb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
+.rpb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; justify-content: center; }
 .rpb:hover, .rpb.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .rpb:active { transform: scale(0.9); }
-.resto-price-display { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 400; color: var(--text); }
-.resto-price-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.resto-price-display { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; font-weight: 400; color: var(--text); }
+.resto-price-display span { font-size: 11px; color: var(--text3); font-family: 'Switzer', sans-serif; }
 .resto-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .resto-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
-.resto-maps-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.resto-maps-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
 .resto-maps-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 
 /* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
@@ -225,11 +229,11 @@ main:focus { outline: none; }
 .hotel-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
 .hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hotel-name-row { flex: 1; }
-.hotel-name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
+.hotel-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
 .hotel-name:hover { color: var(--accent); }
 .hotel-type { font-size: 12px; color: var(--text3); margin-top: 3px; }
 .hotel-price-badge { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
-.hotel-price-main { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
+.hotel-price-main { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; color: var(--text); }
 .hotel-price-sub { font-size: 10px; color: var(--text3); }
 .hotel-body { padding: 0.75rem 1rem; }
 .hotel-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0.75rem; }
@@ -239,15 +243,15 @@ main:focus { outline: none; }
 .hotel-nights-title { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 0.5rem; }
 .hotel-nights-row { display: flex; justify-content: space-between; align-items: center; }
 .hotel-nights-btns { display: flex; gap: 4px; align-items: center; }
-.hnb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
+.hnb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; justify-content: center; }
 .hnb:hover { background: var(--bg2); color: var(--text); }
 .hnb:active { transform: scale(0.9); }
 .hnb-count { font-size: 13px; color: var(--text); min-width: 24px; text-align: center; }
-.hotel-total-display { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
-.hotel-total-display span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.hotel-total-display { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; color: var(--text); }
+.hotel-total-display span { font-size: 11px; color: var(--text3); font-family: 'Switzer', sans-serif; }
 .hotel-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hotel-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
-.hotel-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.hotel-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
 .hotel-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 .hotel-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(91,143,255,0.12); border: 1px solid rgba(91,143,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
 
@@ -257,7 +261,7 @@ main:focus { outline: none; }
 .activity-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
 .activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .activity-name-row { flex: 1; }
-.activity-name { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
+.activity-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
 .activity-name:hover { color: var(--accent); }
 .activity-category { font-size: 12px; color: var(--text3); margin-top: 3px; }
 .activity-duration-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(143,168,122,0.12); border: 1px solid rgba(143,168,122,0.2); color: var(--accent2); flex-shrink: 0; }
@@ -267,11 +271,11 @@ main:focus { outline: none; }
 .activity-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border2); color: var(--text2); }
 .activity-cost-row { background: var(--bg3); border-radius: var(--radius); padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; }
 .activity-cost-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-.activity-cost-val { font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--text); }
-.activity-cost-val span { font-size: 11px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.activity-cost-val { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; color: var(--text); }
+.activity-cost-val span { font-size: 11px; color: var(--text3); font-family: 'Switzer', sans-serif; }
 .activity-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .activity-location { font-size: 12px; color: var(--text3); }
-.activity-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; }
+.activity-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
 .activity-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent2); }
 .activity-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(91,143,255,0.12); border: 1px solid rgba(91,143,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; }
 
@@ -286,7 +290,7 @@ main:focus { outline: none; }
 #input-wrap { padding: 1rem 2rem 1.5rem; border-top: 1px solid var(--border); }
 .input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 0.75rem 0.85rem 0.75rem 1.1rem; transition: border-color 0.2s; }
 .input-box:focus-within { border-color: rgba(91,143,255,0.4); }
-textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
+textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
 textarea::placeholder { color: var(--text3); }
 .send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
 .send-btn:hover { opacity: 0.9; transform: translateY(-1px) scale(1.06); box-shadow: 0 6px 16px -4px rgba(91,143,255,0.45); }
@@ -324,10 +328,10 @@ textarea::placeholder { color: var(--text3); }
 .weather-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
 .weather-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .weather-location { flex: 1; }
-.weather-city { font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 400; color: var(--text); letter-spacing: -0.025em; }
+.weather-city { font-family: 'Clash Display', sans-serif; font-size: 1.75rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
 .weather-country { font-size: 12px; color: var(--text3); margin-top: 2px; }
 .weather-current { text-align: right; flex-shrink: 0; }
-.weather-temp { font-family: 'Fraunces', serif; font-size: 3.4rem; font-weight: 300; color: var(--text); line-height: 1; }
+.weather-temp { font-family: 'Clash Display', sans-serif; font-size: 3.4rem; font-weight: 500; color: var(--text); line-height: 1; }
 .weather-temp-unit { font-size: 1.2rem; color: var(--text3); }
 .weather-condition { font-size: 12px; color: var(--text2); margin-top: 4px; }
 .weather-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); }
@@ -337,7 +341,7 @@ textarea::placeholder { color: var(--text3); }
 .weather-stat-val { font-size: 14px; font-weight: 500; color: var(--text); }
 .weather-forecast { padding: 0.75rem; display: flex; gap: 6px; overflow-x: auto; }
 .weather-forecast::-webkit-scrollbar { height: 3px; }
-.weather-day { flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 0.75rem; text-align: center; min-width: 72px; cursor: pointer; font-family: 'DM Sans', sans-serif; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
+.weather-day { flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 0.75rem; text-align: center; min-width: 72px; cursor: pointer; font-family: 'Switzer', sans-serif; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
 .weather-day:hover { border-color: var(--border2); background: var(--bg2); }
 .weather-day:active { transform: scale(0.97); }
 .weather-day.selected { border-color: var(--accent); background: rgba(91,143,255,0.10); }
@@ -351,7 +355,7 @@ textarea::placeholder { color: var(--text3); }
 .weather-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .weather-updated { font-size: 11px; color: var(--text3); }
 .weather-unit-toggle { display: flex; gap: 4px; }
-.wut { font-size: 11px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s var(--ease); }
+.wut { font-size: 11px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'Switzer', sans-serif; transition: all 0.2s var(--ease); }
 .wut.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .wut:active { transform: scale(0.93); }
 .weather-loading { padding: 2rem; text-align: center; color: var(--text3); font-size: 13px; }
@@ -385,10 +389,10 @@ textarea::placeholder { color: var(--text3); }
 .directions-map-cta-text { font-size: 14px; color: var(--text); font-weight: 500; }
 .directions-map-cta-sub { font-size: 12px; color: var(--accent); }
 .directions-footer { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'DM Sans', sans-serif; }
+.directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: all 0.2s var(--ease); font-family: 'Switzer', sans-serif; }
 .directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 .directions-mode-btns { display: flex; gap: 4px; }
-.dmb { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s var(--ease); }
+.dmb { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'Switzer', sans-serif; transition: all 0.2s var(--ease); }
 .dmb:hover { background: var(--bg3); color: var(--text); }
 .dmb.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .dmb:active { transform: scale(0.93); }
@@ -458,13 +462,20 @@ body.pre-start .app { display: none; }
 #splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: radial-gradient(circle at 50% 45%, #1a1b18 0%, #0a0b09 75%); overflow: hidden; padding: 3rem 2rem; }
 .splash-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
 
-.splash-logo { position: relative; z-index: 1; font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 400; color: #f0ede6; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.45); transition: opacity 250ms ease; }
+/* Entrance is a staggered rise-and-fade (reusing the slideUp keyframe
+   defined under MESSAGES above) rather than the elements just being visible
+   on load — an "arrival" beat that lines up with the camera's own opening
+   settle in splash.js (CAMERA_INTRO_MS). Each element gets its own
+   animation rather than one shared on a wrapper, so the delays stagger
+   independently instead of compounding transforms on nested elements. */
+.splash-logo { position: relative; z-index: 1; font-family: 'Clash Display', sans-serif; font-size: 1.6rem; font-weight: 400; color: #f0ede6; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.45); transition: opacity 250ms ease; animation: slideUp 0.8s var(--ease) 0.15s both; }
 .splash-logo-dot { color: #5b8fff; }
 
 .splash-bottom { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; transition: opacity 250ms ease; }
-.splash-slogan { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 300; color: #f0ede6; letter-spacing: -0.02em; text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.45); }
-.splash-slogan em { font-style: italic; color: #5b8fff; }
-.splash-start-btn { padding: 0.85rem 2rem; border-radius: 30px; border: none; background: #5b8fff; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
+.splash-slogan { font-family: 'Clash Display', sans-serif; font-size: 1.6rem; font-weight: 400; color: #f0ede6; letter-spacing: -0.02em; text-align: center; text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.45); animation: slideUp 0.8s var(--ease) 0.35s both; }
+/* Same no-italic-face reasoning as .welcome h1 em above. */
+.splash-slogan em { font-style: normal; font-weight: 600; color: #5b8fff; }
+.splash-start-btn { padding: 0.85rem 2rem; border-radius: 30px; border: none; background: #5b8fff; color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); animation: slideUp 0.8s var(--ease) 0.55s both; }
 .splash-start-btn:hover { transform: translateY(-2px); opacity: 0.92; box-shadow: 0 10px 24px -6px rgba(91,143,255,0.4); }
 .splash-start-btn:active { transform: translateY(-1px) scale(0.96); }
 .splash-start-btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
@@ -488,6 +499,10 @@ body.pre-start .app { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .splash-logo, .splash-bottom { transition-duration: 80ms; }
+  /* Entrance choreography (rise + stagger) is motion for its own sake, not
+     functional feedback — skip it entirely rather than just shortening it,
+     same as the rest of this block does for the leaving transition below. */
+  .splash-logo, .splash-slogan, .splash-start-btn { animation: none; opacity: 1; transform: none; }
   .splash-leaving .splash-blockout { transition: transform 120ms linear, opacity 80ms linear; }
   .splash-leaving .splash-blockout.splash-blockout-fadeout { transition: opacity 100ms linear; }
 }
