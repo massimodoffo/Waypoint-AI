@@ -9,8 +9,11 @@
   --accent: #5b8fff; --accent2: #8fa87a; --accent3: #7a9fa8; --accent4: #a87a8f; --accent5: #a8947a;
   --radius: 10px; --radius-lg: 16px;
   --nav-bg: rgba(14,15,14,0.92);
-  /* shadows tinted warm-black (not pure rgba(0,0,0,..)) to match the amber
-     accent instead of reading as a generic gray drop shadow */
+  /* Shadows stay warm-black (not pure rgba(0,0,0,..) and not tinted to
+     --accent) so they read as depth/shade rather than a colored glow, and
+     stay stable if --accent itself changes hue — currently cobalt, but the
+     shadow's warmth is a deliberately independent choice, not a leftover
+     from when --accent was gold. */
   --shadow: 0 2px 14px rgba(10,8,2,0.45);
   --shadow-hover: 0 8px 28px rgba(10,8,2,0.4);
   --inset-hi: inset 0 1px 0 rgba(255,255,255,0.05);
@@ -161,6 +164,15 @@ main:focus { outline: none; }
    carries its own accent dot + connecting line segment, reading as a
    continuous route down the day rather than a stacked list of dividers. */
 .stop { display: flex; gap: 10px; padding: 0.7rem 0.9rem 0.7rem 1.1rem; border-bottom: none; border-left: 2px solid var(--border); margin-left: 0.5rem; position: relative; }
+/* left/top center the 8px dot on the 2px border-left line (border sits at
+   the stop's own left edge; -5px shifts the dot left by half its own width
+   plus half the border width so it straddles the line rather than floating
+   beside it). The box-shadow ring is a fake "cutout" — it's not clipping
+   the line, it's painting a solid disc of the day-block's own background
+   color (--bg2, the only background this timeline ever renders on) behind
+   the dot so the border-left appears to stop exactly at the dot's edge
+   instead of running through it. If a stop timeline is ever nested on a
+   different ancestor background, this ring color needs to move with it. */
 .stop::before { content: ''; position: absolute; left: -5px; top: 1.15rem; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--bg2); }
 .stop:last-child { padding-bottom: 0.9rem; }
 .stop-time { font-size: 11px; color: var(--text3); min-width: 50px; padding-top: 2px; }
@@ -388,7 +400,7 @@ textarea::placeholder { color: var(--text3); }
 
 /* ── MOBILE ──────────────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
-  nav { margin: 0.5rem 0.6rem 0; padding: 0.8rem 1rem; border-radius: 16px; top: 0.5rem; }
+  nav { margin: 0.5rem 0.6rem 0; padding: 0.8rem 1rem; border-radius: var(--radius-lg); top: 0.5rem; }
   .theme-label { display: flex; }
   .nav-status { display: none; }
   /* transition overrides desktop width/collapse animations — mobile slides in from left instead */

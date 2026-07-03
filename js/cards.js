@@ -42,7 +42,7 @@ function buildResultCards(budget, hotels, local) {
   const bc = document.createElement('div');
   bc.className = 'result-card';
   bc.innerHTML = `
-    <div class="rc-header"><div class="rc-dot" style="background:var(--accent5)"></div>Budget</div>
+    <div class="rc-header"><div class="rc-dot" style="background:var(--accent)"></div>Budget</div>
     <div class="rc-body">
       <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">
         ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
