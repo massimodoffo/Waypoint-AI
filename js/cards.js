@@ -42,7 +42,7 @@ function buildResultCards(budget, hotels, local) {
   const bc = document.createElement('div');
   bc.className = 'result-card';
   bc.innerHTML = `
-    <div class="rc-header"><div class="rc-dot" style="background:var(--accent5)"></div>Budget</div>
+    <div class="rc-header"><div class="rc-dot" style="background:var(--accent)"></div>Budget</div>
     <div class="rc-body">
       <div style="font-size:18px;font-family:'Fraunces',serif;color:var(--text);margin-bottom:6px">
         ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
@@ -206,7 +206,7 @@ function buildActivityCardHTML(a, mapsUrl, stars) {
         <div class="activity-cost-label">Cost per person</div>
         <div class="activity-cost-val">${costText}</div>
       </div>
-      <div style="background:rgba(200,184,122,0.06);border:1px solid rgba(200,184,122,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
+      <div style="background:rgba(91,143,255,0.06);border:1px solid rgba(91,143,255,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
         <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
       </div>
     </div>
@@ -499,20 +499,20 @@ async function initDirectionsMap(domId) {
     }).addTo(map);
     entry.map = map;
 
-    window.L.circleMarker([dest.lat, dest.lon], { radius: 8, color: '#c8b87a', fillColor: '#c8b87a', fillOpacity: 1, weight: 2 })
+    window.L.circleMarker([dest.lat, dest.lon], { radius: 8, color: '#5b8fff', fillColor: '#5b8fff', fillOpacity: 1, weight: 2 })
       .addTo(map).bindPopup(data.destination_label || data.destination);
 
     if (origin) {
-      window.L.circleMarker([origin.lat, origin.lon], { radius: 6, color: '#c8b87a', fillColor: '#1e1f1c', fillOpacity: 1, weight: 2 })
+      window.L.circleMarker([origin.lat, origin.lon], { radius: 6, color: '#5b8fff', fillColor: '#1e1f1c', fillOpacity: 1, weight: 2 })
         .addTo(map).bindPopup(data.origin_label || data.origin);
 
       const route = await routeOSM(origin, dest);
       if (route) {
-        window.L.polyline(route, { color: '#c8b87a', weight: 4, opacity: 0.9 }).addTo(map);
+        window.L.polyline(route, { color: '#5b8fff', weight: 4, opacity: 0.9 }).addTo(map);
         map.fitBounds(window.L.latLngBounds(route).pad(0.12));
       } else {
         const line = [[origin.lat, origin.lon], [dest.lat, dest.lon]];
-        window.L.polyline(line, { color: '#c8b87a', weight: 3, opacity: 0.7, dashArray: '6,7' }).addTo(map);
+        window.L.polyline(line, { color: '#5b8fff', weight: 3, opacity: 0.7, dashArray: '6,7' }).addTo(map);
         map.fitBounds(window.L.latLngBounds(line).pad(0.2));
       }
     } else {

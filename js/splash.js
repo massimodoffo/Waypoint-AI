@@ -74,13 +74,13 @@ const MARKER_RADIUS = 1.425;
 
 // Color is a bare "r,g,b" triplet rather than a #hex/rgba() string, since
 // rippleTexture() splices it into rgba(...) at several alpha values for its
-// gradient. The takeoff mark matches the tracer line's own gold so it reads
-// as "the trail just started here"; the landing mark stays yellow and gets
-// a second, larger ripple ring since it's the more attention-grabbing of
+// gradient. The takeoff mark matches the tracer line's own accent blue so it
+// reads as "the trail just started here"; the landing mark stays yellow and
+// gets a second, larger ripple ring since it's the more attention-grabbing of
 // the two events. Shaped to match createMarkerPool's spawn(position, {...})
 // config, aside from ringTexture, which is merged in at the call site since
 // textures are created once in loadGlobe() rather than duplicated per mark.
-const TAKEOFF_MARK = { color: '200,184,122', duration: 550, dotRadius: 0.05, ringCount: 1, ringMaxScale: 0.4 };
+const TAKEOFF_MARK = { color: '91,143,255', duration: 550, dotRadius: 0.05, ringCount: 1, ringMaxScale: 0.4 };
 const LANDING_MARK = { color: '255,210,63', duration: 900, dotRadius: 0.065, ringCount: 2, ringMaxScale: 0.55 };
 
 function equirectXY(lon, lat, w, h) {
@@ -300,7 +300,7 @@ function buildJourney(THREE, fromHub, toHub) {
 // the shape loadGlobe() itself returns, so the two compose the same way.
 function createTracer(THREE, globeGroup, startHub, spawnMarkers) {
   const tracerMaterial = new THREE.MeshBasicMaterial({
-    color: 0xc8b87a, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false
+    color: 0x5b8fff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false
   });
   const tracer = new THREE.Mesh(new THREE.BufferGeometry(), tracerMaterial);
   tracer.frustumCulled = false;
@@ -432,12 +432,12 @@ async function loadGlobe(canvas) {
   globeGroup.add(globeMesh);
 
   let wireGeometry = new THREE.SphereGeometry(1.42, 24, 16);
-  const wireMaterial = new THREE.MeshBasicMaterial({ color: 0xc8b87a, wireframe: true, transparent: true, opacity: 0.22 });
+  const wireMaterial = new THREE.MeshBasicMaterial({ color: 0x5b8fff, wireframe: true, transparent: true, opacity: 0.22 });
   const wireMesh = new THREE.Mesh(wireGeometry, wireMaterial);
   globeGroup.add(wireMesh);
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const key = new THREE.PointLight(0xc8b87a, 1.4, 20);
+  const key = new THREE.PointLight(0x5b8fff, 1.4, 20);
   key.position.set(3, 2, 4);
   scene.add(key);
 
