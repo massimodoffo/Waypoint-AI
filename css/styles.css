@@ -37,7 +37,7 @@ html { font-size: 16px; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 /* ── NAV ─────────────────────────────────────────────────────────────────────── */
-nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--nav-bg); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 1px 0 var(--border), 0 12px 24px -18px rgba(0,0,0,0.5); z-index: 100; }
+nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--nav-bg); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 1px 0 var(--border), var(--shadow-hover); z-index: 100; }
 .logo { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 400; color: var(--text); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
 .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .nav-actions { display: flex; align-items: center; gap: 1.1rem; }
@@ -282,9 +282,10 @@ textarea::placeholder { color: var(--text3); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ── HAMBURGER ───────────────────────────────────────────────────────────────── */
-.hamburger { display: flex; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.15s; }
+.hamburger { display: flex; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
 .hamburger:hover { background: var(--bg3); }
-.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s; display: block; }
+.hamburger:active { transform: scale(0.9); }
+.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s var(--ease); display: block; }
 .hamburger:hover span { background: var(--text); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }

@@ -18,18 +18,30 @@ const TILT_SELECTOR = '.resto-card, .hotel-card, .activity-card, .result-card, .
 const TILT_EXCLUDE_SELECTOR = '.directions-map';
 const TILT_MAX_DEG = 6;
 
+// Only the duration/timing-function longhands are set inline, never
+// transition-property or the transition shorthand. Setting transition-property
+// inline (even to just 'transform') fully replaces the CSS-defined property
+// list ('border-color, transform, box-shadow') rather than merging with it,
+// which silently stops the card's hover box-shadow/border-color from
+// transitioning at all once tilt has touched the element once. Leaving
+// transition-property alone means the CSS list keeps applying; the inline
+// duration/timing here just makes all of those properties (including the
+// hover shadow that's mid-flight during a tilt) follow the tilt's snappier
+// pacing instead of the card's normal 0.3s hover pacing.
 function applyTilt(card, e) {
   const rect = card.getBoundingClientRect();
   const px = (e.clientX - rect.left) / rect.width;
   const py = (e.clientY - rect.top) / rect.height;
   const rotateY = (px - 0.5) * TILT_MAX_DEG * 2;
   const rotateX = (0.5 - py) * TILT_MAX_DEG * 2;
-  card.style.transition = 'transform 0.1s ease-out';
+  card.style.transitionDuration = '0.1s';
+  card.style.transitionTimingFunction = 'ease-out';
   card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
 }
 
 function resetTilt(card) {
-  card.style.transition = 'transform 0.4s ease';
+  card.style.transitionDuration = '0.4s';
+  card.style.transitionTimingFunction = 'ease';
   card.style.transform = '';
 }
 
