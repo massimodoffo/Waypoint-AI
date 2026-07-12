@@ -562,10 +562,19 @@ body.pre-start .app { display: none; }
    auth.js once login succeeds, at which point main.js's pre-start gating
    (nav/app hidden — see body.pre-start above) is lifted exactly as it used
    to be at the end of the old splash-only transition. */
-.auth-screen { position: fixed; inset: 0; z-index: 500; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 2rem; overflow-y: auto; transition: opacity 0.3s var(--ease); }
+/* display:flex here would defeat its own [hidden] the same way .auth-form's
+   did above (equal-specificity author rule beats the UA stylesheet) — the
+   [hidden] override below is the fix, not optional polish: without it this
+   screen (and its focusable form fields) stays in the layout and tab order
+   underneath the splash the whole time, not just visually covered by it. */
+.auth-screen { position: fixed; inset: 0; z-index: 500; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 2rem; overflow-y: auto; transition: opacity 0.3s ease; }
+.auth-screen[hidden] { display: none; }
 .auth-screen.auth-leaving { opacity: 0; }
 .auth-shell { width: 100%; max-width: 420px; background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); animation: slideUp 0.5s var(--ease) both; }
-.auth-core { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--inset-hi); padding: 2rem 1.75rem; }
+/* Reuses .card-core (the shared double-bezel inner-surface class every
+   result/detail card in js/cards.js applies) rather than restating its
+   declarations — only the padding differs here. */
+.auth-core { padding: 2rem 1.75rem; }
 .auth-header { text-align: center; margin-bottom: 1.5rem; }
 .auth-header .logo { justify-content: center; margin-bottom: 0.5rem; }
 .auth-tagline { font-size: 13px; color: var(--text2); }
@@ -595,9 +604,9 @@ body.pre-start .app { display: none; }
 .auth-field label { font-size: 12px; font-weight: 500; color: var(--text2); }
 .auth-field input { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 0.65rem 0.85rem; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; transition: border-color 0.2s var(--ease); }
 .auth-field input::placeholder { color: var(--text3); }
-.auth-field input:focus { outline: none; border-color: var(--accent); }
+.auth-field input:focus { outline: none; border-color: rgba(91,143,255,0.4); }
 
-.auth-submit { margin-top: 0.25rem; padding: 0.8rem 1rem; border: none; border-radius: var(--radius-lg); background: var(--accent); color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
+.auth-submit { margin-top: 0.25rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; background: var(--accent); color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
 .auth-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(91,143,255,0.4); }
 .auth-submit:active { transform: translateY(0) scale(0.98); }
 .auth-submit:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
