@@ -7,7 +7,7 @@
   --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
   --text: #f0ede6; --text2: #9e9b93; --text3: #8a877f;
   --accent: #5b8fff; --accent2: #8fa87a; --accent3: #7a9fa8; --accent4: #a87a8f; --accent5: #a8947a;
-  --radius: 10px; --radius-lg: 16px;
+  --radius: 10px; --radius-lg: 16px; --radius-shell: 20px;
   --nav-bg: rgba(14,15,14,0.92);
   /* Shadows stay warm-black (not pure rgba(0,0,0,..) and not tinted to
      --accent) so they read as depth/shade rather than a colored glow, and
@@ -143,19 +143,30 @@ main:focus { outline: none; }
 .task-badge.running { background: rgba(91,143,255,0.15); color: var(--accent); }
 .task-badge.pending { background: var(--bg3); color: var(--text3); }
 
+/* ── CARD SHELL (DOUBLE BEZEL) ──────────────────────────────────────────────── */
+/* Every result/detail card below is a shell (outer, --bg "tray") padded around
+   a core (inner, --bg2 "glass plate"). The shell owns the resting/hover shadow
+   and the hover lift; the core owns the border and the inset catch-light — so
+   the card reads as a plate seated in a machined tray rather than a flat div.
+   Inner radius (--radius-lg, 16px) is deliberately 4px under the shell's
+   (--radius-shell, 20px) 6px padding so the two curves stay near-concentric. */
+.card-core { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--inset-hi); transition: border-color 0.3s var(--ease); }
+
 /* ── ITINERARY CARD ──────────────────────────────────────────────────────────── */
 .result-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; max-width: 620px; margin-top: 0.75rem; }
 /* Budget card (always first in the grid — see buildResultCards in cards.js)
    reads as the hero tile of the trio: wider column + a faint accent wash,
    instead of three visually equal cards. */
-.result-grid .result-card:first-child { background: linear-gradient(160deg, rgba(91,143,255,0.08), var(--bg2) 60%); border-color: rgba(91,143,255,0.22); }
-.result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.result-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.result-grid .result-card:first-child .card-core { background: linear-gradient(160deg, rgba(91,143,255,0.08), var(--bg2) 60%); border-color: rgba(91,143,255,0.22); }
+.result-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.result-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.result-card:hover .card-core { border-color: var(--border2); }
 .rc-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text3); }
 .rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .rc-body { padding: 0.85rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; }
-.itin-full { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.75rem; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.itin-full:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.itin-full { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.75rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.itin-full:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.itin-full:hover .card-core { border-color: var(--border2); }
 .itin-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
 .itin-hero h2 { font-family: 'Clash Display', sans-serif; font-size: 1.9rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
 .itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
@@ -194,8 +205,9 @@ main:focus { outline: none; }
 
 /* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
 .resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.resto-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.resto-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.resto-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.resto-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.resto-card:hover .card-core { border-color: var(--border2); }
 .resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .resto-name-row { flex: 1; }
 .resto-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
@@ -225,8 +237,9 @@ main:focus { outline: none; }
 
 /* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
 .hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.hotel-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.hotel-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.hotel-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.hotel-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.hotel-card:hover .card-core { border-color: var(--border2); }
 .hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hotel-name-row { flex: 1; }
 .hotel-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
@@ -257,8 +270,9 @@ main:focus { outline: none; }
 
 /* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
 .activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
-.activity-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.activity-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.activity-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.activity-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.activity-card:hover .card-core { border-color: var(--border2); }
 .activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .activity-name-row { flex: 1; }
 .activity-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
@@ -288,7 +302,7 @@ main:focus { outline: none; }
 
 /* ── INPUT ───────────────────────────────────────────────────────────────────── */
 #input-wrap { padding: 1rem 2rem 1.5rem; border-top: 1px solid var(--border); }
-.input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 0.75rem 0.85rem 0.75rem 1.1rem; transition: border-color 0.2s; }
+.input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 0.75rem 0.85rem 0.75rem 1.1rem; transition: border-color 0.2s var(--ease); }
 .input-box:focus-within { border-color: rgba(91,143,255,0.4); }
 textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
 textarea::placeholder { color: var(--text3); }
@@ -321,11 +335,29 @@ textarea::placeholder { color: var(--text3); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }
 
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────────── */
+/* Card tilt/parallax already bail out in interactive.js via the same media
+   query; this covers the plain CSS :hover lifts that JS doesn't gate. Color
+   and shadow transitions stay (they aid comprehension); only the
+   position/transform-based lift is removed, per the reduced-motion contract
+   the rest of this file already follows for the splash sequence. */
+@media (prefers-reduced-motion: reduce) {
+  .result-card, .itin-full, .resto-card, .hotel-card, .activity-card, .weather-card, .directions-card,
+  .chip, .send-btn, .trip-entry, .new-trip-btn, .hamburger span {
+    transition-duration: 0.01ms;
+  }
+  .result-card:hover, .itin-full:hover, .resto-card:hover, .hotel-card:hover, .activity-card:hover, .weather-card:hover, .directions-card:hover,
+  .chip:hover, .send-btn:hover, .trip-entry:hover {
+    transform: none;
+  }
+}
+
 
 
 /* ── WEATHER CARD ─────────────────────────────────────────────────────────────── */
-.weather-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.weather-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.weather-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.weather-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.weather-card:hover .card-core { border-color: var(--border2); }
 .weather-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .weather-location { flex: 1; }
 .weather-city { font-family: 'Clash Display', sans-serif; font-size: 1.75rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
@@ -369,8 +401,9 @@ textarea::placeholder { color: var(--text3); }
 }
 
 /* ── DIRECTIONS CARD ─────────────────────────────────────────────────────────── */
-.directions-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow), var(--inset-hi); transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.directions-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: var(--shadow-hover), var(--inset-hi); }
+.directions-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
+.directions-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.directions-card:hover .card-core { border-color: var(--border2); }
 .directions-header { padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .directions-route { flex: 1; }
 .directions-from { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 6px; }

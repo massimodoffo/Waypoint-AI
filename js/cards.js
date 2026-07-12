@@ -9,26 +9,28 @@ function buildItinCard(itin, dest, dur) {
   const div = document.createElement('div');
   div.className = 'itin-full';
   div.innerHTML = `
-    <div class="itin-hero">
-      <h2>${dest}</h2>
-      <div class="itin-meta-row"><span class="itin-badge">✦ ${dur}</span></div>
-    </div>
-    <div class="itin-days">
-      ${itin.days.map(d => `
-        <div class="day-block">
-          <div class="day-header">
-            <div class="day-header-left">Day ${d.day} — ${d.theme}</div>
-          </div>
-          ${d.stops.map(s => `
-            <div class="stop">
-              <div class="stop-time">${s.time}</div>
-              <div class="stop-body">
-                <div class="stop-name">${s.name}</div>
-                <div class="stop-desc">${s.description}</div>
-                <div class="stop-tags"><span class="stag stag-${s.tag}">${s.tag}</span></div>
-              </div>
-            </div>`).join('')}
-        </div>`).join('')}
+    <div class="card-core">
+      <div class="itin-hero">
+        <h2>${dest}</h2>
+        <div class="itin-meta-row"><span class="itin-badge">✦ ${dur}</span></div>
+      </div>
+      <div class="itin-days">
+        ${itin.days.map(d => `
+          <div class="day-block">
+            <div class="day-header">
+              <div class="day-header-left">Day ${d.day} — ${d.theme}</div>
+            </div>
+            ${d.stops.map(s => `
+              <div class="stop">
+                <div class="stop-time">${s.time}</div>
+                <div class="stop-body">
+                  <div class="stop-name">${s.name}</div>
+                  <div class="stop-desc">${s.description}</div>
+                  <div class="stop-tags"><span class="stag stag-${s.tag}">${s.tag}</span></div>
+                </div>
+              </div>`).join('')}
+          </div>`).join('')}
+      </div>
     </div>`;
   return div;
 }
@@ -42,19 +44,21 @@ function buildResultCards(budget, hotels, local) {
   const bc = document.createElement('div');
   bc.className = 'result-card';
   bc.innerHTML = `
-    <div class="rc-header"><div class="rc-dot" style="background:var(--accent)"></div>Budget</div>
-    <div class="rc-body">
-      <div style="font-size:18px;font-family:'Clash Display',sans-serif;color:var(--text);margin-bottom:6px">
-        ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
-      </div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${escHtml(budget.total_estimate)}</div>
-      ${Object.entries(budget.breakdown).map(([k, v]) => `
-        <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2);text-transform:capitalize">${escHtml(k)}</span>
-          <span style="color:var(--text)">${escHtml(v)}</span>
-        </div>`).join('')}
-      <div style="margin-top:10px;font-size:12px;color:var(--text2)">
-        ${budget.money_tips.map(t => `<div style="margin-bottom:4px">· ${escHtml(t)}</div>`).join('')}
+    <div class="card-core">
+      <div class="rc-header"><div class="rc-dot" style="background:var(--accent)"></div>Budget</div>
+      <div class="rc-body">
+        <div style="font-size:18px;font-family:'Clash Display',sans-serif;color:var(--text);margin-bottom:6px">
+          ${escHtml(budget.daily_estimate)}<span style="font-size:11px;color:var(--text3)"> /day</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Total: ${escHtml(budget.total_estimate)}</div>
+        ${Object.entries(budget.breakdown).map(([k, v]) => `
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--text2);text-transform:capitalize">${escHtml(k)}</span>
+            <span style="color:var(--text)">${escHtml(v)}</span>
+          </div>`).join('')}
+        <div style="margin-top:10px;font-size:12px;color:var(--text2)">
+          ${budget.money_tips.map(t => `<div style="margin-bottom:4px">· ${escHtml(t)}</div>`).join('')}
+        </div>
       </div>
     </div>`;
   grid.appendChild(bc);
@@ -63,20 +67,22 @@ function buildResultCards(budget, hotels, local) {
   const hc = document.createElement('div');
   hc.className = 'result-card';
   hc.innerHTML = `
-    <div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
-    <div class="rc-body">
-      ${hotels.hotel_picks.map(h => {
-        // google_maps_query is missing on hotel_picks saved before this field
-        // existed — fall back to searching by name alone for old trip history.
-        const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query || h.name);
-        return `
-        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-          <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-weight:500;font-size:13px;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:4px">${escHtml(h.name)}<span style="font-size:10px;color:var(--text3)">↗</span></a>
-          <div style="font-size:11px;color:var(--accent3);margin:2px 0">${escHtml(h.price_range)} · ${escHtml(h.type)}</div>
-          <div style="font-size:12px;color:var(--text2)">${escHtml(h.why)}</div>
-        </div>`;
-      }).join('')}
-      <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${escHtml(hotels.booking_tips)}</div>
+    <div class="card-core">
+      <div class="rc-header"><div class="rc-dot" style="background:var(--accent3)"></div>Where to stay</div>
+      <div class="rc-body">
+        ${hotels.hotel_picks.map(h => {
+          // google_maps_query is missing on hotel_picks saved before this field
+          // existed — fall back to searching by name alone for old trip history.
+          const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.google_maps_query || h.name);
+          return `
+          <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+            <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-weight:500;font-size:13px;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:4px">${escHtml(h.name)}<span style="font-size:10px;color:var(--text3)">↗</span></a>
+            <div style="font-size:11px;color:var(--accent3);margin:2px 0">${escHtml(h.price_range)} · ${escHtml(h.type)}</div>
+            <div style="font-size:12px;color:var(--text2)">${escHtml(h.why)}</div>
+          </div>`;
+        }).join('')}
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">💡 ${escHtml(hotels.booking_tips)}</div>
+      </div>
     </div>`;
   grid.appendChild(hc);
 
@@ -85,21 +91,23 @@ function buildResultCards(budget, hotels, local) {
   lc.className = 'result-card';
   lc.style.gridColumn = '1/-1';
   lc.innerHTML = `
-    <div class="rc-header"><div class="rc-dot" style="background:var(--accent2)"></div>Local insider tips</div>
-    <div class="rc-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div>
-        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Insider tips</div>
-        ${local.insider_tips.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Avoid</div>
-        ${local.avoid.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
-        <div style="margin-top:10px;font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Useful phrases</div>
-        ${local.phrases.map(p => `
-          <div style="font-size:12px;margin-bottom:4px">
-            <span style="color:var(--accent);font-style:italic">${escHtml(p.phrase)}</span>
-            <span style="color:var(--text3)">— ${escHtml(p.means)}</span>
-          </div>`).join('')}
+    <div class="card-core">
+      <div class="rc-header"><div class="rc-dot" style="background:var(--accent2)"></div>Local insider tips</div>
+      <div class="rc-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Insider tips</div>
+          ${local.insider_tips.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Avoid</div>
+          ${local.avoid.map(t => `<div style="font-size:12px;color:var(--text2);margin-bottom:5px">· ${escHtml(t)}</div>`).join('')}
+          <div style="margin-top:10px;font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Useful phrases</div>
+          ${local.phrases.map(p => `
+            <div style="font-size:12px;margin-bottom:4px">
+              <span style="color:var(--accent);font-style:italic">${escHtml(p.phrase)}</span>
+              <span style="color:var(--text3)">— ${escHtml(p.means)}</span>
+            </div>`).join('')}
+        </div>
       </div>
     </div>`;
   grid.appendChild(lc);
@@ -109,76 +117,80 @@ function buildResultCards(budget, hotels, local) {
 // ── SHARED CARD HTML BUILDERS ─────────────────────────────────────────────────
 function buildRestoCardHTML(r, cardId, mapsUrl, stars) {
   return `
-    <div class="resto-header">
-      <div class="resto-name-row">
-        <a class="resto-name" href="${r.booking_url}" target="_blank" rel="noopener">
-          ${escHtml(r.name)}<span class="resto-name-link-icon">↗</span>
-        </a>
-        <div class="resto-cuisine">${escHtml(r.cuisine)} · ${escHtml(r.meal_type)}</div>
+    <div class="card-core">
+      <div class="resto-header">
+        <div class="resto-name-row">
+          <a class="resto-name" href="${r.booking_url}" target="_blank" rel="noopener">
+            ${escHtml(r.name)}<span class="resto-name-link-icon">↗</span>
+          </a>
+          <div class="resto-cuisine">${escHtml(r.cuisine)} · ${escHtml(r.meal_type)}</div>
+        </div>
+        <div class="resto-rating-badge">${stars} ${r.rating}</div>
       </div>
-      <div class="resto-rating-badge">${stars} ${r.rating}</div>
-    </div>
-    <div class="resto-divider"></div>
-    <div class="resto-body">
-      <div class="resto-desc">${escHtml(r.description)}</div>
-      <div class="resto-meta-row">
-        <div class="resto-tag"><span class="resto-tag-icon">✦</span> Must order: ${escHtml(r.must_order)}</div>
-      </div>
-      <div class="resto-pricing">
-        <div class="resto-pricing-title">Estimated cost</div>
-        <div class="resto-pricing-row">
-          <div class="resto-people-btns">
-            ${[1, 2, 3, 4].map(n => `<button class="rpb${n === 1 ? ' active' : ''}" onclick="updateRestoPrice('${cardId}', ${r.price_per_person}, ${n}, this)">${n}</button>`).join('')}
-            <button class="rpb" onclick="updateRestoPricePlus('${cardId}', ${r.price_per_person}, this)" style="width:auto;padding:0 8px">+</button>
+      <div class="resto-divider"></div>
+      <div class="resto-body">
+        <div class="resto-desc">${escHtml(r.description)}</div>
+        <div class="resto-meta-row">
+          <div class="resto-tag"><span class="resto-tag-icon">✦</span> Must order: ${escHtml(r.must_order)}</div>
+        </div>
+        <div class="resto-pricing">
+          <div class="resto-pricing-title">Estimated cost</div>
+          <div class="resto-pricing-row">
+            <div class="resto-people-btns">
+              ${[1, 2, 3, 4].map(n => `<button class="rpb${n === 1 ? ' active' : ''}" onclick="updateRestoPrice('${cardId}', ${r.price_per_person}, ${n}, this)">${n}</button>`).join('')}
+              <button class="rpb" onclick="updateRestoPricePlus('${cardId}', ${r.price_per_person}, this)" style="width:auto;padding:0 8px">+</button>
+            </div>
+            <div class="resto-price-display" id="${cardId}-price">$${r.price_per_person} <span>per person / 1 guest</span></div>
           </div>
-          <div class="resto-price-display" id="${cardId}-price">$${r.price_per_person} <span>per person / 1 guest</span></div>
         </div>
       </div>
-    </div>
-    <div class="resto-footer">
-      <div class="resto-location">📍 ${escHtml(r.neighborhood)}</div>
-      <a class="resto-maps-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      <div class="resto-footer">
+        <div class="resto-location">📍 ${escHtml(r.neighborhood)}</div>
+        <a class="resto-maps-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      </div>
     </div>`;
 }
 
 function buildHotelCardHTML(h, cardId, mapsUrl, stars) {
   const amenityHtml = (h.amenities || []).map(a => `<span class="hotel-amenity">${escHtml(a)}</span>`).join('');
   return `
-    <div class="hotel-header">
-      <div class="hotel-name-row">
-        <a class="hotel-name" href="${h.booking_url}" target="_blank" rel="noopener">
-          ${escHtml(h.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
-        </a>
-        <div class="hotel-type">${escHtml(h.type)} · Best for: ${escHtml(h.best_for)}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-        <div class="hotel-rating-badge">${stars} ${h.rating}</div>
-        <div class="hotel-price-badge">
-          <div class="hotel-price-main">$${h.price_per_night}</div>
-          <div class="hotel-price-sub">per night</div>
+    <div class="card-core">
+      <div class="hotel-header">
+        <div class="hotel-name-row">
+          <a class="hotel-name" href="${h.booking_url}" target="_blank" rel="noopener">
+            ${escHtml(h.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+          </a>
+          <div class="hotel-type">${escHtml(h.type)} · Best for: ${escHtml(h.best_for)}</div>
         </div>
-      </div>
-    </div>
-    <div class="resto-divider"></div>
-    <div class="hotel-body">
-      <div class="hotel-desc">${escHtml(h.description)}</div>
-      <div class="hotel-amenities">${amenityHtml}</div>
-      <div class="hotel-nights-calc">
-        <div class="hotel-nights-title">Estimated stay cost</div>
-        <div class="hotel-nights-row">
-          <div class="hotel-nights-btns">
-            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, -1)">−</button>
-            <span class="hnb-count" id="${cardId}-nights">3</span>
-            <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, 1)">+</button>
-            <span style="font-size:12px;color:var(--text3);margin-left:4px">nights</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <div class="hotel-rating-badge">${stars} ${h.rating}</div>
+          <div class="hotel-price-badge">
+            <div class="hotel-price-main">$${h.price_per_night}</div>
+            <div class="hotel-price-sub">per night</div>
           </div>
-          <div class="hotel-total-display" id="${cardId}-total">$${h.price_per_night * 3} <span>total</span></div>
         </div>
       </div>
-    </div>
-    <div class="hotel-footer">
-      <div class="hotel-location">📍 ${escHtml(h.neighborhood)}</div>
-      <a class="hotel-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      <div class="resto-divider"></div>
+      <div class="hotel-body">
+        <div class="hotel-desc">${escHtml(h.description)}</div>
+        <div class="hotel-amenities">${amenityHtml}</div>
+        <div class="hotel-nights-calc">
+          <div class="hotel-nights-title">Estimated stay cost</div>
+          <div class="hotel-nights-row">
+            <div class="hotel-nights-btns">
+              <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, -1)">−</button>
+              <span class="hnb-count" id="${cardId}-nights">3</span>
+              <button class="hnb" onclick="changeNights('${cardId}', ${h.price_per_night}, 1)">+</button>
+              <span style="font-size:12px;color:var(--text3);margin-left:4px">nights</span>
+            </div>
+            <div class="hotel-total-display" id="${cardId}-total">$${h.price_per_night * 3} <span>total</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hotel-footer">
+        <div class="hotel-location">📍 ${escHtml(h.neighborhood)}</div>
+        <a class="hotel-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      </div>
     </div>`;
 }
 
@@ -186,33 +198,35 @@ function buildActivityCardHTML(a, mapsUrl, stars) {
   const tagHtml = (a.tags || []).map(t => `<span class="activity-tag">${escHtml(t)}</span>`).join('');
   const costText = a.price_per_person === 0 ? 'Free' : `$${a.price_per_person} <span>per person</span>`;
   return `
-    <div class="activity-header">
-      <div class="activity-name-row">
-        <a class="activity-name" href="${a.booking_url}" target="_blank" rel="noopener">
-          ${escHtml(a.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
-        </a>
-        <div class="activity-category">${escHtml(a.category)} · ${escHtml(a.best_time)}</div>
+    <div class="card-core">
+      <div class="activity-header">
+        <div class="activity-name-row">
+          <a class="activity-name" href="${a.booking_url}" target="_blank" rel="noopener">
+            ${escHtml(a.name)} <span style="font-size:11px;color:var(--text3)">↗</span>
+          </a>
+          <div class="activity-category">${escHtml(a.category)} · ${escHtml(a.best_time)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <div class="activity-rating-badge">${stars} ${a.rating}</div>
+          <div class="activity-duration-badge">⏱ ${escHtml(a.duration)}</div>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-        <div class="activity-rating-badge">${stars} ${a.rating}</div>
-        <div class="activity-duration-badge">⏱ ${escHtml(a.duration)}</div>
+      <div class="resto-divider"></div>
+      <div class="activity-body">
+        <div class="activity-desc">${escHtml(a.description)}</div>
+        <div class="activity-tags">${tagHtml}</div>
+        <div class="activity-cost-row">
+          <div class="activity-cost-label">Cost per person</div>
+          <div class="activity-cost-val">${costText}</div>
+        </div>
+        <div style="background:rgba(91,143,255,0.06);border:1px solid rgba(91,143,255,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
+          <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
+        </div>
       </div>
-    </div>
-    <div class="resto-divider"></div>
-    <div class="activity-body">
-      <div class="activity-desc">${escHtml(a.description)}</div>
-      <div class="activity-tags">${tagHtml}</div>
-      <div class="activity-cost-row">
-        <div class="activity-cost-label">Cost per person</div>
-        <div class="activity-cost-val">${costText}</div>
+      <div class="activity-footer">
+        <div class="activity-location">📍 ${escHtml(a.neighborhood)}</div>
+        <a class="activity-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
       </div>
-      <div style="background:rgba(91,143,255,0.06);border:1px solid rgba(91,143,255,0.15);border-radius:var(--radius);padding:0.55rem 0.75rem;margin-top:0.5rem;font-size:12px;color:var(--text2)">
-        <span style="color:var(--accent);font-size:11px">✦ Insider tip:</span> ${escHtml(a.insider_tip)}
-      </div>
-    </div>
-    <div class="activity-footer">
-      <div class="activity-location">📍 ${escHtml(a.neighborhood)}</div>
-      <a class="activity-book-btn" href="${mapsUrl}" target="_blank" rel="noopener">Open in Maps ↗</a>
     </div>`;
 }
 
@@ -436,26 +450,28 @@ function buildDirectionsHTML(domId, data, mode) {
   ).join('');
 
   return `
-    <div class="directions-header">
-      <div class="directions-route">
-        ${originKnown ? `
-          <div class="directions-from">
-            <div class="directions-dot from"></div>
-            <span>${escHtml(data.origin_label || data.origin)}</span>
+    <div class="card-core">
+      <div class="directions-header">
+        <div class="directions-route">
+          ${originKnown ? `
+            <div class="directions-from">
+              <div class="directions-dot from"></div>
+              <span>${escHtml(data.origin_label || data.origin)}</span>
+            </div>
+            <div class="directions-line"></div>` : ''}
+          <div class="directions-to">
+            <div class="directions-dot to"></div>
+            <span>${escHtml(data.destination_label || data.destination)}</span>
           </div>
-          <div class="directions-line"></div>` : ''}
-        <div class="directions-to">
-          <div class="directions-dot to"></div>
-          <span>${escHtml(data.destination_label || data.destination)}</span>
         </div>
+        <div class="directions-mode-badge">${DIR_MODE_ICON[mode] || '🗺'} ${DIR_MODE_LABEL[mode] || mode}</div>
       </div>
-      <div class="directions-mode-badge">${DIR_MODE_ICON[mode] || '🗺'} ${DIR_MODE_LABEL[mode] || mode}</div>
-    </div>
-    ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
-    <div class="directions-map" id="dmap-${domId}"><div class="directions-map-loading">Loading map…</div></div>
-    <div class="directions-footer">
-      <div class="directions-mode-btns">${modeBtns}</div>
-      <a class="directions-open-btn" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      ${data.context ? `<div class="directions-context">${escHtml(data.context)}</div>` : ''}
+      <div class="directions-map" id="dmap-${domId}"><div class="directions-map-loading">Loading map…</div></div>
+      <div class="directions-footer">
+        <div class="directions-mode-btns">${modeBtns}</div>
+        <a class="directions-open-btn" href="${dirOpenUrl(data.origin, data.destination, mode)}" target="_blank" rel="noopener">Open in Maps ↗</a>
+      </div>
     </div>`;
 }
 
@@ -614,7 +630,7 @@ async function fetchAndRenderWeather(cityData, trip) {
   wrap.innerHTML = '<div class="avatar ai" style="opacity:0"></div>';
   const loadingCard = document.createElement('div');
   loadingCard.className = 'weather-card';
-  loadingCard.innerHTML = '<div class="weather-loading">⏳ Fetching live weather for ' + escHtml(cityData.city) + '...</div>';
+  loadingCard.innerHTML = '<div class="card-core"><div class="weather-loading">⏳ Fetching live weather for ' + escHtml(cityData.city) + '...</div></div>';
   wrap.appendChild(loadingCard);
   chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
@@ -667,7 +683,7 @@ async function fetchAndRenderWeather(cityData, trip) {
     }
   } catch (err) {
     console.error('[Waypoint] weather card failed:', err);
-    loadingCard.innerHTML = '<div class="weather-loading" style="color:var(--accent4)">Could not load weather: ' + escHtml(err.message) + '</div>';
+    loadingCard.innerHTML = '<div class="card-core"><div class="weather-loading" style="color:var(--accent4)">Could not load weather: ' + escHtml(err.message) + '</div></div>';
   }
   chat.scrollTop = chat.scrollHeight;
 }
@@ -734,25 +750,27 @@ function buildWeatherHTML(cardId) {
   const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
   return `
-    <div class="weather-hero">
-      <div class="weather-location">
-        <div class="weather-city">${escHtml(city)}</div>
-        <div class="weather-country">${escHtml(country)}</div>
-        <div class="weather-sel-day">${heroLabel}</div>
+    <div class="card-core">
+      <div class="weather-hero">
+        <div class="weather-location">
+          <div class="weather-city">${escHtml(city)}</div>
+          <div class="weather-country">${escHtml(country)}</div>
+          <div class="weather-sel-day">${heroLabel}</div>
+        </div>
+        <div class="weather-current">
+          <div class="weather-temp">${heroTemp}<span class="weather-temp-unit">°${unit}</span></div>
+          <div class="weather-condition">${dayInfo.icon} ${dayInfo.desc}</div>
+          <div class="weather-hilo">H ${hiSel}° · L ${loSel}°</div>
+        </div>
       </div>
-      <div class="weather-current">
-        <div class="weather-temp">${heroTemp}<span class="weather-temp-unit">°${unit}</span></div>
-        <div class="weather-condition">${dayInfo.icon} ${dayInfo.desc}</div>
-        <div class="weather-hilo">H ${hiSel}° · L ${loSel}°</div>
-      </div>
-    </div>
-    <div class="weather-stats">${statsHtml}</div>
-    <div class="weather-forecast">${dayCards}</div>
-    <div class="weather-footer">
-      <div class="weather-updated">Updated ${now} · tap a day for details</div>
-      <div class="weather-unit-toggle">
-        <button class="wut${!isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'C')">°C</button>
-        <button class="wut${isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'F')">°F</button>
+      <div class="weather-stats">${statsHtml}</div>
+      <div class="weather-forecast">${dayCards}</div>
+      <div class="weather-footer">
+        <div class="weather-updated">Updated ${now} · tap a day for details</div>
+        <div class="weather-unit-toggle">
+          <button class="wut${!isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'C')">°C</button>
+          <button class="wut${isF ? ' active' : ''}" onclick="switchWeatherUnit('${cardId}', 'F')">°F</button>
+        </div>
       </div>
     </div>`;
 }
