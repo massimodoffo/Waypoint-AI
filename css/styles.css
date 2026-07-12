@@ -330,8 +330,16 @@ textarea::placeholder { color: var(--text3); }
 .hamburger { display: flex; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
 .hamburger:hover { background: var(--bg3); }
 .hamburger:active { transform: scale(0.9); }
-.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s var(--ease); display: block; }
+.hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s var(--ease), transform 0.3s var(--ease), opacity 0.2s var(--ease); display: block; }
 .hamburger:hover span { background: var(--text); }
+/* Morph into an X (state indication for the open sidebar drawer, toggled via
+   .hamburger.active in theme.js's toggleSidebar) rather than the icon just
+   disappearing — the two outer bars rotate/translate onto the middle bar's
+   axis (gap 5px + height 2px puts bar centers at 1/8/15px, so ±7px aligns
+   bars 1 and 3 on bar 2's center) while the middle bar fades out. */
+.hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }
 
