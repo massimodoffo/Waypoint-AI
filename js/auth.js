@@ -18,10 +18,12 @@
 // email confirmation is off.
 
 const IDENTITY_BASE = '/.netlify/identity';
+const IDENTITY_TIMEOUT_MS = 8000;
 const STORAGE_KEY = 'wp_identity';
 
 const MSG_GENERIC_ERROR = 'Something went wrong. Please try again.';
 const MSG_UNCONFIRMED = 'Account created! Check your email to confirm it, then log in below.';
+const MSG_MAYBE_REGISTERED = 'That email may already have an account — try logging in instead.';
 
 function els() {
   return {
@@ -33,7 +35,12 @@ function els() {
     submitSignup: document.getElementById('authSignupSubmit'),
     submitLogin: document.getElementById('authLoginSubmit'),
     message: document.getElementById('authMessage'),
+    firstName: document.getElementById('authFirstName'),
+    lastName: document.getElementById('authLastName'),
+    signupEmail: document.getElementById('authSignupEmail'),
+    signupPassword: document.getElementById('authSignupPassword'),
     loginEmail: document.getElementById('authLoginEmail'),
+    loginPassword: document.getElementById('authLoginPassword'),
   };
 }
 
@@ -52,7 +59,12 @@ function clearMessage() {
   message.textContent = '';
 }
 
-function switchTab(target) {
+// preserveMessage: the signup-success handler switches to the login tab
+// itself to show a "check your email" / "you're in" message it just set —
+// without this, the tab-click default of clearing stale messages would wipe
+// that message out before the user ever sees it, since both calls happen in
+// the same synchronous tick with nothing in between to let it paint.
+function switchTab(target, { preserveMessage = false } = {}) {
   const { tabSignup, tabLogin, formSignup, formLogin } = els();
   if (!tabSignup || !tabLogin || !formSignup || !formLogin) return;
   const toSignup = target === 'signup';
@@ -62,41 +74,68 @@ function switchTab(target) {
   tabLogin.setAttribute('aria-selected', String(!toSignup));
   formSignup.hidden = !toSignup;
   formLogin.hidden = toSignup;
-  clearMessage();
+  if (!preserveMessage) clearMessage();
+}
+
+function isDuplicateAccountError(message) {
+  return typeof message === 'string' && /already.*(registered|exists)/i.test(message);
 }
 
 // Netlify Identity's signup/token endpoints return their error text under
 // slightly different shapes depending on the failure — normalize to one
-// human-readable string rather than showing raw API JSON.
-function extractErrorMessage(body) {
+// human-readable string rather than showing raw API JSON. Duplicate-account
+// signups are softened separately (see isDuplicateAccountError) rather than
+// relaying GoTrue's own wording verbatim, so a scripted signup attempt can't
+// use the exact response text to enumerate which emails already have
+// accounts.
+function extractErrorMessage(body, { isSignup = false } = {}) {
   if (!body) return MSG_GENERIC_ERROR;
-  return body.error_description || body.msg || body.error || MSG_GENERIC_ERROR;
+  const raw = body.error_description || body.msg || body.error || MSG_GENERIC_ERROR;
+  if (isSignup && isDuplicateAccountError(raw)) return MSG_MAYBE_REGISTERED;
+  return raw;
 }
 
 async function parseJsonSafe(res) {
   try { return await res.json(); } catch { return null; }
 }
 
+// Every error this throws is already normalized/safe to show directly to
+// the user (see extractErrorMessage and the network-failure catch below) —
+// callers don't need to re-check err.message before displaying it.
 async function identitySignup(email, password, firstName, lastName) {
-  const res = await fetch(`${IDENTITY_BASE}/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email, password,
-      data: { first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`.trim() }
-    })
-  });
+  let res;
+  try {
+    res = await fetch(`${IDENTITY_BASE}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email, password,
+        data: { first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`.trim() }
+      }),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS)
+    });
+  } catch {
+    // Network failure or timeout, not an API error response — fetch's own
+    // TypeError ("Failed to fetch") is not something to show verbatim.
+    throw new Error(MSG_GENERIC_ERROR);
+  }
   const body = await parseJsonSafe(res);
-  if (!res.ok) throw new Error(extractErrorMessage(body));
+  if (!res.ok) throw new Error(extractErrorMessage(body, { isSignup: true }));
   return body;
 }
 
 async function identityLogin(email, password) {
-  const res = await fetch(`${IDENTITY_BASE}/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'password', username: email, password })
-  });
+  let res;
+  try {
+    res = await fetch(`${IDENTITY_BASE}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'password', username: email, password }),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS)
+    });
+  } catch {
+    throw new Error(MSG_GENERIC_ERROR);
+  }
   const body = await parseJsonSafe(res);
   if (!res.ok) throw new Error(extractErrorMessage(body));
   return body; // { access_token, refresh_token, expires_in, ... }
@@ -104,11 +143,14 @@ async function identityLogin(email, password) {
 
 // Only covers this page load — there's no session restore on return visits
 // (the splash always plays first), just enough persistence that a mid-app
-// refresh right after logging in doesn't strand the user.
+// refresh right after logging in doesn't strand the user. tokenResponse can
+// be null if the API returned a 2xx with a non-JSON body — guarded so that
+// case surfaces as nothing-happens rather than a TypeError masquerading as
+// a storage failure.
 function storeSession(tokenResponse, email) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      email, storedAt: Date.now(), expiresIn: tokenResponse.expires_in
+      email, storedAt: Date.now(), expiresIn: tokenResponse?.expires_in ?? null
     }));
   } catch { /* storage unavailable or full — session still works for this tab */ }
 }
@@ -136,22 +178,23 @@ function setSubmitting(button, isSubmitting, idleLabel) {
 
 async function handleSignupSubmit(e) {
   e.preventDefault();
-  const { submitSignup } = els();
+  const { submitSignup, firstName, lastName, signupEmail, signupPassword } = els();
+  if (!firstName || !lastName || !signupEmail || !signupPassword) return;
   clearMessage();
 
-  const firstName = document.getElementById('authFirstName').value.trim();
-  const lastName = document.getElementById('authLastName').value.trim();
-  const email = document.getElementById('authSignupEmail').value.trim();
-  const password = document.getElementById('authSignupPassword').value;
+  const first = firstName.value.trim();
+  const last = lastName.value.trim();
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value;
 
-  if (!firstName || !lastName || !email || password.length < 6) {
+  if (!first || !last || !email || password.length < 6) {
     showMessage('Fill in every field — password needs at least 6 characters.', 'error');
     return;
   }
 
   setSubmitting(submitSignup, true, 'Create account');
   try {
-    await identitySignup(email, password, firstName, lastName);
+    await identitySignup(email, password, first, last);
     // Netlify Identity's default config requires email confirmation before
     // a token grant succeeds, so this immediate login attempt is expected
     // to fail on a freshly-confirmed-by-default site — that's handled below
@@ -160,27 +203,35 @@ async function handleSignupSubmit(e) {
       const tokenResponse = await identityLogin(email, password);
       storeSession(tokenResponse, email);
       showMessage('Account created — you\'re in!', 'success');
+      signupPassword.value = '';
+      // Left disabled deliberately (unlike the catch branches below): the
+      // screen is already on its way out via enterApp(), so re-enabling the
+      // button here would just open a window for a duplicate signup click
+      // while the success message is still on screen.
       setTimeout(enterApp, 600);
+      return;
     } catch {
       showMessage(MSG_UNCONFIRMED, 'success');
-      switchTab('login');
+      signupPassword.value = '';
+      switchTab('login', { preserveMessage: true });
       const { loginEmail } = els();
       if (loginEmail) loginEmail.value = email;
     }
   } catch (err) {
     showMessage(err.message || MSG_GENERIC_ERROR, 'error');
-  } finally {
-    setSubmitting(submitSignup, false, 'Create account');
+    signupPassword.value = '';
   }
+  setSubmitting(submitSignup, false, 'Create account');
 }
 
 async function handleLoginSubmit(e) {
   e.preventDefault();
-  const { submitLogin } = els();
+  const { submitLogin, loginEmail, loginPassword } = els();
+  if (!loginEmail || !loginPassword) return;
   clearMessage();
 
-  const email = document.getElementById('authLoginEmail').value.trim();
-  const password = document.getElementById('authLoginPassword').value;
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value;
   if (!email || !password) {
     showMessage('Enter your email and password.', 'error');
     return;
@@ -190,9 +241,11 @@ async function handleLoginSubmit(e) {
   try {
     const tokenResponse = await identityLogin(email, password);
     storeSession(tokenResponse, email);
-    enterApp();
+    loginPassword.value = '';
+    enterApp(); // left disabled — same reasoning as the signup success path above
   } catch (err) {
     showMessage(err.message || MSG_GENERIC_ERROR, 'error');
+    loginPassword.value = '';
     setSubmitting(submitLogin, false, 'Log in');
   }
 }
