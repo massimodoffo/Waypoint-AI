@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-12T00:00:00Z",
+  "title": "Design System: Waypoint AI",
+  "extensions": {
+    "colorMeta": {
+      "cobalt": { "role": "primary", "displayName": "Cobalt", "canonical": "#5b8fff", "tonalRamp": ["#00184d", "#002d8f", "#0041cc", "#0a58ff", "#4782ff", "#85abff", "#c2d5ff", "#e5eeff"] },
+      "sage": { "role": "secondary", "displayName": "Sage", "canonical": "#8fa87a", "tonalRamp": ["#262e1e", "#465638", "#647b51", "#829e6b", "#a2b690", "#c1cfb5", "#e0e7da", "#f2f5f0"] },
+      "teal": { "role": "secondary", "displayName": "Slate Teal", "canonical": "#7a9fa8", "tonalRamp": ["#1e2b2e", "#385056", "#51737b", "#6b949e", "#90afb6", "#b5cacf", "#dae4e7", "#f0f4f5"] },
+      "mauve": { "role": "secondary", "displayName": "Dusty Mauve", "canonical": "#a87a8f", "tonalRamp": ["#2e1e26", "#563846", "#7b5164", "#9e6b82", "#b690a2", "#cfb5c1", "#e7dae0", "#f5f0f2"] },
+      "tan": { "role": "secondary", "displayName": "Warm Tan", "canonical": "#a8947a", "tonalRamp": ["#2e271e", "#564938", "#7b6951", "#9e886b", "#b6a690", "#cfc3b5", "#e7e1da", "#f5f3f0"] },
+      "ink-black": { "role": "neutral", "displayName": "Ink Black", "canonical": "#0e0f0e", "tonalRamp": ["#252825", "#454a45", "#626a62", "#808980", "#a0a6a0", "#c0c4c0", "#dfe1df", "#f2f3f2"] },
+      "panel-black": { "role": "neutral", "displayName": "Panel Black", "canonical": "#161714", "tonalRamp": ["#272924", "#494c42", "#686d5f", "#878d7c", "#a5aa9d", "#c3c6be", "#e1e3de", "#f3f3f1"] },
+      "raised-black": { "role": "neutral", "displayName": "Raised Black", "canonical": "#1e1f1c", "tonalRamp": ["#272824", "#494b44", "#686b61", "#878b7e", "#a5a89f", "#c3c5bf", "#e1e2df", "#f2f3f2"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#f0ede6", "tonalRamp": ["#302a1d", "#594f36", "#7f704d", "#a39166", "#baac8c", "#d1c8b3", "#e8e3d9", "#f5f4ef"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Welcome-screen H1 only — the single per-screen statement." },
+      "headline": { "displayName": "Headline", "purpose": "Itinerary hero title, weather city name." },
+      "title": { "displayName": "Title", "purpose": "Card titles — hotel, restaurant, activity name." },
+      "body": { "displayName": "Body", "purpose": "Chat bubbles and descriptive card text." },
+      "label": { "displayName": "Label", "purpose": "Section headers, badges, status labels." }
+    },
+    "shadows": [
+      { "name": "resting", "value": "0 2px 14px rgba(10,8,2,0.45)", "purpose": "Default card/panel shadow, warm-black tint independent of accent hue." },
+      { "name": "hover", "value": "0 8px 28px rgba(10,8,2,0.4)", "purpose": "Paired with translateY(-3px) card lift on hover." },
+      { "name": "inset-highlight", "value": "inset 0 1px 0 rgba(255,255,255,0.05)", "purpose": "One-pixel top-edge catch-light simulating an overhead light source." },
+      { "name": "cobalt-glow", "value": "0 6px 16px -4px rgba(91,143,255,0.45)", "purpose": "Primary button hover glow — the only shadow allowed to carry the accent hue." }
+    ],
+    "motion": [
+      { "name": "ease-spring", "value": "cubic-bezier(0.32,0.72,0,1)", "purpose": "Default tactile hover/press easing for cards, buttons, chips, toggles." },
+      { "name": "duration-press", "value": "160ms", "purpose": "Button/chip press feedback." },
+      { "name": "duration-card-hover", "value": "300ms", "purpose": "Card border/shadow/transform transitions." },
+      { "name": "duration-entrance", "value": "450ms", "purpose": "Staggered slideUp entrance for welcome screen and messages." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (Send)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Circular cobalt send button in the composer.",
+      "html": "<button class=\"ds-btn-send\" aria-label=\"Send message\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M4 12L20 4L13 20L11 13L4 12Z\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-btn-send { width: 36px; height: 36px; border-radius: 50%; border: none; background: #5b8fff; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 350ms cubic-bezier(0.32,0.72,0,1), opacity 200ms cubic-bezier(0.32,0.72,0,1), box-shadow 350ms cubic-bezier(0.32,0.72,0,1); box-shadow: 0 0 0 0 rgba(91,143,255,0); } .ds-btn-send:hover { opacity: 0.9; transform: translateY(-1px) scale(1.06); box-shadow: 0 6px 16px -4px rgba(91,143,255,0.45); } .ds-btn-send:active { transform: scale(0.94); } .ds-btn-send:focus-visible { outline: 2px solid #5b8fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Result Card (Double-Bezel)",
+      "kind": "card",
+      "refersTo": "card-shell",
+      "description": "Nested-shell card used for itinerary/hotel/restaurant/activity/weather/directions results.",
+      "html": "<div class=\"ds-card-shell\"><div class=\"ds-card-core\"><div class=\"ds-card-header\">Hotel</div><div class=\"ds-card-body\">Ryokan Sakura — quiet ryokan near the river.</div></div></div>",
+      "css": ".ds-card-shell { background: #161714; border-radius: 20px; padding: 6px; box-shadow: 0 2px 14px rgba(10,8,2,0.45); } .ds-card-core { background: #161714; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); transition: border-color 300ms cubic-bezier(0.32,0.72,0,1), transform 300ms cubic-bezier(0.32,0.72,0,1); } .ds-card-shell:hover .ds-card-core { border-color: rgba(255,255,255,0.12); transform: translateY(-3px); } .ds-card-header { padding: 0.9rem 1rem 0.6rem; font-family: 'Clash Display', sans-serif; font-size: 1.25rem; color: #f0ede6; } .ds-card-body { padding: 0 1rem 0.9rem; font-size: 14px; color: #9e9b93; line-height: 1.6; }"
+    },
+    {
+      "name": "Ghost Toggle Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Compact toggle used for people/night counters and mode switches (rpb/hnb/dmb/wut).",
+      "html": "<button class=\"ds-btn-ghost ds-btn-ghost--active\">2</button>",
+      "css": ".ds-btn-ghost { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #9e9b93; font-size: 12px; cursor: pointer; transition: all 200ms cubic-bezier(0.32,0.72,0,1); } .ds-btn-ghost:hover { background: #1e1f1c; color: #f0ede6; } .ds-btn-ghost:active { transform: scale(0.9); } .ds-btn-ghost--active { background: #5b8fff; color: #fff; border-color: #5b8fff; }"
+    },
+    {
+      "name": "Agent Status Dot",
+      "kind": "custom",
+      "refersTo": "agent-dot",
+      "description": "Signature component: small colored dot showing per-agent state (idle/running/done).",
+      "html": "<span class=\"ds-agent-dot ds-agent-dot--running\"></span>",
+      "css": ".ds-agent-dot { width: 6px; height: 6px; border-radius: 50%; background: #5c5a54; display: inline-block; } .ds-agent-dot--running { background: #5b8fff; box-shadow: 0 0 6px rgba(91,143,255,0.5); animation: ds-pulse 1.2s infinite; } .ds-agent-dot--done { background: #8fa87a; } @keyframes ds-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Waypoint is a globe coming alive under your fingertips — every AI decision is a route drawn in real time, not a line of text.",
+    "overview": "Waypoint AI is not a form that outputs a PDF itinerary; it's a flight deck. The user sits in a near-black cockpit (#0e0f0e) lit by a single cobalt instrument glow, watching four specialist agents work in parallel — each decision (a hotel, a stop, a route) resolving into a precise, tactile readout rather than a wall of prose. The globe on the splash screen isn't decoration; it's the thesis statement, rendered literally. Every card in the app after that point is a smaller echo of the same idea: information with weight, motion with intent, one color that means \"this is live.\" This system explicitly rejects the generic SaaS dashboard: no gradient-clip hero-metric tiles, no identical icon+heading card grids, no boilerplate uppercase eyebrow tags stacked above every section, no side-stripe accent borders, no decorative glassmorphism. The floating nav's backdrop-blur is the one deliberate exception — functional (fixed/sticky), not decorative.",
+    "keyCharacteristics": [
+      "Dark-first OLED canvas with a warm off-white ink, not pure white-on-black",
+      "A single cobalt accent carries all 'this is interactive / this is live' meaning; four muted secondary hues exist only for semantic tagging",
+      "Clash Display for anything that names or labels; Switzer for anything read at length",
+      "Spring-decelerated motion (cubic-bezier(0.32,0.72,0,1)) on every tactile interaction",
+      "Double-bezel card architecture: a quiet outer shell around the primary content surface"
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Cobalt appears only where something is interactive or currently true. It never appears as a passive decorative wash across a whole section.", "section": "colors" },
+      { "name": "The Warm Neutral Rule", "body": "Backgrounds and text are never pure black/white. Ink Black carries a green undertone; Paper carries a warm cream undertone.", "section": "colors" },
+      { "name": "The No-Italic Rule", "body": "Clash Display ships no italic face. Emphasis within display type is weight + cobalt color, never a synthesized skew-italic.", "section": "typography" },
+      { "name": "The Concentric Radius Rule", "body": "Any nested shell's inner radius = outer radius minus padding, so the curves stay visually concentric.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep cobalt as the only color that signals interactivity or 'currently true'.",
+      "Do use the spring ease cubic-bezier(0.32,0.72,0,1) for every tactile hover/press interaction.",
+      "Do pair a resting shadow + 1px inset top highlight on every card, brightening to a hover shadow + lift on interaction.",
+      "Do keep Ink Black and Paper warm-tinted, never pure #000/#fff.",
+      "Do respect prefers-reduced-motion: cut entrance choreography entirely, keep functional feedback.",
+      "Do gate hover-only affordances behind @media (hover: hover) and (pointer: fine)."
+    ],
+    "donts": [
+      "Don't ship a generic SaaS dashboard: no gradient-clip hero-metric tiles, no identical icon+heading card grids, no uppercase eyebrow kickers, no side-stripe accent borders.",
+      "Don't use glassmorphism decoratively — backdrop-blur is reserved for the fixed/sticky nav island only.",
+      "Don't synthesize a fake italic for Clash Display.",
+      "Don't let a secondary accent leak into a role cobalt owns.",
+      "Don't animate top/left/width/height — transform and opacity only.",
+      "Don't start scale-based entrance animations from scale(0)."
+    ]
+  }
+}
