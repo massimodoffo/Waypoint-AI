@@ -5,7 +5,7 @@
 // lying flat against the surface continent-to-continent and landing on
 // ripple markers, the Waypoint AI wordmark, and a single "Explore" button.
 // Clicking it grows a color-matched circle over the globe until it blocks
-// out the whole screen, then reveals the main app underneath.
+// out the whole screen, then reveals the account/sign-in screen underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
 
@@ -934,8 +934,13 @@ function initSplash() {
 
     setTimeout(() => {
       // The blockout circle is fully grown and opaque at this point, so
-      // revealing the app underneath here causes no visible pop or flash.
-      document.body.classList.remove('pre-start');
+      // revealing the auth screen underneath here causes no visible pop or
+      // flash. body.pre-start (which hides nav/app) stays in effect — it's
+      // only lifted once auth.js's login handler succeeds, same as this
+      // block used to lift it directly back when Explore led straight into
+      // the app.
+      const authScreen = document.getElementById('authScreen');
+      if (authScreen) authScreen.hidden = false;
 
       blockout.classList.add('splash-blockout-fadeout');
       setTimeout(() => {
@@ -944,10 +949,10 @@ function initSplash() {
         if (globeHandle) globeHandle.dispose();
         // splash.remove() drops whatever had focus (the button, for keyboard
         // users who activated it via Enter/Space) back to <body> with no
-        // visible indicator. Hand focus to the <main> landmark instead of
-        // leaving it stranded.
-        const main = document.querySelector('main');
-        if (main) main.focus({ preventScroll: true });
+        // visible indicator. Hand focus into the newly-revealed auth form
+        // instead of leaving it stranded.
+        const firstField = document.getElementById('authFirstName');
+        if (firstField) firstField.focus({ preventScroll: true });
       }, fadeMs);
     }, growMs);
   });

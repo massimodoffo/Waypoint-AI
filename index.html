@@ -42,6 +42,61 @@
   <div class="splash-blockout" id="splashBlockout"></div>
 </div>
 
+<!-- Revealed by splash.js once the blockout has grown to cover the screen;
+     hides again (and hands off to the main app) once auth.js's login
+     handler succeeds. See both files' transition comments. -->
+<div id="authScreen" class="auth-screen" hidden>
+  <div class="auth-shell">
+    <div class="auth-core">
+      <div class="auth-header">
+        <div class="logo"><span class="logo-dot"></span>Waypoint</div>
+        <p class="auth-tagline">One account, every trip you plan.</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="authTabSignup" role="tab" aria-selected="true" aria-controls="authFormSignup">Create account</button>
+        <button type="button" class="auth-tab" id="authTabLogin" role="tab" aria-selected="false" aria-controls="authFormLogin">Log in</button>
+      </div>
+
+      <div class="auth-message" id="authMessage" role="status" hidden></div>
+
+      <form class="auth-form" id="authFormSignup" novalidate>
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label for="authFirstName">First name</label>
+            <input id="authFirstName" name="firstName" type="text" autocomplete="given-name" required>
+          </div>
+          <div class="auth-field">
+            <label for="authLastName">Last name</label>
+            <input id="authLastName" name="lastName" type="text" autocomplete="family-name" required>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="authSignupEmail">Email</label>
+          <input id="authSignupEmail" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="auth-field">
+          <label for="authSignupPassword">Password</label>
+          <input id="authSignupPassword" name="password" type="password" autocomplete="new-password" minlength="6" required>
+        </div>
+        <button type="submit" class="auth-submit" id="authSignupSubmit">Create account</button>
+      </form>
+
+      <form class="auth-form" id="authFormLogin" novalidate hidden>
+        <div class="auth-field">
+          <label for="authLoginEmail">Email</label>
+          <input id="authLoginEmail" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="auth-field">
+          <label for="authLoginPassword">Password</label>
+          <input id="authLoginPassword" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="auth-submit" id="authLoginSubmit">Log in</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <nav>
   <div style="display:flex;align-items:center;gap:12px">
     <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
