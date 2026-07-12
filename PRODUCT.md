@@ -30,4 +30,4 @@ Must not read as a generic SaaS dashboard: no gradient-clip hero-metric tiles, n
 
 ## Accessibility & Inclusion
 
-WCAG AA minimum: body text ≥4.5:1 contrast, large text ≥3:1, including placeholder text. Full `prefers-reduced-motion` support — every transform/opacity-driven animation gets a reduced-motion fallback (crossfade or instant), not just a global "turn off". Keyboard-navigable end to end (chat input, sidebar trip list, card actions). Touch-only devices must not trigger hover-gated interactions (`@media (hover: hover) and (pointer: fine)` guard).
+WCAG AA minimum: body text ≥4.5:1 contrast, large text ≥3:1, including placeholder text. Full `prefers-reduced-motion` support — every transform/opacity-driven animation gets a reduced-motion fallback (crossfade or instant), not just a global "turn off". Keyboard-navigable end to end (chat input, sidebar trip list, card actions). Target: touch-only devices shouldn't get stuck in a false-hover state on `:hover`-only affordances (`@media (hover: hover) and (pointer: fine)` guard) — not yet applied across the existing stylesheet as of this writing; treat as a backlog item, not a shipped guarantee.

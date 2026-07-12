@@ -12,7 +12,7 @@ colors:
   raised-black: "#1e1f1c"
   paper: "#f0ede6"
   paper-muted: "#9e9b93"
-  paper-faint: "#5c5a54"
+  paper-faint: "#8a877f"
 typography:
   display:
     fontFamily: "Clash Display, sans-serif"
@@ -109,7 +109,7 @@ The palette is a single saturated accent against a warm-neutral dark (or, in lig
 - **Raised Black** (`#1e1f1c`): Pressed/hover surface state, nested readouts (pricing/cost rows inside cards).
 - **Paper** (`#f0ede6`): Primary text (dark mode) — warm off-white, never pure `#fff`.
 - **Paper Muted** (`#9e9b93`): Secondary text, metadata.
-- **Paper Faint** (`#5c5a54`): Tertiary text, placeholder, disabled.
+- **Paper Faint** (`#8a877f` dark / `#6b6961` light): Tertiary text, placeholder, disabled. Deliberately lighter than a "true" faint gray — at `#5c5a54`/`#a09e97` this tier fell to ~2.4-2.8:1 against the surfaces it's used on, below the 4.5:1 AA floor for its typical use (card labels, metadata).
 - Light mode inverts the ramp onto warm paper (`#f7f5f0` bg / `#ffffff` panel / `#1a1916` ink) with the same role structure — see frontmatter is dark-canonical; light-mode hexes are documented in Do's and Don'ts.
 
 ### Named Rules
@@ -185,7 +185,7 @@ Small colored dots (`--agent-dot`), not progress bars or spinners, represent eac
 - **Do** pair a resting shadow + 1px inset top highlight on every card, brightening to a hover shadow + `translateY(-3px)` lift on interaction — never a static, shadowless card.
 - **Do** keep Ink Black (`#0e0f0e`) and Paper (`#f0ede6`) warm-tinted, never pure `#000`/`#fff`.
 - **Do** respect `prefers-reduced-motion`: entrance choreography (stagger, rise-and-fade) is cut entirely, not just shortened; functional feedback (hover color, focus) survives at a faster duration.
-- **Do** gate all `:hover`-only affordances behind `@media (hover: hover) and (pointer: fine)` so touch devices don't get stuck in a false-hover state.
+- **Do** gate all `:hover`-only affordances behind `@media (hover: hover) and (pointer: fine)` on new components, so touch devices don't get stuck in a false-hover state. (Not yet retrofitted onto the pre-existing hover rules in this file as of this writing — a known gap, not a shipped guarantee.)
 
 ### Don't:
 - **Don't** ship a generic SaaS dashboard: no gradient-clip hero-metric tiles, no identical icon+heading card grids repeated endlessly, no uppercase "eyebrow" kicker stacked above every section, no `border-left`/`border-right` colored stripes as accents.

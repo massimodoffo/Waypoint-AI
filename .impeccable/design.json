@@ -68,7 +68,7 @@
       "refersTo": "agent-dot",
       "description": "Signature component: small colored dot showing per-agent state (idle/running/done).",
       "html": "<span class=\"ds-agent-dot ds-agent-dot--running\"></span>",
-      "css": ".ds-agent-dot { width: 6px; height: 6px; border-radius: 50%; background: #5c5a54; display: inline-block; } .ds-agent-dot--running { background: #5b8fff; box-shadow: 0 0 6px rgba(91,143,255,0.5); animation: ds-pulse 1.2s infinite; } .ds-agent-dot--done { background: #8fa87a; } @keyframes ds-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }"
+      "css": ".ds-agent-dot { width: 6px; height: 6px; border-radius: 50%; background: #8a877f; display: inline-block; } .ds-agent-dot--running { background: #5b8fff; box-shadow: 0 0 6px rgba(91,143,255,0.5); animation: ds-pulse 1.2s infinite; } .ds-agent-dot--done { background: #8fa87a; } @keyframes ds-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }"
     }
   ],
   "narrative": {
