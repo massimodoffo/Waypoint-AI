@@ -14,8 +14,10 @@ function toggleSidebar() {
   if (!sidebar) return;
   const isMobile = window.matchMedia('(max-width: 700px)').matches;
   if (isMobile) {
-    sidebar.classList.toggle('open');
+    const isOpen = sidebar.classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('visible');
+    const hamburger = document.getElementById('hamburger');
+    if (hamburger) hamburger.classList.toggle('active', isOpen);
   } else {
     const collapsed = sidebar.classList.toggle('collapsed');
     try { localStorage.setItem('wp_sidebar', collapsed ? 'collapsed' : 'open'); } catch (e) { /* storage unavailable */ }
@@ -37,6 +39,8 @@ function initSidebar() {
       // Entering desktop: strip mobile open state
       sidebar.classList.remove('open');
       if (overlay) overlay.classList.remove('visible');
+      const hamburger = document.getElementById('hamburger');
+      if (hamburger) hamburger.classList.remove('active');
       // Restore persisted collapsed preference
       try {
         if (localStorage.getItem('wp_sidebar') === 'collapsed') sidebar.classList.add('collapsed');
