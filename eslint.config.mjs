@@ -14,6 +14,7 @@ export default [
         console: "readonly",
         fetch: "readonly",
         AbortSignal: "readonly",
+        URLSearchParams: "readonly",
         localStorage: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
