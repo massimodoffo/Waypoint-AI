@@ -1,9 +1,11 @@
 // ── splash.js ─────────────────────────────────────────────────────────────────
-// Full-screen entry splash: a spinning 3D globe with land/ocean continents,
-// tracer routes lying flat against the surface continent-to-continent and
-// landing on ripple markers, the Waypoint AI wordmark, and a single
-// "Explore" button. Clicking it grows a color-matched circle over the globe
-// until it blocks out the whole screen, then reveals the main app underneath.
+// Full-screen entry splash: a spinning 3D globe with a real NASA-derived
+// Earth photograph (day map + specular ocean glint + normal-mapped terrain +
+// a drifting cloud layer) under a wireframe "AI overlay" grid, tracer routes
+// lying flat against the surface continent-to-continent and landing on
+// ripple markers, the Waypoint AI wordmark, and a single "Explore" button.
+// Clicking it grows a color-matched circle over the globe until it blocks
+// out the whole screen, then reveals the main app underneath.
 
 import { CONTINENTS, HUBS } from './globe-coastlines.js';
 
@@ -87,11 +89,14 @@ function equirectXY(lon, lat, w, h) {
   return [(lon + 180) / 360 * w, (90 - lat) / 180 * h];
 }
 
-// Draws a land/ocean map for the globe's base sphere from real coastline
-// data — avoids needing an image asset for a static, no-build-step site.
-// Each ring is drawn three times, offset a full map-width left/right, so
-// landmasses that cross the antimeridian (like Afro-Eurasia's Siberian
-// edge) wrap correctly instead of leaving a seam artifact.
+// Draws a flat, stylized land/ocean map from real coastline data. This is
+// the globe's *placeholder* texture now — painted instantly with no network
+// round-trip so the globe never renders blank while loadRealEarthTextures()
+// (below) streams in the actual NASA-derived photograph in the background,
+// and the fallback if that fetch fails (offline, blocked CDN). Each ring is
+// drawn three times, offset a full map-width left/right, so landmasses that
+// cross the antimeridian (like Afro-Eurasia's Siberian edge) wrap correctly
+// instead of leaving a seam artifact.
 function earthTexture(THREE) {
   const w = 1024;
   const h = 512;
@@ -545,6 +550,52 @@ const PARALLAX_SMOOTHING = 0.05;
 
 function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
+// Official three.js example assets — NASA Blue Marble-derived day map,
+// ocean specular mask, terrain normal map, and a cloud layer. Hosted on
+// three.js's own domain (same trust boundary as the "three" package itself,
+// already loaded from unpkg via the import map in index.html) rather than a
+// bundled file, matching this project's existing "CDN asset, degrade
+// gracefully if it doesn't load" posture (see the Leaflet-vendoring and
+// Google-Maps-embed-key comments elsewhere in this codebase for the same
+// trade-off made the other way, where the asset was vendored instead).
+const EARTH_DAY_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+const EARTH_SPECULAR_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg';
+const EARTH_NORMAL_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg';
+const EARTH_CLOUDS_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
+const EARTH_TEXTURE_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('texture load timed out')), ms))
+  ]);
+}
+
+// Streams in the real Earth photograph set in the background — never awaited
+// by loadGlobe() itself, so the splash's first frame always paints instantly
+// with the procedural earthTexture() placeholder above rather than blocking
+// on a multi-hundred-KB image fetch. Returns null (rather than throwing) on
+// any failure so the caller's .then() has one shape to handle either way.
+async function loadRealEarthTextures(THREE) {
+  const loader = new THREE.TextureLoader();
+  try {
+    const [day, specular, normal, clouds] = await withTimeout(
+      Promise.all([
+        loader.loadAsync(EARTH_DAY_MAP_URL),
+        loader.loadAsync(EARTH_SPECULAR_MAP_URL),
+        loader.loadAsync(EARTH_NORMAL_MAP_URL),
+        loader.loadAsync(EARTH_CLOUDS_MAP_URL)
+      ]),
+      EARTH_TEXTURE_TIMEOUT_MS
+    );
+    day.colorSpace = THREE.SRGBColorSpace;
+    return { day, specular, normal, clouds };
+  } catch (err) {
+    console.error('[Waypoint] real Earth textures failed to load, keeping stylized placeholder:', err);
+    return null;
+  }
+}
+
 async function loadGlobe(canvas) {
   const THREE = await import('three');
 
@@ -561,9 +612,12 @@ async function loadGlobe(canvas) {
 
   const globeTexture = earthTexture(THREE);
   // Reassigned by degradeQuality() to a coarser geometry — dispose() below
-  // always disposes whatever these currently point to.
+  // always disposes whatever these currently point to. MeshPhongMaterial
+  // (not MeshStandardMaterial) specifically so the real ocean specular map
+  // loaded in below has something to plug into — Standard's PBR roughness/
+  // metalness workflow has no specularMap slot.
   let globeGeometry = new THREE.SphereGeometry(1.4, 48, 48);
-  const globeMaterial = new THREE.MeshStandardMaterial({ map: globeTexture, roughness: 0.65, metalness: 0.05 });
+  const globeMaterial = new THREE.MeshPhongMaterial({ map: globeTexture, shininess: 12, specular: 0x223344 });
   const globeMesh = new THREE.Mesh(globeGeometry, globeMaterial);
   globeGroup.add(globeMesh);
 
@@ -576,6 +630,16 @@ async function loadGlobe(canvas) {
   const key = new THREE.PointLight(0x5b8fff, 1.4, 20);
   key.position.set(3, 2, 4);
   scene.add(key);
+
+  // Populated once loadRealEarthTextures() resolves (see below the render
+  // loop) — kept as outer-scope handles so degradeQuality() can drop the
+  // cloud layer's overdraw on slow devices and dispose() can always clean up
+  // whatever's currently live, whether or not the real textures ever arrived.
+  let cloudMesh = null;
+  let cloudGeometry = null;
+  let cloudMaterial = null;
+  let realTextures = null;
+  let disposed = false;
 
   const starfield = createStarfield(THREE, scene);
   const atmosphere = createAtmosphere(THREE, scene, '91,143,255');
@@ -594,6 +658,29 @@ async function loadGlobe(canvas) {
   }
 
   const tracers = Array.from({ length: TRACER_COUNT }, () => createTracer(THREE, globeGroup, pickHub(), spawnMarkers));
+
+  // Fire-and-forget: never awaited here, so the globe above has already
+  // painted its first frame with the instant placeholder texture by the
+  // time this resolves (or times out / fails) a beat later.
+  loadRealEarthTextures(THREE).then((textures) => {
+    if (disposed || !textures) return;
+    realTextures = textures;
+    globeMaterial.map = textures.day;
+    globeMaterial.specularMap = textures.specular;
+    globeMaterial.normalMap = textures.normal;
+    globeMaterial.normalScale.set(0.85, 0.85);
+    globeMaterial.needsUpdate = true;
+
+    // Slightly larger than the globe (1.4) but still under the wireframe
+    // overlay (1.42), so the layering reads front-to-back as: photograph →
+    // drifting clouds → AI wireframe grid → tracers/markers.
+    cloudGeometry = new THREE.SphereGeometry(1.41, 48, 48);
+    cloudMaterial = new THREE.MeshStandardMaterial({
+      map: textures.clouds, transparent: true, opacity: 0.55, depthWrite: false, roughness: 1
+    });
+    cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+    globeGroup.add(cloudMesh);
+  });
 
   const reduced = reducedMotionPreferred();
   let frameId = null;
@@ -616,6 +703,20 @@ async function loadGlobe(canvas) {
     wireGeometry.dispose();
     wireGeometry = new THREE.SphereGeometry(1.42, 16, 10);
     wireMesh.geometry = wireGeometry;
+    // The cloud layer is a second full-sphere overdraw pass (transparent,
+    // on top of the already-lit globe) — the single most expensive part of
+    // the real-texture upgrade, so it's the first thing degradeQuality()
+    // sheds. The photo/specular/normal maps stay; they cost no more render
+    // time than the flat placeholder texture they replaced.
+    if (cloudMesh) {
+      globeGroup.remove(cloudMesh);
+      cloudGeometry.dispose();
+      cloudMaterial.dispose();
+      if (realTextures && realTextures.clouds) { realTextures.clouds.dispose(); realTextures.clouds = null; }
+      cloudMesh = null;
+      cloudGeometry = null;
+      cloudMaterial = null;
+    }
   }
 
   function maybeDegrade(now) {
@@ -665,6 +766,11 @@ async function loadGlobe(canvas) {
     if (!reduced) {
       const now = performance.now();
       globeGroup.rotation.y += GLOBE_ROTATION_SPEED;
+      // Clouds are a child of globeGroup (so they inherit its base spin) but
+      // drift a further 15% on top of that — real weather doesn't co-rotate
+      // exactly with the land beneath it, and the mismatch is what reads as
+      // "alive" rather than a texture painted onto the same rigid sphere.
+      if (cloudMesh) cloudMesh.rotation.y += GLOBE_ROTATION_SPEED * 0.15;
       tracers.forEach((t) => t.update());
       markerPool.update(now);
       maybeDegrade(now);
@@ -693,6 +799,12 @@ async function loadGlobe(canvas) {
 
   return {
     dispose() {
+      // Set first: guards the loadRealEarthTextures().then() continuation
+      // above, which can still be in flight (or resolve just after) if the
+      // user clicks through before the ~image fetches finish — same
+      // dismissed-before-load race initSplash() already handles for the
+      // globe handle itself.
+      disposed = true;
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('pointermove', onPointerMove);
@@ -708,6 +820,17 @@ async function loadGlobe(canvas) {
       globeGeometry.dispose();
       globeMaterial.dispose();
       globeTexture.dispose();
+      if (realTextures) {
+        realTextures.day.dispose();
+        realTextures.specular.dispose();
+        realTextures.normal.dispose();
+        if (realTextures.clouds) realTextures.clouds.dispose();
+      }
+      if (cloudMesh) {
+        globeGroup.remove(cloudMesh);
+        cloudGeometry.dispose();
+        cloudMaterial.dispose();
+      }
       wireGeometry.dispose();
       wireMaterial.dispose();
       renderer.dispose();
