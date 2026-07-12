@@ -564,6 +564,9 @@ const EARTH_NORMAL_MAP_URL = 'https://threejs.org/examples/textures/planets/eart
 const EARTH_CLOUDS_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png';
 const EARTH_TEXTURE_TIMEOUT_MS = 8000;
 
+// A hand-rolled race rather than this codebase's usual AbortSignal.timeout()
+// (see cards.js's getGoogleMapsKey()) because THREE.TextureLoader.loadAsync()
+// has no signal/AbortController option to pass one into.
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
@@ -670,6 +673,14 @@ async function loadGlobe(canvas) {
     globeMaterial.normalMap = textures.normal;
     globeMaterial.normalScale.set(0.85, 0.85);
     globeMaterial.needsUpdate = true;
+
+    // degradeQuality() below can fire (as early as ~3s, via the FPS sampler)
+    // before this fetch resolves (up to EARTH_TEXTURE_TIMEOUT_MS = 8s) — if
+    // it already shed the cloud layer for a slow device, don't undo that by
+    // adding a fresh one back in right after. The day/specular/normal maps
+    // above are cheap (a texture swap, not new overdraw) so they still apply
+    // either way.
+    if (degraded) return;
 
     // Slightly larger than the globe (1.4) but still under the wireframe
     // overlay (1.42), so the layering reads front-to-back as: photograph →
