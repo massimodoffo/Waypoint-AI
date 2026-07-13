@@ -16,6 +16,8 @@ export default [
         AbortSignal: "readonly",
         URLSearchParams: "readonly",
         localStorage: "readonly",
+        sessionStorage: "readonly",
+        history: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
         setInterval: "readonly",

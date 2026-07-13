@@ -629,10 +629,18 @@ async function loadGlobe(canvas) {
   const wireMesh = new THREE.Mesh(wireGeometry, wireMaterial);
   globeGroup.add(wireMesh);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const key = new THREE.PointLight(0x5b8fff, 1.4, 20);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+  const key = new THREE.PointLight(0x5b8fff, 1.8, 20);
   key.position.set(3, 2, 4);
   scene.add(key);
+  // Opposite octant from the key light (which sits at positive x/y/z) so
+  // this actually lights the far hemisphere rather than doubling up on the
+  // side the key light already covers — softens the night-side falloff that
+  // key light alone left too dark to read against the splash's near-black
+  // background ("hard to see" user feedback).
+  const fill = new THREE.PointLight(0xffffff, 0.5, 20);
+  fill.position.set(-3, -1, -3);
+  scene.add(fill);
 
   // Populated once loadRealEarthTextures() resolves (see below the render
   // loop) — kept as outer-scope handles so degradeQuality() can drop the
@@ -902,6 +910,14 @@ function initMagneticButton(btn) {
   return { reset };
 }
 
+// Shared by the confirmation-token bypass below and the normal Explore-click
+// transition further down — both need to un-hide the same element the same
+// way, just at different points in the splash lifecycle.
+function revealAuthScreen() {
+  const authScreen = document.getElementById('authScreen');
+  if (authScreen) authScreen.hidden = false;
+}
+
 // ── SPLASH TRANSITION ───────────────────────────────────────────────────────
 function initSplash() {
   const splash = document.getElementById('splash');
@@ -909,6 +925,18 @@ function initSplash() {
   const blockout = document.getElementById('splashBlockout');
   const canvas = document.getElementById('splashCanvas');
   if (!splash || !startBtn || !blockout || !canvas) return;
+
+  // A Netlify Identity confirmation email link lands here with
+  // #confirmation_token= in the hash — that's someone finishing account
+  // creation, not a visitor browsing in to plan a trip. Skip the marketing
+  // splash (and the globe's network/WebGL cost) and drop straight onto the
+  // auth screen, whose own hash check (auth.js's consumeConfirmationToken)
+  // picks up the token from here.
+  if (/confirmation_token=/.test(window.location.hash)) {
+    splash.remove();
+    revealAuthScreen();
+    return;
+  }
 
   const magneticBtn = initMagneticButton(startBtn);
 
@@ -950,8 +978,7 @@ function initSplash() {
       // only lifted once auth.js's login handler succeeds, same as this
       // block used to lift it directly back when Explore led straight into
       // the app.
-      const authScreen = document.getElementById('authScreen');
-      if (authScreen) authScreen.hidden = false;
+      revealAuthScreen();
 
       blockout.classList.add('splash-blockout-fadeout');
       setTimeout(() => {

@@ -1,15 +1,31 @@
 // ── agents.js ─────────────────────────────────────────────────────────────────
 // All Claude API calls and system prompts
 
+import { getAccessToken } from './auth.js';
+
 const WORKER_URL = '/.netlify/functions/proxy';
 
 async function callClaude(systemPrompt, userMsg, history = []) {
   const messages = [...history, { role: 'user', content: userMsg }];
+  const headers = { 'Content-Type': 'application/json' };
+  // proxy.js rejects unauthenticated requests (see its clientContext.user
+  // check) — attach the Identity JWT auth.js stashed at login so a signed-in
+  // user's calls actually get through.
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(WORKER_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ system: systemPrompt, messages })
   });
+  // Identity access tokens are short-lived (~1hr default) and this app has
+  // no refresh-token flow, so a 401 here almost always means the token
+  // simply expired mid-session rather than a transient worker failure — a
+  // generic "Worker error 401" gives the user nothing to act on, and
+  // retrying (the generic message's own advice) can't succeed without
+  // logging in again. main.js's catch blocks surface err.message verbatim,
+  // so this reaches the user as-is.
+  if (res.status === 401) throw new Error('Your session expired — reload the page and log in again to continue.');
   if (!res.ok) throw new Error('Worker error ' + res.status);
   const data = await res.json();
   if (data.error) throw new Error(data.error);

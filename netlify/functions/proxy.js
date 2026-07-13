@@ -1,8 +1,22 @@
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 
-exports.handler = async function(event) {
+// Netlify verifies the Identity JWT's signature at the edge before this
+// function ever runs, and only populates context.clientContext.user from a
+// token that passed that check — there's no separate JWT library to add or
+// signature verification to hand-roll here, just this check has to actually
+// happen. Without it, the login screen was a UX funnel: it gated the app's
+// UI but nothing stopped a direct, unauthenticated POST to this endpoint
+// from spending the shared ANTHROPIC_API_KEY. This only takes effect once
+// deployed on Netlify (see this repo's CLAUDE.md — functions don't run at
+// all under a plain static server or without `netlify dev`), same
+// constraint every other function here already has.
+exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  if (!context.clientContext?.user) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Sign in required' }) };
   }
 
   let body;

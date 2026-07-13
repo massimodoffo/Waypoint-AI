@@ -185,7 +185,7 @@ Small colored dots (`--agent-dot`), not progress bars or spinners, represent eac
 - **Do** pair a resting shadow + 1px inset top highlight on every card, brightening to a hover shadow + `translateY(-3px)` lift on interaction — never a static, shadowless card.
 - **Do** keep Ink Black (`#0e0f0e`) and Paper (`#f0ede6`) warm-tinted, never pure `#000`/`#fff`.
 - **Do** respect `prefers-reduced-motion`: entrance choreography (stagger, rise-and-fade) is cut entirely, not just shortened; functional feedback (hover color, focus) survives at a faster duration.
-- **Do** gate all `:hover`-only affordances behind `@media (hover: hover) and (pointer: fine)` on new components, so touch devices don't get stuck in a false-hover state. (Not yet retrofitted onto the pre-existing hover rules in this file as of this writing — a known gap, not a shipped guarantee.)
+- **Do** gate all `:hover`-only affordances behind `@media (hover: hover) and (pointer: fine)` so touch devices don't get stuck in a false-hover state. Every hover rule in `styles.css` lives in one consolidated block under `── HOVER-CAPABLE POINTERS ──`, positioned above `── REDUCED MOTION ──` so that block's `:hover` transform overrides still win for fine-pointer + reduced-motion users. Add new hover rules there, not inline next to their component.
 
 ### Don't:
 - **Don't** ship a generic SaaS dashboard: no gradient-clip hero-metric tiles, no identical icon+heading card grids repeated endlessly, no uppercase "eyebrow" kicker stacked above every section, no `border-left`/`border-right` colored stripes as accents.
