@@ -54,6 +54,8 @@ function els() {
     lastName: document.getElementById('authLastName'),
     signupEmail: document.getElementById('authSignupEmail'),
     signupPassword: document.getElementById('authSignupPassword'),
+    agreeTerms: document.getElementById('authAgreeTerms'),
+    agreePrivacy: document.getElementById('authAgreePrivacy'),
     loginEmail: document.getElementById('authLoginEmail'),
     loginPassword: document.getElementById('authLoginPassword'),
   };
@@ -232,7 +234,7 @@ function setSubmitting(button, isSubmitting, idleLabel) {
 
 async function handleSignupSubmit(e) {
   e.preventDefault();
-  const { submitSignup, firstName, lastName, signupEmail, signupPassword } = els();
+  const { submitSignup, firstName, lastName, signupEmail, signupPassword, agreeTerms, agreePrivacy } = els();
   if (!firstName || !lastName || !signupEmail || !signupPassword) return;
   clearMessage();
 
@@ -243,6 +245,13 @@ async function handleSignupSubmit(e) {
 
   if (!first || !last || !email || password.length < 6) {
     showMessage('Fill in every field — password needs at least 6 characters.', 'error');
+    return;
+  }
+  // The form carries novalidate (see index.html) so the checkboxes' own
+  // `required` attribute never blocks submission on its own — this is the
+  // actual gate, same manual-validation pattern as the fields above.
+  if (!agreeTerms?.checked || !agreePrivacy?.checked) {
+    showMessage('Please agree to the Terms of Service and Privacy Policy to continue.', 'error');
     return;
   }
 

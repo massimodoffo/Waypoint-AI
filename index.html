@@ -80,6 +80,16 @@
           <label for="authSignupPassword">Password</label>
           <input id="authSignupPassword" name="password" type="password" autocomplete="new-password" minlength="6" required>
         </div>
+        <div class="auth-consent">
+          <label class="auth-check">
+            <input type="checkbox" id="authAgreeTerms" required>
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></span>
+          </label>
+          <label class="auth-check">
+            <input type="checkbox" id="authAgreePrivacy" required>
+            <span>I agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
+          </label>
+        </div>
         <button type="submit" class="auth-submit" id="authSignupSubmit">Create account</button>
       </form>
 
