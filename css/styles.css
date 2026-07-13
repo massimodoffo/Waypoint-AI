@@ -64,11 +64,9 @@ aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visib
 .sidebar-top { padding: 1.25rem 1rem 0.75rem; }
 .sidebar-top h2 { font-family: 'Clash Display', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
 .new-trip-btn { width: 100%; padding: 0.6rem 0.85rem; background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius); color: var(--text2); font-size: 13px; font-family: 'Switzer', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.2s var(--ease); }
-.new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; border-color: var(--accent); }
 .new-trip-btn:active { transform: scale(0.98); }
 .trip-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
 .trip-entry { padding: 0.65rem 0.85rem; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease); margin-bottom: 2px; }
-.trip-entry:hover { background: var(--bg3); color: var(--text); transform: translateX(2px); }
 .trip-entry.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
 .trip-entry-icon { font-size: 15px; margin-top: 1px; flex-shrink: 0; }
 .trip-entry-name { font-weight: 400; }
@@ -107,7 +105,6 @@ main:focus { outline: none; }
 .welcome p { font-size: 15px; color: var(--text2); max-width: 420px; line-height: 1.7; margin-bottom: 2rem; animation: slideUp 0.45s ease 0.18s both; }
 .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; animation: slideUp 0.45s var(--ease) 0.26s both; transition: transform 0.2s ease-out; will-change: transform; }
 .chip { padding: 0.5rem 1rem; border: 1px solid var(--border2); border-radius: 20px; font-size: 13px; color: var(--text2); background: transparent; cursor: pointer; font-family: 'Switzer', sans-serif; transition: background 0.25s var(--ease), color 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.25s var(--ease); }
-.chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(-2px); }
 .chip:active { transform: translateY(-2px) scale(0.97); }
 
 /* ── MESSAGES ────────────────────────────────────────────────────────────────── */
@@ -159,14 +156,10 @@ main:focus { outline: none; }
    instead of three visually equal cards. */
 .result-grid .result-card:first-child .card-core { background: linear-gradient(160deg, rgba(91,143,255,0.08), var(--bg2) 60%); border-color: rgba(91,143,255,0.22); }
 .result-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.result-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.result-card:hover .card-core { border-color: var(--border2); }
 .rc-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text3); }
 .rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .rc-body { padding: 0.85rem 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; }
 .itin-full { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.75rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.itin-full:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.itin-full:hover .card-core { border-color: var(--border2); }
 .itin-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
 .itin-hero h2 { font-family: 'Clash Display', sans-serif; font-size: 1.9rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
 .itin-meta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 0.5rem; }
@@ -206,12 +199,9 @@ main:focus { outline: none; }
 /* ── RESTAURANT CARDS ────────────────────────────────────────────────────────── */
 .resto-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
 .resto-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.resto-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.resto-card:hover .card-core { border-color: var(--border2); }
 .resto-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .resto-name-row { flex: 1; }
 .resto-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
-.resto-name:hover { color: var(--accent); }
 .resto-name-link-icon { font-size: 11px; color: var(--text3); }
 .resto-cuisine { font-size: 12px; color: var(--text3); margin-top: 3px; }
 .resto-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(91,143,255,0.12); border: 1px solid rgba(91,143,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
@@ -226,24 +216,20 @@ main:focus { outline: none; }
 .resto-pricing-row { display: flex; justify-content: space-between; align-items: center; }
 .resto-people-btns { display: flex; gap: 4px; }
 .rpb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; justify-content: center; }
-.rpb:hover, .rpb.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.rpb.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .rpb:active { transform: scale(0.9); }
 .resto-price-display { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; font-weight: 400; color: var(--text); }
 .resto-price-display span { font-size: 11px; color: var(--text3); font-family: 'Switzer', sans-serif; }
 .resto-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .resto-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
 .resto-maps-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
-.resto-maps-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 
 /* ── HOTEL CARDS ─────────────────────────────────────────────────────────────── */
 .hotel-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
 .hotel-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.hotel-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.hotel-card:hover .card-core { border-color: var(--border2); }
 .hotel-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .hotel-name-row { flex: 1; }
 .hotel-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
-.hotel-name:hover { color: var(--accent); }
 .hotel-type { font-size: 12px; color: var(--text3); margin-top: 3px; }
 .hotel-price-badge { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
 .hotel-price-main { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; color: var(--text); }
@@ -257,7 +243,6 @@ main:focus { outline: none; }
 .hotel-nights-row { display: flex; justify-content: space-between; align-items: center; }
 .hotel-nights-btns { display: flex; gap: 4px; align-items: center; }
 .hnb { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 14px; cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; justify-content: center; }
-.hnb:hover { background: var(--bg2); color: var(--text); }
 .hnb:active { transform: scale(0.9); }
 .hnb-count { font-size: 13px; color: var(--text); min-width: 24px; text-align: center; }
 .hotel-total-display { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; color: var(--text); }
@@ -265,18 +250,14 @@ main:focus { outline: none; }
 .hotel-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hotel-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
 .hotel-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
-.hotel-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 .hotel-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(91,143,255,0.12); border: 1px solid rgba(91,143,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
 
 /* ── ACTIVITY CARDS ──────────────────────────────────────────────────────────── */
 .activity-grid { display: flex; flex-direction: column; gap: 10px; max-width: 620px; margin-top: 0.5rem; }
 .activity-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.activity-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.activity-card:hover .card-core { border-color: var(--border2); }
 .activity-header { padding: 0.9rem 1rem 0.6rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .activity-name-row { flex: 1; }
 .activity-name { font-family: 'Clash Display', sans-serif; font-size: 1.25rem; font-weight: 500; color: var(--text); text-decoration: none; letter-spacing: -0.015em; display: flex; align-items: center; gap: 6px; }
-.activity-name:hover { color: var(--accent); }
 .activity-category { font-size: 12px; color: var(--text3); margin-top: 3px; }
 .activity-duration-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(143,168,122,0.12); border: 1px solid rgba(143,168,122,0.2); color: var(--accent2); flex-shrink: 0; }
 .activity-body { padding: 0.75rem 1rem; }
@@ -290,7 +271,6 @@ main:focus { outline: none; }
 .activity-footer { padding: 0.6rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .activity-location { font-size: 12px; color: var(--text3); }
 .activity-book-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; display: flex; align-items: center; gap: 4px; }
-.activity-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent2); }
 .activity-rating-badge { display: flex; align-items: center; gap: 4px; background: rgba(91,143,255,0.12); border: 1px solid rgba(91,143,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 12px; color: var(--accent); font-weight: 500; }
 
 /* ── TYPING ───────────────────────────────────────────────────────────────────── */
@@ -307,7 +287,6 @@ main:focus { outline: none; }
 textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; line-height: 1.6; resize: none; min-height: 24px; max-height: 120px; }
 textarea::placeholder { color: var(--text3); }
 .send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
-.send-btn:hover { opacity: 0.9; transform: translateY(-1px) scale(1.06); box-shadow: 0 6px 16px -4px rgba(91,143,255,0.45); }
 .send-btn:active { transform: scale(0.94); }
 .send-btn:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
 
@@ -316,8 +295,6 @@ textarea::placeholder { color: var(--text3); }
 .theme-toggle::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--text3); top: 2px; left: 2px; transition: transform 0.3s var(--ease), background 0.25s var(--ease); }
 :root.light .theme-toggle::after { transform: translateX(16px); background: var(--accent); }
 .theme-label { font-size: 13px; color: var(--text3); display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; transition: color 0.2s var(--ease); }
-.theme-label:hover { color: var(--text); }
-.theme-label:hover .theme-toggle { border-color: var(--accent); }
 .theme-label:active .theme-toggle::after { transform: scale(0.85) translateX(0); }
 :root.light .theme-label:active .theme-toggle::after { transform: scale(0.85) translateX(16px); }
 
@@ -328,10 +305,8 @@ textarea::placeholder { color: var(--text3); }
 
 /* ── HAMBURGER ───────────────────────────────────────────────────────────────── */
 .hamburger { display: flex; flex-direction: column; gap: 5px; background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.2s var(--ease), transform 0.2s var(--ease); }
-.hamburger:hover { background: var(--bg3); }
 .hamburger:active { transform: scale(0.9); }
 .hamburger span { width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: background 0.2s var(--ease), transform 0.3s var(--ease), opacity 0.2s var(--ease); display: block; }
-.hamburger:hover span { background: var(--text); }
 /* Morph into an X (state indication for the open sidebar drawer, toggled via
    .hamburger.active in theme.js's toggleSidebar) rather than the icon just
    disappearing — the two outer bars rotate/translate onto the middle bar's
@@ -342,6 +317,69 @@ textarea::placeholder { color: var(--text3); }
 .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; }
 .sidebar-overlay.visible { display: block; }
+
+/* ── HOVER-CAPABLE POINTERS ──────────────────────────────────────────────────── */
+/* Every :hover-only affordance in this file, gated behind a fine pointer that
+   can actually hover — a tap on a touch device otherwise leaves the element
+   "stuck" in its hover state with no pointerleave to clear it. Consolidated
+   here (component rules above stay hover-free) rather than gated in place,
+   same shape as the REDUCED MOTION block below, which targets several of
+   these same selectors — and has to stay below this block, not above it, so
+   its :hover transform overrides still win for fine-pointer + reduced-motion
+   users (equal-specificity @media blocks resolve by source order). Per
+   DESIGN.md's Do list, new components should be gated in place from the
+   start rather than added here. */
+@media (hover: hover) and (pointer: fine) {
+  .new-trip-btn:hover { background: var(--bg3); color: var(--text); border-style: solid; border-color: var(--accent); }
+  .trip-entry:hover { background: var(--bg3); color: var(--text); transform: translateX(2px); }
+  .chip:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(-2px); }
+
+  .result-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .result-card:hover .card-core { border-color: var(--border2); }
+  .itin-full:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .itin-full:hover .card-core { border-color: var(--border2); }
+
+  .resto-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .resto-card:hover .card-core { border-color: var(--border2); }
+  .resto-name:hover { color: var(--accent); }
+  .rpb:hover { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  .resto-maps-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+
+  .hotel-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .hotel-card:hover .card-core { border-color: var(--border2); }
+  .hotel-name:hover { color: var(--accent); }
+  .hnb:hover { background: var(--bg2); color: var(--text); }
+  .hotel-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+
+  .activity-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .activity-card:hover .card-core { border-color: var(--border2); }
+  .activity-name:hover { color: var(--accent); }
+  .activity-book-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent2); }
+
+  .send-btn:hover { opacity: 0.9; transform: translateY(-1px) scale(1.06); box-shadow: 0 6px 16px -4px rgba(91,143,255,0.45); }
+
+  .theme-label:hover { color: var(--text); }
+  .theme-label:hover .theme-toggle { border-color: var(--accent); }
+
+  .hamburger:hover { background: var(--bg3); }
+  .hamburger:hover span { background: var(--text); }
+
+  .weather-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .weather-card:hover .card-core { border-color: var(--border2); }
+  .weather-day:hover { border-color: var(--border2); background: var(--bg2); }
+
+  .directions-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+  .directions-card:hover .card-core { border-color: var(--border2); }
+  .directions-map-cta:hover { background: linear-gradient(135deg, var(--bg2), var(--bg3)); }
+  .directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
+  .dmb:hover { background: var(--bg3); color: var(--text); }
+
+  .splash-start-btn:hover { transform: translateY(-2px); opacity: 0.92; box-shadow: 0 10px 24px -6px rgba(91,143,255,0.4); }
+
+  .auth-back:hover { background: var(--bg3); color: var(--text); }
+  .auth-tab:not(.active):hover { background: var(--bg2); color: var(--text); }
+  .auth-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(91,143,255,0.4); }
+}
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────────────── */
 /* Card tilt/parallax already bail out in interactive.js via the same media
@@ -355,7 +393,7 @@ textarea::placeholder { color: var(--text3); }
     transition-duration: 0.01ms;
   }
   .result-card:hover, .itin-full:hover, .resto-card:hover, .hotel-card:hover, .activity-card:hover, .weather-card:hover, .directions-card:hover,
-  .chip:hover, .send-btn:hover, .trip-entry:hover {
+  .chip:hover, .send-btn:hover, .trip-entry:hover, .auth-submit:hover {
     transform: none;
   }
 }
@@ -364,8 +402,6 @@ textarea::placeholder { color: var(--text3); }
 
 /* ── WEATHER CARD ─────────────────────────────────────────────────────────────── */
 .weather-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.weather-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.weather-card:hover .card-core { border-color: var(--border2); }
 .weather-hero { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .weather-location { flex: 1; }
 .weather-city { font-family: 'Clash Display', sans-serif; font-size: 1.75rem; font-weight: 500; color: var(--text); letter-spacing: -0.025em; }
@@ -382,7 +418,6 @@ textarea::placeholder { color: var(--text3); }
 .weather-forecast { padding: 0.75rem; display: flex; gap: 6px; overflow-x: auto; }
 .weather-forecast::-webkit-scrollbar { height: 3px; }
 .weather-day { flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 0.75rem; text-align: center; min-width: 72px; cursor: pointer; font-family: 'Switzer', sans-serif; color: inherit; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
-.weather-day:hover { border-color: var(--border2); background: var(--bg2); }
 .weather-day:active { transform: scale(0.97); }
 .weather-day.selected { border-color: var(--accent); background: rgba(91,143,255,0.10); }
 .weather-sel-day { font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 500; }
@@ -410,8 +445,6 @@ textarea::placeholder { color: var(--text3); }
 
 /* ── DIRECTIONS CARD ─────────────────────────────────────────────────────────── */
 .directions-card { background: var(--bg); border-radius: var(--radius-shell); padding: 6px; max-width: 620px; margin-top: 0.5rem; box-shadow: var(--shadow); transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease); will-change: transform; }
-.directions-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.directions-card:hover .card-core { border-color: var(--border2); }
 .directions-header { padding: 0.9rem 1rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .directions-route { flex: 1; }
 .directions-from { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
@@ -425,16 +458,13 @@ textarea::placeholder { color: var(--text3); }
 .directions-map { width: 100%; height: 320px; border: none; display: block; position: relative; z-index: 0; background: var(--bg3); }
 .directions-map-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); font-size: 13px; }
 .directions-map-cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 180px; text-decoration: none; background: linear-gradient(135deg, var(--bg3), var(--bg2)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: background 0.2s; }
-.directions-map-cta:hover { background: linear-gradient(135deg, var(--bg2), var(--bg3)); }
 .directions-map-cta-icon { font-size: 2rem; opacity: 0.85; }
 .directions-map-cta-text { font-size: 14px; color: var(--text); font-weight: 500; }
 .directions-map-cta-sub { font-size: 12px; color: var(--accent); }
 .directions-footer { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .directions-open-btn { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; text-decoration: none; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); font-family: 'Switzer', sans-serif; }
-.directions-open-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--accent); }
 .directions-mode-btns { display: flex; gap: 4px; }
 .dmb { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; font-family: 'Switzer', sans-serif; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease); }
-.dmb:hover { background: var(--bg3); color: var(--text); }
 .dmb.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .dmb:active { transform: scale(0.93); }
 
@@ -517,7 +547,6 @@ body.pre-start .app { display: none; }
 /* Same no-italic-face reasoning as .welcome h1 em above. */
 .splash-slogan em { font-style: normal; font-weight: 600; color: #5b8fff; }
 .splash-start-btn { padding: 0.85rem 2rem; border-radius: 30px; border: none; background: #5b8fff; color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); animation: slideUp 0.8s var(--ease) 0.55s both; }
-.splash-start-btn:hover { transform: translateY(-2px); opacity: 0.92; box-shadow: 0 10px 24px -6px rgba(91,143,255,0.4); }
 .splash-start-btn:active { transform: translateY(-1px) scale(0.96); }
 .splash-start-btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
 
@@ -587,7 +616,6 @@ body.pre-start .app { display: none; }
 .auth-tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
 .auth-tab { flex: 1; padding: 0.55rem 0.75rem; border: none; background: transparent; border-radius: 6px; color: var(--text2); font-family: 'Switzer', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
 .auth-tab.active { background: var(--accent); color: #ffffff; }
-.auth-tab:not(.active):hover { background: var(--bg2); color: var(--text); }
 .auth-tab:active { transform: scale(0.98); }
 
 .auth-message { font-size: 13px; padding: 0.65rem 0.85rem; border-radius: var(--radius); margin-bottom: 1.25rem; border: 1px solid var(--border2); color: var(--text2); line-height: 1.5; }
@@ -612,7 +640,6 @@ body.pre-start .app { display: none; }
 .auth-field input:focus { outline: none; border-color: rgba(91,143,255,0.4); }
 
 .auth-submit { margin-top: 0.25rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; background: var(--accent); color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
-.auth-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(91,143,255,0.4); }
 .auth-submit:active { transform: translateY(0) scale(0.98); }
 .auth-submit:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
 
@@ -620,7 +647,6 @@ body.pre-start .app { display: none; }
   .auth-shell { animation: none; }
   .auth-screen { transition-duration: 0.01ms; }
   .auth-submit { transition-duration: 0.01ms; }
-  .auth-submit:hover { transform: none; }
 }
 
 @media (max-width: 700px) {
