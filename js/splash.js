@@ -629,10 +629,18 @@ async function loadGlobe(canvas) {
   const wireMesh = new THREE.Mesh(wireGeometry, wireMaterial);
   globeGroup.add(wireMesh);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const key = new THREE.PointLight(0x5b8fff, 1.4, 20);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+  const key = new THREE.PointLight(0x5b8fff, 1.8, 20);
   key.position.set(3, 2, 4);
   scene.add(key);
+  // Opposite octant from the key light (which sits at positive x/y/z) so
+  // this actually lights the far hemisphere rather than doubling up on the
+  // side the key light already covers — softens the night-side falloff that
+  // key light alone left too dark to read against the splash's near-black
+  // background ("hard to see" user feedback).
+  const fill = new THREE.PointLight(0xffffff, 0.5, 20);
+  fill.position.set(-3, -1, -3);
+  scene.add(fill);
 
   // Populated once loadRealEarthTextures() resolves (see below the render
   // loop) — kept as outer-scope handles so degradeQuality() can drop the
