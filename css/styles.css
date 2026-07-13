@@ -79,6 +79,11 @@ aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visib
 .agent-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(143,168,122,0.5); animation: pulse 1.2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
+.sidebar-account { padding: 0.75rem; border-top: 1px solid var(--border); }
+.sidebar-account-btn { width: 100%; display: flex; align-items: center; gap: 9px; padding: 0.55rem 0.6rem; background: transparent; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+.sidebar-account-avatar { width: 22px; height: 22px; border-radius: 50%; background: rgba(91,143,255,0.14); color: var(--accent); border: 1px solid rgba(91,143,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; text-transform: uppercase; flex-shrink: 0; }
+.sidebar-account-email { font-size: 12.5px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+
 /* ── MAIN ────────────────────────────────────────────────────────────────────── */
 /* tabindex="-1" + focus() in splash.js's dismissal handler moves focus here once the
    splash is torn down, so keyboard users don't lose focus to <body>. outline is
@@ -379,6 +384,14 @@ textarea::placeholder { color: var(--text3); }
   .auth-back:hover { background: var(--bg3); color: var(--text); }
   .auth-tab:not(.active):hover { background: var(--bg2); color: var(--text); }
   .auth-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(91,143,255,0.4); }
+
+  .sidebar-account-btn:hover { background: var(--bg3); border-color: var(--border2); }
+  .account-close:hover { background: var(--bg3); color: var(--text); }
+  .account-danger-btn:hover:not(:disabled) { opacity: 0.88; }
+  .account-delete-cancel:hover { color: var(--text); }
+  .account-logout-btn:hover { background: var(--bg3); color: var(--text); }
+  .account-legal-links a:hover { color: var(--accent); }
+  .auth-check a:hover { color: var(--accent); }
 }
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────────────── */
@@ -669,4 +682,49 @@ body.pre-start .app { display: none; }
      line next to it — tighter padding + a smaller size keeps both tabs
      single-line down to a 320px viewport. */
   .auth-tab { padding: 0.55rem 0.4rem; font-size: 12px; white-space: nowrap; }
+}
+
+/* ── ACCOUNT MODAL ───────────────────────────────────────────────────────────── */
+/* A dismissible overlay on top of the live app (unlike #authScreen, which
+   gates entry to it) — reuses .card-core and the auth-* field/message/
+   submit-button classes above rather than redeclaring them, only the
+   modal chrome (backdrop, close button, section layout) is new here. */
+.account-modal[hidden] { display: none; }
+.account-modal { position: fixed; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.account-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fadeIn 0.2s ease both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.account-shell { position: relative; z-index: 1; width: 100%; max-width: 440px; max-height: calc(100vh - 4rem); overflow-y: auto; background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); animation: slideUp 0.35s var(--ease) both; }
+.account-core { padding: 2rem 1.75rem; position: relative; }
+.account-close { position: absolute; top: 1rem; right: 1rem; left: auto; font-size: 13px; }
+
+.account-section { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.account-section-title { font-family: 'Clash Display', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem; }
+
+.account-legal-links { display: flex; flex-direction: column; gap: 0.6rem; }
+.account-legal-links a { font-size: 13.5px; color: var(--text2); text-decoration: none; }
+
+.account-danger { border-color: rgba(168,122,143,0.25); }
+.account-danger-copy { font-size: 12.5px; color: var(--text3); line-height: 1.6; margin-bottom: 0.85rem; }
+.account-danger-btn { width: 100%; padding: 0.7rem 1rem; border: 1px solid rgba(168,122,143,0.4); border-radius: var(--radius); background: rgba(168,122,143,0.1); color: var(--accent4); font-family: 'Switzer', sans-serif; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: opacity 0.2s var(--ease), transform 0.2s var(--ease); }
+.account-danger-btn:active:not(:disabled) { transform: scale(0.98); }
+.account-danger-btn:disabled { opacity: 0.4; cursor: default; }
+
+.account-delete-confirm { margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px dashed var(--border2); }
+.account-delete-confirm[hidden] { display: none; }
+.account-delete-input { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 0.6rem 0.75rem; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; margin-bottom: 0.75rem; transition: border-color 0.2s var(--ease); }
+.account-delete-input:focus { outline: none; border-color: rgba(168,122,143,0.5); }
+.account-delete-actions { display: flex; gap: 0.6rem; }
+.account-delete-actions .account-danger-btn { flex: 1; }
+.account-delete-cancel { flex: 1; padding: 0.7rem 1rem; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text2); font-family: 'Switzer', sans-serif; font-size: 13.5px; cursor: pointer; transition: color 0.2s var(--ease); }
+
+.account-logout-btn { width: 100%; margin-top: 1.75rem; padding: 0.7rem 1rem; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text2); font-family: 'Switzer', sans-serif; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .account-shell { animation: none; }
+  .account-backdrop { animation: none; }
+}
+
+@media (max-width: 700px) {
+  .account-modal { padding: 1rem; }
+  .account-core { padding: 1.5rem 1.25rem; }
 }
