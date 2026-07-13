@@ -391,8 +391,17 @@ function getStoredEmail() {
 async function changePassword(currentPassword, newPassword) {
   const email = getStoredEmail();
   if (!email) throw new Error('Your session has expired — please log in again.');
+  // identityLogin succeeding already confirms currentPassword was correct —
+  // a failure past this point (network blip, timeout) doesn't tell us
+  // whether GoTrue actually applied the update before the response was
+  // lost, so it gets distinct wording rather than implying nothing changed
+  // and it's safe to just retry with the same "current" password.
   const tokenResponse = await identityLogin(email, currentPassword);
-  await identityUpdateUser(tokenResponse.access_token, { password: newPassword });
+  try {
+    await identityUpdateUser(tokenResponse.access_token, { password: newPassword });
+  } catch {
+    throw new Error('Your password may have already been updated. Try logging in with the new one — if that fails, use the old one and try again.');
+  }
 }
 
 // Calls the account-deletion Netlify function (see
@@ -443,4 +452,4 @@ function initAuth() {
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-export { initAuth, getAccessToken, getStoredEmail, changePassword, deleteAccount, clearSession };
+export { initAuth, getAccessToken, getStoredEmail, changePassword, deleteAccount, clearSession, MSG_GENERIC_ERROR };

@@ -25,9 +25,14 @@ exports.handler = async function(event, context) {
 
   let response;
   try {
+    // Shorter than the client's own 8s timeout (js/auth.js's
+    // IDENTITY_TIMEOUT_MS) so this function always resolves — success or
+    // failure — before the client gives up and shows a "try again" that
+    // might really mean "already deleted, just slow to confirm."
     response = await fetch(`${identity.url}/admin/users/${user.sub}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${identity.token}` },
+      signal: AbortSignal.timeout(6000),
     });
   } catch (err) {
     return { statusCode: 502, body: JSON.stringify({ error: 'Failed to reach Identity admin API: ' + err.message }) };
@@ -40,5 +45,9 @@ exports.handler = async function(event, context) {
     return { statusCode: response.status, body: JSON.stringify({ error: 'Account deletion failed: ' + (text || response.statusText) }) };
   }
 
-  return { statusCode: 200, body: JSON.stringify({ deleted: true }) };
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deleted: true }),
+  };
 };

@@ -3,13 +3,13 @@
 // the legal docs, log out. auth.js owns the pre-login signup/login screen;
 // this owns the dismissible panel opened from the sidebar once logged in.
 
-import { getStoredEmail, changePassword, deleteAccount, clearSession } from './auth.js';
+import { getStoredEmail, changePassword, deleteAccount, clearSession, MSG_GENERIC_ERROR } from './auth.js';
 
 function els() {
   return {
     modal: document.getElementById('accountModal'),
     backdrop: document.getElementById('accountBackdrop'),
-    openBtn: document.getElementById('accountOpenBtn'),
+    openBtn: document.getElementById('sidebarAccountOpenBtn'),
     closeBtn: document.getElementById('accountCloseBtn'),
     emailDisplay: document.getElementById('accountEmailDisplay'),
     sidebarEmail: document.getElementById('sidebarAccountEmail'),
@@ -119,7 +119,7 @@ async function handlePasswordSubmit(e) {
     newPassword.value = '';
     confirmPassword.value = '';
   } catch (err) {
-    showMessage(err.message || 'Something went wrong. Please try again.', 'error');
+    showMessage(err.message || MSG_GENERIC_ERROR, 'error');
   }
   setSubmitting(passwordSubmit, false, 'Update password');
 }
@@ -142,7 +142,7 @@ async function handleDeleteConfirm() {
     await deleteAccount();
     returnToLanding();
   } catch (err) {
-    showMessage(err.message || 'Something went wrong. Please try again.', 'error');
+    showMessage(err.message || MSG_GENERIC_ERROR, 'error');
     setSubmitting(deleteConfirmBtn, false, 'Permanently delete');
   }
 }

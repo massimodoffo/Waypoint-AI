@@ -60,6 +60,8 @@ Functions will not work locally without a local Netlify dev setup (`netlify dev`
 - `js/interactive.js` — Card tilt-on-hover and welcome-screen parallax hover effects
 - `js/splash.js` — Entry splash screen: 3D globe (Three.js, loaded via CDN import map) and the "Start new chat" transition into the main app
 - `js/globe-coastlines.js` — Static coastline/flight-hub coordinate data consumed by `js/splash.js`
+- `js/auth.js` — Netlify Identity REST calls (signup/login/email confirmation) and the pre-login signup/login screen
+- `js/account.js` — Post-login account settings panel (change password, delete account, log out); calls into `js/auth.js`'s exported account-management functions
 
 **Conversation modes:** `main.js` tracks `conversationMode` with three states:
 1. `chat` — gathering trip preferences; uses `CHAT_PROMPT`

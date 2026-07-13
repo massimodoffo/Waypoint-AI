@@ -51,7 +51,8 @@ export default [
         console: "readonly",
         fetch: "readonly",
         setTimeout: "readonly",
-        clearTimeout: "readonly"
+        clearTimeout: "readonly",
+        AbortSignal: "readonly"
       }
     },
     rules: {
