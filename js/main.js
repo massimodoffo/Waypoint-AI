@@ -324,8 +324,13 @@ async function fallbackReply(trip, text) {
     trip.history.push({ role: 'assistant', content: reply });
     saveTrips(trips, currentTripId, tripCounter);
     appendMsg('ai', reply);
-  } catch {
-    appendMsg('ai', 'Something went wrong. Please try again.');
+  } catch (err) {
+    // Mirrors sendMessage/generateItinerary's catches, which already
+    // surface err.message verbatim (e.g. callClaude's session-expired
+    // message) — this one silently discarded it before, so a session
+    // expiring mid-fallback showed the generic "try again" even though
+    // trying again could never succeed without logging in first.
+    appendMsg('ai', err.message || 'Something went wrong. Please try again.');
   }
 }
 
