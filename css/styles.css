@@ -574,7 +574,12 @@ body.pre-start .app { display: none; }
 /* Reuses .card-core (the shared double-bezel inner-surface class every
    result/detail card in js/cards.js applies) rather than restating its
    declarations — only the padding differs here. */
-.auth-core { padding: 2rem 1.75rem; }
+.auth-core { padding: 2rem 1.75rem; position: relative; }
+/* Splash is fully torn down (splash.remove()) by the time this screen is
+   interactive, so there's no live splash state left to un-hide — going
+   "back" reloads the page fresh into the landing splash instead. */
+.auth-back { position: absolute; top: 1rem; left: 1rem; width: 32px; height: 32px; border: none; border-radius: 50%; background: transparent; color: var(--text2); font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
+.auth-back:active { transform: scale(0.94); }
 .auth-header { text-align: center; margin-bottom: 1.5rem; }
 .auth-header .logo { justify-content: center; margin-bottom: 0.5rem; }
 .auth-tagline { font-size: 13px; color: var(--text2); }

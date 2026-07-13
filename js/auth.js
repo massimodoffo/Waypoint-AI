@@ -16,14 +16,29 @@
 // can flip. The login attempt this file fires immediately after signup
 // handles that gracefully (see MSG_UNCONFIRMED below) rather than assuming
 // email confirmation is off.
+//
+// The confirmation email's link redirects back to this site with
+// #confirmation_token=<token> in the URL hash. netlify-identity-widget would
+// normally catch that automatically and call /verify to complete the
+// confirmation — this REST-only implementation has no equivalent unless it's
+// done explicitly, so consumeConfirmationToken() below does it on load. Skip
+// this comment's history if you're wondering why an earlier version of this
+// flow never actually finished confirming anyone: the widget's auto-handling
+// was assumed rather than replaced.
 
 const IDENTITY_BASE = '/.netlify/identity';
 const IDENTITY_TIMEOUT_MS = 8000;
 const STORAGE_KEY = 'wp_identity';
+// The raw access token, kept separate from STORAGE_KEY's display-only
+// metadata and in sessionStorage rather than localStorage — it's read by
+// agents.js on every Claude call (see getAccessToken) but only needs to
+// survive this tab for this session, not linger on disk after it's closed.
+const TOKEN_STORAGE_KEY = 'wp_identity_token';
 
 const MSG_GENERIC_ERROR = 'Something went wrong. Please try again.';
 const MSG_UNCONFIRMED = 'Account created! Check your email to confirm it, then log in below.';
 const MSG_MAYBE_REGISTERED = 'That email may already have an account — try logging in instead.';
+const MSG_NOT_CONFIRMED_LOGIN = 'Please confirm your email first — check your inbox for the link we sent, then log in from there.';
 
 function els() {
   return {
@@ -81,17 +96,27 @@ function isDuplicateAccountError(message) {
   return typeof message === 'string' && /already.*(registered|exists)/i.test(message);
 }
 
+function isUnconfirmedError(message) {
+  return typeof message === 'string' && /not confirmed/i.test(message);
+}
+
 // Netlify Identity's signup/token endpoints return their error text under
 // slightly different shapes depending on the failure — normalize to one
 // human-readable string rather than showing raw API JSON. Duplicate-account
 // signups are softened separately (see isDuplicateAccountError) rather than
 // relaying GoTrue's own wording verbatim, so a scripted signup attempt can't
 // use the exact response text to enumerate which emails already have
-// accounts.
+// accounts. "Email not confirmed" is remapped everywhere (not just the
+// post-signup path handleSignupSubmit already covers via MSG_UNCONFIRMED) so
+// a standalone login attempt on an unconfirmed account — e.g. the user
+// closed the tab after signing up and came back later without clicking the
+// email link — gets the same actionable wording instead of GoTrue's terse
+// raw string.
 function extractErrorMessage(body, { isSignup = false } = {}) {
   if (!body) return MSG_GENERIC_ERROR;
   const raw = body.error_description || body.msg || body.error || MSG_GENERIC_ERROR;
   if (isSignup && isDuplicateAccountError(raw)) return MSG_MAYBE_REGISTERED;
+  if (isUnconfirmedError(raw)) return MSG_NOT_CONFIRMED_LOGIN;
   return raw;
 }
 
@@ -141,6 +166,26 @@ async function identityLogin(email, password) {
   return body; // { access_token, refresh_token, expires_in, ... }
 }
 
+// GoTrue's /verify endpoint both confirms the account *and* logs it in —
+// the response shape matches identityLogin's (access_token/refresh_token/
+// user), so a successful call here can go straight into the app.
+async function identityVerify(token) {
+  let res;
+  try {
+    res = await fetch(`${IDENTITY_BASE}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, type: 'signup' }),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS)
+    });
+  } catch {
+    throw new Error(MSG_GENERIC_ERROR);
+  }
+  const body = await parseJsonSafe(res);
+  if (!res.ok) throw new Error(extractErrorMessage(body));
+  return body;
+}
+
 // Only covers this page load — there's no session restore on return visits
 // (the splash always plays first), just enough persistence that a mid-app
 // refresh right after logging in doesn't strand the user. tokenResponse can
@@ -153,6 +198,15 @@ function storeSession(tokenResponse, email) {
       email, storedAt: Date.now(), expiresIn: tokenResponse?.expires_in ?? null
     }));
   } catch { /* storage unavailable or full — session still works for this tab */ }
+  try {
+    if (tokenResponse?.access_token) sessionStorage.setItem(TOKEN_STORAGE_KEY, tokenResponse.access_token);
+  } catch { /* storage unavailable — proxy.js's JWT check will 401 subsequent Claude calls */ }
+}
+
+// Read by agents.js to attach the Identity JWT to every /.netlify/functions/proxy
+// call — that function rejects requests with no valid token (see proxy.js).
+function getAccessToken() {
+  try { return sessionStorage.getItem(TOKEN_STORAGE_KEY); } catch { return null; }
 }
 
 // Mirrors the reveal splash.js used to do itself when Explore led straight
@@ -250,6 +304,37 @@ async function handleLoginSubmit(e) {
   }
 }
 
+// Consumed once on load. The token is single-use server-side, so the hash
+// is stripped immediately (before the fetch even resolves) rather than
+// after success — a refresh or accidental back-nav mid-request must not
+// replay it against /verify a second time.
+async function consumeConfirmationToken() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get('confirmation_token');
+  if (!token) return;
+
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  showMessage('Confirming your email…', '');
+  try {
+    const tokenResponse = await identityVerify(token);
+    storeSession(tokenResponse, tokenResponse?.user?.email);
+    showMessage('Email confirmed — you\'re in!', 'success');
+    setTimeout(enterApp, 600);
+  } catch (err) {
+    // identityVerify throws MSG_GENERIC_ERROR specifically for network
+    // failures/timeouts/unparseable responses (see its own catch block) —
+    // those are worth retrying, unlike a token GoTrue has actually rejected
+    // as invalid or expired, so they get distinct wording instead of both
+    // being told the one-time link is dead and to sign up again.
+    const message = err.message === MSG_GENERIC_ERROR
+      ? 'Couldn\'t reach the server to confirm your email. Check your connection and try the link again.'
+      : 'That confirmation link is invalid or has expired. Try logging in below, or sign up again.';
+    showMessage(message, 'error');
+    switchTab('login', { preserveMessage: true });
+  }
+}
+
 function initAuth() {
   const { tabSignup, tabLogin, formSignup, formLogin } = els();
   if (!tabSignup || !tabLogin || !formSignup || !formLogin) return;
@@ -258,7 +343,12 @@ function initAuth() {
   tabLogin.addEventListener('click', () => switchTab('login'));
   formSignup.addEventListener('submit', handleSignupSubmit);
   formLogin.addEventListener('submit', handleLoginSubmit);
+
+  const backBtn = document.getElementById('authBackBtn');
+  if (backBtn) backBtn.addEventListener('click', () => window.location.reload());
+
+  consumeConfirmationToken();
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-export { initAuth };
+export { initAuth, getAccessToken };

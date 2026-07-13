@@ -902,6 +902,14 @@ function initMagneticButton(btn) {
   return { reset };
 }
 
+// Shared by the confirmation-token bypass below and the normal Explore-click
+// transition further down — both need to un-hide the same element the same
+// way, just at different points in the splash lifecycle.
+function revealAuthScreen() {
+  const authScreen = document.getElementById('authScreen');
+  if (authScreen) authScreen.hidden = false;
+}
+
 // ── SPLASH TRANSITION ───────────────────────────────────────────────────────
 function initSplash() {
   const splash = document.getElementById('splash');
@@ -909,6 +917,18 @@ function initSplash() {
   const blockout = document.getElementById('splashBlockout');
   const canvas = document.getElementById('splashCanvas');
   if (!splash || !startBtn || !blockout || !canvas) return;
+
+  // A Netlify Identity confirmation email link lands here with
+  // #confirmation_token= in the hash — that's someone finishing account
+  // creation, not a visitor browsing in to plan a trip. Skip the marketing
+  // splash (and the globe's network/WebGL cost) and drop straight onto the
+  // auth screen, whose own hash check (auth.js's consumeConfirmationToken)
+  // picks up the token from here.
+  if (/confirmation_token=/.test(window.location.hash)) {
+    splash.remove();
+    revealAuthScreen();
+    return;
+  }
 
   const magneticBtn = initMagneticButton(startBtn);
 
@@ -950,8 +970,7 @@ function initSplash() {
       // only lifted once auth.js's login handler succeeds, same as this
       // block used to lift it directly back when Explore led straight into
       // the app.
-      const authScreen = document.getElementById('authScreen');
-      if (authScreen) authScreen.hidden = false;
+      revealAuthScreen();
 
       blockout.classList.add('splash-blockout-fadeout');
       setTimeout(() => {
