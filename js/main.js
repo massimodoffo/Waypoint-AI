@@ -26,6 +26,7 @@ import {
 import { initCardTilt, initWelcomeParallax } from './interactive.js';
 import { initSplash } from './splash.js';
 import { initAuth } from './auth.js';
+import { initAccount } from './account.js';
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWelcomeParallax();
   initSplash();
   initAuth();
+  initAccount();
 
   const saved = loadTrips();
   if (saved) {

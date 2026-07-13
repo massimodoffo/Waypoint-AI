@@ -80,6 +80,16 @@
           <label for="authSignupPassword">Password</label>
           <input id="authSignupPassword" name="password" type="password" autocomplete="new-password" minlength="6" required>
         </div>
+        <div class="auth-consent">
+          <label class="auth-check">
+            <input type="checkbox" id="authAgreeTerms" required>
+            <span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></span>
+          </label>
+          <label class="auth-check">
+            <input type="checkbox" id="authAgreePrivacy" required>
+            <span>I agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a></span>
+          </label>
+        </div>
         <button type="submit" class="auth-submit" id="authSignupSubmit">Create account</button>
       </form>
 
@@ -94,6 +104,69 @@
         </div>
         <button type="submit" class="auth-submit" id="authLoginSubmit">Log in</button>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Opened from the sidebar's Account button once logged in (see
+     js/account.js). Unlike #authScreen, this is a dismissible overlay on
+     top of the live app, not a pre-app gate — closing it just hides it
+     again, nothing underneath needs to be torn down or revealed. -->
+<div id="accountModal" class="account-modal" hidden>
+  <div class="account-backdrop" id="accountBackdrop"></div>
+  <div class="account-shell">
+    <div class="card-core account-core">
+      <button type="button" class="auth-back account-close" id="accountCloseBtn" aria-label="Close account settings">&#10005;</button>
+      <div class="auth-header">
+        <div class="logo"><span class="logo-dot"></span>Account</div>
+        <p class="auth-tagline" id="accountEmailDisplay"></p>
+      </div>
+
+      <div class="auth-message" id="accountMessage" role="status" hidden></div>
+
+      <section class="account-section">
+        <h3 class="account-section-title">Change password</h3>
+        <form class="auth-form" id="accountPasswordForm" novalidate>
+          <div class="auth-field">
+            <label for="accountCurrentPassword">Current password</label>
+            <input id="accountCurrentPassword" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="auth-field">
+            <label for="accountNewPassword">New password</label>
+            <input id="accountNewPassword" type="password" autocomplete="new-password" minlength="6" required>
+          </div>
+          <div class="auth-field">
+            <label for="accountConfirmPassword">Confirm new password</label>
+            <input id="accountConfirmPassword" type="password" autocomplete="new-password" minlength="6" required>
+          </div>
+          <button type="submit" class="auth-submit" id="accountPasswordSubmit">Update password</button>
+        </form>
+      </section>
+
+      <section class="account-section">
+        <h3 class="account-section-title">Legal</h3>
+        <div class="account-legal-links">
+          <a href="terms.html" target="_blank" rel="noopener">Terms of Service ↗</a>
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy ↗</a>
+        </div>
+      </section>
+
+      <section class="account-section account-danger">
+        <h3 class="account-section-title">Danger zone</h3>
+        <p class="account-danger-copy">Deleting your account is permanent and cannot be undone. Trip data already saved in this browser isn't affected — see the Privacy Policy for details.</p>
+        <button type="button" class="account-danger-btn" id="accountDeleteOpenBtn">Delete account</button>
+
+        <div class="account-delete-confirm" id="accountDeleteConfirm" hidden>
+          <p class="account-danger-copy">Type <strong>DELETE</strong> below to confirm.</p>
+          <input type="text" class="account-delete-input" id="accountDeleteInput" autocomplete="off" spellcheck="false">
+          <div class="account-delete-actions">
+            <button type="button" class="account-delete-cancel" id="accountDeleteCancelBtn">Cancel</button>
+            <button type="button" class="account-danger-btn" id="accountDeleteConfirmBtn" disabled>Permanently delete</button>
+          </div>
+        </div>
+      </section>
+
+      <button type="button" class="account-logout-btn" id="accountLogoutBtn">Log out</button>
     </div>
   </div>
 </div>
@@ -156,6 +229,12 @@
         <div class="agent-dot" id="ad-local"></div>
         <span style="font-size:13px">Local Tips</span>
       </div>
+    </div>
+    <div class="sidebar-account">
+      <button class="sidebar-account-btn" id="sidebarAccountOpenBtn" aria-haspopup="dialog">
+        <span class="sidebar-account-avatar" id="sidebarAccountAvatar">•</span>
+        <span class="sidebar-account-email" id="sidebarAccountEmail">Account</span>
+      </button>
     </div>
   </aside>
 

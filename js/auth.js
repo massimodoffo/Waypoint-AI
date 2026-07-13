@@ -54,6 +54,8 @@ function els() {
     lastName: document.getElementById('authLastName'),
     signupEmail: document.getElementById('authSignupEmail'),
     signupPassword: document.getElementById('authSignupPassword'),
+    agreeTerms: document.getElementById('authAgreeTerms'),
+    agreePrivacy: document.getElementById('authAgreePrivacy'),
     loginEmail: document.getElementById('authLoginEmail'),
     loginPassword: document.getElementById('authLoginPassword'),
   };
@@ -232,7 +234,7 @@ function setSubmitting(button, isSubmitting, idleLabel) {
 
 async function handleSignupSubmit(e) {
   e.preventDefault();
-  const { submitSignup, firstName, lastName, signupEmail, signupPassword } = els();
+  const { submitSignup, firstName, lastName, signupEmail, signupPassword, agreeTerms, agreePrivacy } = els();
   if (!firstName || !lastName || !signupEmail || !signupPassword) return;
   clearMessage();
 
@@ -243,6 +245,13 @@ async function handleSignupSubmit(e) {
 
   if (!first || !last || !email || password.length < 6) {
     showMessage('Fill in every field — password needs at least 6 characters.', 'error');
+    return;
+  }
+  // The form carries novalidate (see index.html) so the checkboxes' own
+  // `required` attribute never blocks submission on its own — this is the
+  // actual gate, same manual-validation pattern as the fields above.
+  if (!agreeTerms?.checked || !agreePrivacy?.checked) {
+    showMessage('Please agree to the Terms of Service and Privacy Policy to continue.', 'error');
     return;
   }
 
@@ -335,6 +344,98 @@ async function consumeConfirmationToken() {
   }
 }
 
+// ── ACCOUNT MANAGEMENT ──────────────────────────────────────────────────────
+// Used by js/account.js's settings panel, not the signup/login screen above.
+
+// GoTrue's self-service /user endpoint updates the *currently authenticated*
+// user (identified by the Bearer token, not a path param) — the same
+// no-admin-secret pattern identityLogin/identitySignup use above, just for
+// updates instead of account creation.
+async function identityUpdateUser(accessToken, updates) {
+  let res;
+  try {
+    res = await fetch(`${IDENTITY_BASE}/user`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(updates),
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS)
+    });
+  } catch {
+    throw new Error(MSG_GENERIC_ERROR);
+  }
+  const body = await parseJsonSafe(res);
+  if (!res.ok) throw new Error(extractErrorMessage(body));
+  return body;
+}
+
+// Read by the account panel to display which address is signed in —
+// separate from getAccessToken() (sessionStorage, cleared on tab close)
+// since this is just display text, not a credential.
+function getStoredEmail() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw).email ?? null : null;
+  } catch { return null; }
+}
+
+// Re-authenticates with the current password before changing it. GoTrue's
+// /user endpoint itself only requires a valid access token, not the current
+// password — this extra round-trip is a deliberate choice on top of that,
+// not a GoTrue requirement: it stops someone who's grabbed an active
+// session/token (but not the password) from locking the real account owner
+// out, and it doubles as confirming the typed current password is actually
+// correct before the new one overwrites it.
+async function changePassword(currentPassword, newPassword) {
+  const email = getStoredEmail();
+  if (!email) throw new Error('Your session has expired — please log in again.');
+  // identityLogin succeeding already confirms currentPassword was correct —
+  // a failure past this point (network blip, timeout) doesn't tell us
+  // whether GoTrue actually applied the update before the response was
+  // lost, so it gets distinct wording rather than implying nothing changed
+  // and it's safe to just retry with the same "current" password.
+  const tokenResponse = await identityLogin(email, currentPassword);
+  try {
+    await identityUpdateUser(tokenResponse.access_token, { password: newPassword });
+  } catch {
+    throw new Error('Your password may have already been updated. Try logging in with the new one — if that fails, use the old one and try again.');
+  }
+}
+
+// Calls the account-deletion Netlify function (see
+// netlify/functions/delete-account.js), which needs the caller's own
+// Identity JWT to know which account to delete — the same Bearer-header
+// pattern agents.js uses for the Claude proxy.
+async function deleteAccount() {
+  const token = getAccessToken();
+  if (!token) throw new Error('Your session has expired — please log in again.');
+  let res;
+  try {
+    res = await fetch('/.netlify/functions/delete-account', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(IDENTITY_TIMEOUT_MS)
+    });
+  } catch {
+    throw new Error(MSG_GENERIC_ERROR);
+  }
+  if (!res.ok) {
+    const body = await parseJsonSafe(res);
+    throw new Error(body?.error || MSG_GENERIC_ERROR);
+  }
+}
+
+// Clears the local session without calling any API — used both for a plain
+// "log out" action and after a successful account deletion, where the
+// account is already gone server-side and there's nothing left to sign out
+// of, just local state to clear.
+function clearSession() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+  try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch { /* storage unavailable */ }
+}
+
 function initAuth() {
   const { tabSignup, tabLogin, formSignup, formLogin } = els();
   if (!tabSignup || !tabLogin || !formSignup || !formLogin) return;
@@ -351,4 +452,4 @@ function initAuth() {
 }
 
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
-export { initAuth, getAccessToken };
+export { initAuth, getAccessToken, getStoredEmail, changePassword, deleteAccount, clearSession, MSG_GENERIC_ERROR };

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Waypoint AI</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&f[]=switzer@400,500,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="legal-page">
+
+<header class="legal-header">
+  <div class="logo"><span class="logo-dot"></span>Waypoint</div>
+  <a class="legal-back" href="index.html">← Back to app</a>
+</header>
+
+<main class="legal-wrap">
+  <h1>Privacy Policy</h1>
+  <p class="legal-updated">Last updated: July 13, 2026</p>
+
+  <div class="legal-toc">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#overview">1. Overview</a></li>
+      <li><a href="#collect">2. Information We Collect</a></li>
+      <li><a href="#local-storage">3. What Stays On Your Device</a></li>
+      <li><a href="#use">4. How We Use Information</a></li>
+      <li><a href="#share">5. How We Share Information</a></li>
+      <li><a href="#retention">6. Data Retention</a></li>
+      <li><a href="#rights">7. Your Rights &amp; Choices</a></li>
+      <li><a href="#children">8. Children's Privacy</a></li>
+      <li><a href="#security">9. Data Security</a></li>
+      <li><a href="#international">10. International Data Transfers</a></li>
+      <li><a href="#changes">11. Changes to This Policy</a></li>
+      <li><a href="#contact">12. Contact Us</a></li>
+    </ol>
+  </div>
+
+  <h2 id="overview">1. Overview</h2>
+  <p>This Privacy Policy explains what information Waypoint AI ("<strong>we</strong>," "<strong>us</strong>," "<strong>Waypoint</strong>") collects, how we use it, and the choices you have. It applies to your use of the Waypoint AI website and application (the "<strong>Service</strong>"). This Policy should be read together with our <a href="terms.html">Terms of Service</a>.</p>
+
+  <div class="legal-highlight">
+    <p><strong>The short version:</strong> we collect your name and email to run your account. Your actual trip-planning conversations and generated itineraries are stored only in your own browser, not in a Waypoint database. To generate responses, your trip-planning messages are sent to Anthropic (the maker of the Claude AI model that powers this app) for processing. We never sell your personal information.</p>
+  </div>
+
+  <h2 id="collect">2. Information We Collect</h2>
+  <h3>Account information</h3>
+  <p>When you create an account, we collect your <strong>first name, last name, email address, and password</strong>. Your password is handled entirely by our authentication provider, Netlify Identity, and is never visible to us or stored by us in plain text.</p>
+
+  <h3>Content you provide</h3>
+  <p>When you use the chat to plan a trip, we process the messages you type — your destination, dates, preferences, budget, and follow-up questions — in order to generate a response. See <a href="#local-storage">Section 3</a> for where this content actually lives, and <a href="#share">Section 5</a> for who it's sent to.</p>
+
+  <h3>Automatically collected information</h3>
+  <p>Our hosting provider (Netlify) automatically logs standard technical information for any request to our servers, such as IP address, browser type, device type, and request timestamps, for security and operational purposes. We do not currently use any third-party analytics or advertising tracking services.</p>
+
+  <table class="legal-table">
+    <tr><th>Category</th><th>Examples</th><th>Where it's stored</th></tr>
+    <tr><td>Account credentials</td><td>Name, email, password</td><td>Netlify Identity (our authentication provider)</td></tr>
+    <tr><td>Trip &amp; chat content</td><td>Destinations, preferences, generated itineraries, budget/hotel/restaurant results</td><td>Your browser's local storage only — never on a Waypoint server database</td></tr>
+    <tr><td>AI processing data</td><td>The text of your chat messages, sent to generate a response</td><td>Transmitted to Anthropic for processing; not retained by us afterward</td></tr>
+    <tr><td>Technical/server logs</td><td>IP address, browser type, timestamps</td><td>Netlify's hosting infrastructure</td></tr>
+  </table>
+
+  <h2 id="local-storage">3. What Stays On Your Device</h2>
+  <p><strong>Waypoint does not operate a database of your trips or conversations.</strong> Your trip list, chat history, and generated itineraries are saved using your browser's <code>localStorage</code>, on your own device, and are never uploaded to or stored on a Waypoint server. This means:</p>
+  <ul>
+    <li>Clearing your browser's site data, using a different browser or device, or using a private/incognito window will make that trip history inaccessible to you (it isn't backed up anywhere by us);</li>
+    <li>We also use your browser's <code>sessionStorage</code> to temporarily hold your login session token, cleared automatically when you close the tab;</li>
+    <li>Deleting your account (see <a href="#rights">Section 7</a>) removes your Netlify Identity account record, but does <strong>not</strong> automatically clear localStorage data already saved in your browser — you can clear that yourself via your browser's site-data settings.</li>
+  </ul>
+
+  <h2 id="use">4. How We Use Information</h2>
+  <p>We use the information described above to:</p>
+  <ul>
+    <li>Create and secure your account, and authenticate you when you log in;</li>
+    <li>Generate AI-assisted trip-planning responses to the messages you send;</li>
+    <li>Fetch weather, map, and directions data relevant to the trip you're planning;</li>
+    <li>Maintain the security, integrity, and reliability of the Service (e.g., rejecting unauthenticated requests to our AI proxy);</li>
+    <li>Communicate with you about your account (e.g., confirmation emails, security notices);</li>
+    <li>Comply with legal obligations.</li>
+  </ul>
+  <p>We do not use your trip content to train our own AI models, and we do not sell your personal information to third parties.</p>
+
+  <h2 id="share">5. How We Share Information</h2>
+  <p>We share information only as needed to operate the Service, with the following categories of service providers, each acting under their own terms:</p>
+  <ul>
+    <li><strong>Anthropic</strong> — receives the text of your chat messages in order to generate the AI response. See <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a>.</li>
+    <li><strong>Netlify, Inc.</strong> — hosts the Service and manages account authentication (Netlify Identity) and password storage. See <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener">Netlify's Privacy Policy</a>.</li>
+    <li><strong>Open-Meteo</strong> — receives the destination/coordinates you're asking about in order to return a weather forecast. No account or personal identifiers are sent.</li>
+    <li><strong>OSRM / OpenStreetMap (Nominatim)</strong> — receives origin/destination text or coordinates to compute routes and directions, when Google Maps is not configured.</li>
+    <li><strong>Google Maps Embed API</strong> — loads an embedded map for directions, when configured for this deployment, subject to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+  </ul>
+  <p>We do not otherwise share, rent, or sell your personal information to third parties for their own marketing purposes. We may disclose information if required by law, subpoena, or other legal process, or to protect the rights, property, or safety of Waypoint, our users, or the public.</p>
+  <p>If Waypoint is involved in a merger, acquisition, or sale of assets, account information may be transferred as part of that transaction; we will provide notice before your information becomes subject to a different privacy policy.</p>
+
+  <h2 id="retention">6. Data Retention</h2>
+  <p>We retain your account information (name, email) for as long as your account is active. If you delete your account, your Netlify Identity account record is permanently deleted and cannot be recovered. Content sent to Anthropic for processing a given request is not retained by us after the response is generated; Anthropic's own retention practices are governed by its terms with us and its privacy policy. Server/technical logs are retained by our hosting provider for a limited operational period consistent with standard industry practice.</p>
+
+  <h2 id="rights">7. Your Rights &amp; Choices</h2>
+  <p>Depending on where you live, you may have rights under laws such as the EU/UK General Data Protection Regulation (GDPR) or the California Consumer Privacy Act (CCPA), including the right to access, correct, delete, or export your personal information, and to object to or restrict certain processing. You can exercise most of these directly:</p>
+  <ul>
+    <li><strong>Access or correct your information</strong> — update your name/email from the Account settings panel in the app.</li>
+    <li><strong>Change your password</strong> — from the Account settings panel in the app.</li>
+    <li><strong>Delete your account</strong> — from the Account settings panel in the app. This permanently and irreversibly deletes your account record from our authentication provider. It does not delete trip data already saved in your browser's local storage — clear that separately via your browser settings if you want it removed too.</li>
+    <li><strong>Any other request</strong> (data export, objection to processing, or a request in a jurisdiction with additional rights) — email <a href="mailto:massimo.doffo@gmail.com">massimo.doffo@gmail.com</a> and we will respond within the time required by applicable law.</li>
+  </ul>
+
+  <h2 id="children">8. Children's Privacy</h2>
+  <p>The Service is not directed to, and is not intended for use by, children under the age of 16. We do not knowingly collect personal information from children under 16. If we become aware that we have collected personal information from a child under 16 without verified parental consent, we will delete that information promptly. If you believe a child has provided us with personal information, contact us at <a href="mailto:massimo.doffo@gmail.com">massimo.doffo@gmail.com</a>.</p>
+
+  <h2 id="security">9. Data Security</h2>
+  <p>We rely on our infrastructure providers' security practices (Netlify for hosting and authentication) and use industry-standard measures such as encrypted transport (HTTPS) and server-side gating of our AI proxy behind authenticated requests. However, no method of transmission or storage is 100% secure, and we cannot guarantee absolute security.</p>
+
+  <h2 id="international">10. International Data Transfers</h2>
+  <p>Our service providers (including Anthropic and Netlify) may process information on servers located in the United States or other countries. By using the Service, you understand that your information may be transferred to and processed in countries other than your own, which may have different data protection laws.</p>
+
+  <h2 id="changes">11. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. If we make material changes, we will update the "Last updated" date above and, where appropriate, provide additional notice (such as an in-app notification). Your continued use of the Service after changes take effect constitutes acceptance of the revised Policy.</p>
+
+  <h2 id="contact">12. Contact Us</h2>
+  <p>Questions about this Privacy Policy, or requests regarding your personal information, can be sent to <a href="mailto:massimo.doffo@gmail.com">massimo.doffo@gmail.com</a>.</p>
+
+  <div class="legal-note">
+    <p><strong>Not legal advice.</strong> This document is a general-purpose template drafted to reflect Waypoint AI's actual current data practices. It is not a substitute for review by a licensed attorney or privacy professional, particularly if you plan to operate in jurisdictions with specific requirements (e.g., GDPR's Article 30 records, CCPA "Do Not Sell" mechanics) or once paid features are introduced.</p>
+  </div>
+</main>
+
+<script type="module">
+  import { initTheme } from './js/theme.js';
+  document.addEventListener('DOMContentLoaded', initTheme);
+</script>
+
+</body>
+</html>

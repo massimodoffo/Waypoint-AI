@@ -79,6 +79,11 @@ aside.collapsed { width: 0; min-width: 0; border-right-color: transparent; visib
 .agent-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(143,168,122,0.5); animation: pulse 1.2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
+.sidebar-account { padding: 0.75rem; border-top: 1px solid var(--border); }
+.sidebar-account-btn { width: 100%; display: flex; align-items: center; gap: 9px; padding: 0.55rem 0.6rem; background: transparent; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+.sidebar-account-avatar { width: 22px; height: 22px; border-radius: 50%; background: rgba(91,143,255,0.14); color: var(--accent); border: 1px solid rgba(91,143,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; text-transform: uppercase; flex-shrink: 0; }
+.sidebar-account-email { font-size: 12.5px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+
 /* ── MAIN ────────────────────────────────────────────────────────────────────── */
 /* tabindex="-1" + focus() in splash.js's dismissal handler moves focus here once the
    splash is torn down, so keyboard users don't lose focus to <body>. outline is
@@ -379,6 +384,17 @@ textarea::placeholder { color: var(--text3); }
   .auth-back:hover { background: var(--bg3); color: var(--text); }
   .auth-tab:not(.active):hover { background: var(--bg2); color: var(--text); }
   .auth-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(91,143,255,0.4); }
+
+  .sidebar-account-btn:hover { background: var(--bg3); border-color: var(--border2); }
+  .account-close:hover { background: var(--bg3); color: var(--text); }
+  .account-danger-btn:hover:not(:disabled) { opacity: 0.88; }
+  .account-delete-cancel:hover { color: var(--text); }
+  .account-logout-btn:hover { background: var(--bg3); color: var(--text); }
+  .account-legal-links a:hover { color: var(--accent); }
+  .auth-check a:hover { color: var(--accent); }
+
+  .legal-back:hover { color: var(--text); }
+  .legal-toc a:hover { color: var(--accent); }
 }
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────────────────── */
@@ -639,6 +655,17 @@ body.pre-start .app { display: none; }
 .auth-field input::placeholder { color: var(--text3); }
 .auth-field input:focus { outline: none; border-color: rgba(91,143,255,0.4); }
 
+.auth-consent { display: flex; flex-direction: column; gap: 0.5rem; margin-top: -0.25rem; }
+/* Custom box instead of the bare UA checkbox — accent-colored + checkmark
+   drawn with clip-path rather than an SVG/icon-font dependency, matching
+   this file's no-icon-asset posture elsewhere (e.g. the hamburger's bars). */
+.auth-check { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 12.5px; color: var(--text2); line-height: 1.5; cursor: pointer; user-select: none; }
+.auth-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.auth-check span::before { content: ''; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px; border: 1px solid var(--border2); border-radius: 4px; background: var(--bg3); transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease); flex-shrink: 0; }
+.auth-check input:checked + span::before { background: var(--accent); border-color: var(--accent); clip-path: polygon(20% 47%, 0% 65%, 47% 100%, 100% 20%, 82% 5%, 43% 68%); }
+.auth-check input:focus-visible + span::before { outline: 2px solid var(--accent); outline-offset: 2px; }
+.auth-check a { color: var(--text2); text-decoration: underline; text-underline-offset: 2px; transition: color 0.2s var(--ease); }
+
 .auth-submit { margin-top: 0.25rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; background: var(--accent); color: #ffffff; font-family: 'Switzer', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.35s var(--ease), opacity 0.2s var(--ease), box-shadow 0.35s var(--ease); box-shadow: 0 0 0 0 rgba(91,143,255,0); }
 .auth-submit:active { transform: translateY(0) scale(0.98); }
 .auth-submit:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
@@ -658,4 +685,89 @@ body.pre-start .app { display: none; }
      line next to it — tighter padding + a smaller size keeps both tabs
      single-line down to a 320px viewport. */
   .auth-tab { padding: 0.55rem 0.4rem; font-size: 12px; white-space: nowrap; }
+}
+
+/* ── ACCOUNT MODAL ───────────────────────────────────────────────────────────── */
+/* A dismissible overlay on top of the live app (unlike #authScreen, which
+   gates entry to it) — reuses .card-core and the auth-* field/message/
+   submit-button classes above rather than redeclaring them, only the
+   modal chrome (backdrop, close button, section layout) is new here. */
+.account-modal[hidden] { display: none; }
+.account-modal { position: fixed; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.account-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fadeIn 0.2s ease both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.account-shell { position: relative; z-index: 1; width: 100%; max-width: 440px; max-height: calc(100vh - 4rem); overflow-y: auto; background: var(--bg); border-radius: var(--radius-shell); padding: 6px; box-shadow: var(--shadow); animation: slideUp 0.35s var(--ease) both; }
+.account-core { padding: 2rem 1.75rem; position: relative; }
+.account-close { position: absolute; top: 1rem; right: 1rem; left: auto; font-size: 13px; }
+
+.account-section { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.account-section-title { font-family: 'Clash Display', sans-serif; font-size: 0.85rem; font-weight: 500; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem; }
+
+.account-legal-links { display: flex; flex-direction: column; gap: 0.6rem; }
+.account-legal-links a { font-size: 13.5px; color: var(--text2); text-decoration: none; }
+
+.account-danger { border-color: rgba(168,122,143,0.25); }
+.account-danger-copy { font-size: 12.5px; color: var(--text3); line-height: 1.6; margin-bottom: 0.85rem; }
+.account-danger-btn { width: 100%; padding: 0.7rem 1rem; border: 1px solid rgba(168,122,143,0.4); border-radius: var(--radius); background: rgba(168,122,143,0.1); color: var(--accent4); font-family: 'Switzer', sans-serif; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: opacity 0.2s var(--ease), transform 0.2s var(--ease); }
+.account-danger-btn:active:not(:disabled) { transform: scale(0.98); }
+.account-danger-btn:disabled { opacity: 0.4; cursor: default; }
+
+.account-delete-confirm { margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px dashed var(--border2); }
+.account-delete-confirm[hidden] { display: none; }
+.account-delete-input { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 0.6rem 0.75rem; color: var(--text); font-family: 'Switzer', sans-serif; font-size: 14px; margin-bottom: 0.75rem; transition: border-color 0.2s var(--ease); }
+.account-delete-input:focus { outline: none; border-color: rgba(168,122,143,0.5); }
+.account-delete-actions { display: flex; gap: 0.6rem; }
+.account-delete-actions .account-danger-btn { flex: 1; }
+.account-delete-cancel { flex: 1; padding: 0.7rem 1rem; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text2); font-family: 'Switzer', sans-serif; font-size: 13.5px; cursor: pointer; transition: color 0.2s var(--ease); }
+
+.account-logout-btn { width: 100%; margin-top: 1.75rem; padding: 0.7rem 1rem; border: 1px solid var(--border2); border-radius: var(--radius); background: transparent; color: var(--text2); font-family: 'Switzer', sans-serif; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .account-shell { animation: none; }
+  .account-backdrop { animation: none; }
+}
+
+@media (max-width: 700px) {
+  .account-modal { padding: 1rem; }
+  .account-core { padding: 1.5rem 1.25rem; }
+}
+
+/* ── LEGAL PAGES ─────────────────────────────────────────────────────────────── */
+/* Shared by terms.html and privacy.html — a plain reading column, not the
+   app shell (no sidebar/cards/chat), but pulling the same fonts/variables
+   from this stylesheet rather than duplicating them page-locally. Hover
+   rules for .legal-back/.legal-toc a live in the consolidated
+   HOVER-CAPABLE POINTERS block above, not here. */
+body.legal-page { height: auto; overflow: auto; }
+.legal-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); background: var(--nav-bg); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+.legal-back { font-family: 'Switzer', sans-serif; font-size: 13px; color: var(--text2); text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color 0.2s ease; }
+.legal-wrap { max-width: 720px; margin: 0 auto; padding: 3rem 2rem 6rem; }
+.legal-wrap h1 { font-family: 'Clash Display', sans-serif; font-size: 2.4rem; font-weight: 500; color: var(--text); letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+.legal-updated { font-size: 13px; color: var(--text3); margin-bottom: 2.5rem; }
+.legal-wrap h2 { font-family: 'Clash Display', sans-serif; font-size: 1.35rem; font-weight: 500; color: var(--text); letter-spacing: -0.01em; margin: 2.25rem 0 0.85rem; }
+.legal-wrap h3 { font-family: 'Switzer', sans-serif; font-size: 14.5px; font-weight: 600; color: var(--text); margin: 1.25rem 0 0.5rem; }
+.legal-wrap p { font-size: 14.5px; line-height: 1.75; color: var(--text2); margin-bottom: 0.9rem; }
+.legal-wrap ul { margin: 0 0 0.9rem 1.25rem; padding: 0; }
+.legal-wrap li { font-size: 14.5px; line-height: 1.75; color: var(--text2); margin-bottom: 0.4rem; }
+.legal-wrap strong { color: var(--text); font-weight: 600; }
+.legal-wrap a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.legal-note { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin: 1.5rem 0; }
+.legal-note p { color: var(--text2); margin-bottom: 0; font-size: 13.5px; }
+.legal-highlight { background: linear-gradient(160deg, rgba(91,143,255,0.08), var(--bg2) 60%); border: 1px solid rgba(91,143,255,0.22); border-radius: var(--radius-lg); padding: 1.1rem 1.35rem; margin: 1.5rem 0; }
+.legal-highlight p { margin-bottom: 0; }
+.legal-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 13.5px; }
+.legal-table th, .legal-table td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.legal-table th { color: var(--text3); font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+.legal-table td { color: var(--text2); }
+.legal-toc { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+.legal-toc p { margin-bottom: 0.6rem; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); }
+.legal-toc ol { list-style: none; margin: 0; padding-left: 0; columns: 2; column-gap: 1.5rem; }
+.legal-toc li { font-size: 13px; margin-bottom: 0.35rem; }
+.legal-toc a { color: var(--text2); text-decoration: none; }
+
+@media (max-width: 700px) {
+  .legal-wrap { padding: 2rem 1.25rem 4rem; }
+  .legal-wrap h1 { font-size: 1.8rem; }
+  .legal-toc ol { columns: 1; }
+  .legal-table { display: block; overflow-x: auto; }
 }
